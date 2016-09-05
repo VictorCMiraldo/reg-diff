@@ -1,0 +1,3 @@
+name: reg-diff
+include: src
+depend: victor-prelude
