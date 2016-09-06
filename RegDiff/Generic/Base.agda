@@ -24,7 +24,7 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
 
   ⟦_⟧ : U → Set → Set
   ⟦ I       ⟧ A = A
-  ⟦ u1       ⟧ A = Unit
+  ⟦ u1      ⟧ A = Unit
   ⟦ K x     ⟧ A = lookup x parms
   ⟦ ty ⊕ tv ⟧ A = ⟦ ty ⟧ A ⊎ ⟦ tv ⟧ A
   ⟦ ty ⊗ tv ⟧ A = ⟦ ty ⟧ A × ⟦ tv ⟧ A
@@ -180,4 +180,29 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
 
   μ-ar : {ty : U} → μ ty → ℕ
   μ-ar {ty} ⟨ x ⟩ = ar ty x
+
+  μ-hd : {ty : U} → μ ty → ⟦ ty ⟧ Unit
+  μ-hd {ty} ⟨ x ⟩ = fgt ty x
   
+  μ-plug : {ty : U} → ⟦ ty ⟧ Unit → List (μ ty) → Maybe (μ ty)
+  μ-plug {ty} shape as = ⟨_⟩ <M> plug ty shape as
+
+  μ-plug-correct
+    : {ty : U}(x : μ ty)
+    → μ-plug (μ-hd x) (μ-ch x) ≡ just x
+  μ-plug-correct {ty} ⟨ x ⟩ 
+    rewrite plug-correct ty x
+          = refl
+
+{-
+  Finally, our "size" function
+-}
+
+  size : {A : Set}(ty : U)
+       → ⟦ ty ⟧ A → ℕ
+  size I x = 0
+  size u1 x = 1
+  size (K k) x = 1
+  size (ty ⊕ tv) (i1 x) = size ty x
+  size (ty ⊕ tv) (i2 y) = size tv y
+  size (ty ⊗ tv) (x , y) = size ty x + size tv y
