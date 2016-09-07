@@ -1,15 +1,12 @@
 open import Prelude
 open import Prelude.Vector
 
-open import RegDiff.Diff.Abstract
-
 module RegDiff.Diff.Lab where
 
-  open import RegDiff.Generic.Lab
+  open import RegDiff.Generic.Konstants
   open import RegDiff.Diff.Base 
       konstants 
       keqs
-      (trivial-diff ∷ trivial-diff ∷ [])
     public
 
   TREE-F : U
@@ -30,7 +27,7 @@ module RegDiff.Diff.Lab where
   t2 = Node 13 (Node 10 Leaf Leaf)
                Leaf
 
-  p12 : Dμ TREE-F
+  p12 : Dμ ⊥' TREE-F
   p12 = diffμ (t1 ∷ []) (t2 ∷ [])
 
   r3 : Maybe (List TreeNat)

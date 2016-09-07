@@ -194,6 +194,11 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
     rewrite plug-correct ty x
           = refl
 
+  μ-ch-ar-hd-lemma
+    : {ty : U}(x : μ ty)
+    → length (μ-ch x) ≡ ar ty (μ-hd x)
+  μ-ch-ar-hd-lemma {ty} ⟨ x ⟩ = ch-ar-fgt-lemma ty x
+
 {-
   Finally, our "size" function
 -}
