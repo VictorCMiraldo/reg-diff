@@ -10,7 +10,7 @@ module RegDiff.Diff.Lab where
     public
 
   TREE-F : U
-  TREE-F = u1 ⊕ (K kℕ) ⊗ I ⊗ I
+  TREE-F = u1 ⊕ (K kℕ) ⊗ I ⊗ I ⊕ (K kℕ) ⊗ I
 
   TreeNat : Set
   TreeNat = μ TREE-F
@@ -19,10 +19,13 @@ module RegDiff.Diff.Lab where
   Leaf = ⟨ i1 unit ⟩
 
   Node : ℕ → TreeNat → TreeNat → TreeNat
-  Node e l r = ⟨ i2 (e , l , r) ⟩
+  Node e l r = ⟨ i2 (i1 (e , l , r)) ⟩
+
+  Cons : ℕ → TreeNat → TreeNat
+  Cons x l = ⟨ i2 (i2 (x , l)) ⟩
 
   t1 t2 : TreeNat
-  t1 = Node 10 Leaf Leaf
+  t1 = Node 10 Leaf (Cons 5 Leaf)
 
   t2 = Node 13 (Node 10 Leaf Leaf)
                Leaf

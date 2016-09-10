@@ -219,3 +219,24 @@ module RegDiff.Diff.Base
     with apply ty x (μ-hd l₀) 
   ...| nothing = nothing
   ...| just x' = μ-ins x' <M> applyμ d (μ-ch l₀ ++ l)
+
+
+  dμ-splitd : {ty : U}(n : ℕ) → Dμ ⊥' ty → Dμ ⊥' ty × Dμ ⊥' ty
+  dμ-splitd zero    d      = Dμ-nil , d
+  dμ-splitd (suc n) Dμ-nil = Dμ-nil , Dμ-nil
+  dμ-splitd (suc n) (Dμ-B () d)
+  dμ-splitd {ty} (suc n) (Dμ-ins x d) 
+    = let d0 , d1 = dμ-splitd (ar ty x + n) d 
+       in Dμ-ins x d0 , d1
+  dμ-splitd {ty} (suc n) (Dμ-del x d)
+    = let d0 , d1 = dμ-splitd (ar ty x + n) d 
+       in Dμ-del x d0 , d1
+  dμ-splitd {ty} (suc n) (Dμ-mod x d) 
+    = let d0 , d1 = dμ-splitd (ar ty (D-src x) + n) d 
+       in Dμ-mod x d0 , d1
+  
+  {-# TERMINATING #-}
+  dμ-ch : {ty : U} → Dμ ⊥' ty → List (Dμ ⊥' ty)
+  dμ-ch d with dμ-splitd 1 d
+  ...| d0 , Dμ-nil = d0 ∷ []
+  ...| d0 , d1     = d0 ∷ dμ-ch d1
