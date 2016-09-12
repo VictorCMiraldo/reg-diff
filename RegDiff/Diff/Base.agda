@@ -31,28 +31,23 @@ module RegDiff.Diff.Base
   Definition of patches for regular datatypes follow
 -}
 
-  data D (B : U → Set) : U → Set → Set where
-    DB  : {A : Set}{ty : U} → B ty → D B ty A
-    D1  : {A : Set} → D B u1 A
-    DA  : {A : Set}(x y : A) → D B I A
+  data D : U → Set → Set where
+    D1  : {A : Set} → D u1 A
+    DA  : {A : Set}(x y : A) → D I A
     DK  : {A : Set}(k : Fin n)
-        → (x y : lookup k v) → D B (K k) A
+        → (x y : lookup k v) → D (K k) A
     D⊗  : {A : Set}{ty tv : U}
-        → D B ty A → D B tv A → D B (ty ⊗ tv) A
+        → D ty A → D tv A → D (ty ⊗ tv) A
     Di1 : {A : Set}{ty tv : U}
-        → D B ty A → D B (ty ⊕ tv) A
+        → D ty A → D (ty ⊕ tv) A
     Di2 : {A : Set}{ty tv : U}
-        → D B tv A → D B (ty ⊕ tv) A
+        → D tv A → D (ty ⊕ tv) A
     Ds1 : {A : Set}{ty tv : U}
-        → ⟦ ty ⟧ A → ⟦ tv ⟧ A → D B (ty ⊕ tv) A
+        → ⟦ ty ⟧ A → ⟦ tv ⟧ A → D (ty ⊕ tv) A
     Ds2 : {A : Set}{ty tv : U}
-        → ⟦ tv ⟧ A → ⟦ ty ⟧ A → D B (ty ⊕ tv) A
+        → ⟦ tv ⟧ A → ⟦ ty ⟧ A → D (ty ⊕ tv) A
 
-  ⊥' : U → Set
-  ⊥' _ = ⊥
-
-  D-src : {A : Set}{ty : U} → D ⊥' ty A → ⟦ ty ⟧ A
-  D-src (DB ())
+  D-src : {A : Set}{ty : U} → D ty A → ⟦ ty ⟧ A
   D-src D1 = unit
   D-src (DA x y) = x
   D-src (DK k x y) = x
@@ -62,8 +57,7 @@ module RegDiff.Diff.Base
   D-src (Ds1 x y) = i1 x
   D-src (Ds2 x y) = i2 x
 
-  D-dst : {A : Set}{ty : U} → D ⊥' ty A → ⟦ ty ⟧ A
-  D-dst (DB ())
+  D-dst : {A : Set}{ty : U} → D ty A → ⟦ ty ⟧ A
   D-dst D1 = unit
   D-dst (DA x y) = y
   D-dst (DK k x y) = y
@@ -78,7 +72,7 @@ module RegDiff.Diff.Base
 -}
 
   diff : {A : Set}(ty : U)
-       → (x y : ⟦ ty ⟧ A) → D ⊥' ty A
+       → (x y : ⟦ ty ⟧ A) → D ty A
   diff I x y 
     = DA x y
   diff u1 x y 
@@ -93,8 +87,7 @@ module RegDiff.Diff.Base
     = D⊗ (diff ty x1 y1 ) (diff tv x2 y2)
 
   cost : {A : Set}{ty : U}
-       → D ⊥' ty A → ℕ
-  cost (DB ())
+       → D ty A → ℕ
   cost D1 = 1
   cost (DA x y) = 1
   cost (DK k x y)
@@ -106,7 +99,7 @@ module RegDiff.Diff.Base
   cost {A} {ty ⊕ tv} (Ds2 x y) = 1 + size tv x + size ty y
 
   _⊔_ : {A : Set}{ty : U}
-      → (d e : D ⊥' ty A) → D ⊥' ty A
+      → (d e : D ty A) → D ty A
   d ⊔ e with cost d ≤?-ℕ cost e
   ...| yes _ = d
   ...| no  _ = e
@@ -116,8 +109,7 @@ module RegDiff.Diff.Base
 -}
 
   apply : {A : Set}{{eqA : Eq A}}(ty : U)
-        → D ⊥' ty A → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
-  apply ty (DB ()) e
+        → D ty A → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
   apply {{eq _≟_}} I (DA x y) e 
     with x ≟ e
   ...| yes _ = just y
@@ -154,46 +146,42 @@ module RegDiff.Diff.Base
   Now we repeat everything for fixed points
 -}
 
-  data Dμ (B : U → Set)(ty : U) : Set where
-    Dμ-nil : Dμ B ty
-    Dμ-B   : B ty → Dμ B ty → Dμ B ty
-    Dμ-ins : ⟦ ty ⟧ Unit → Dμ B ty → Dμ B ty
-    Dμ-del : ⟦ ty ⟧ Unit → Dμ B ty → Dμ B ty
-    Dμ-mod : D B ty Unit   → Dμ B ty → Dμ B ty
+  data Dμ (ty : U) : Set where
+    Dμ-nil : Dμ ty
+    Dμ-ins : ⟦ ty ⟧ Unit → Dμ ty → Dμ ty
+    Dμ-del : ⟦ ty ⟧ Unit → Dμ ty → Dμ ty
+    Dμ-mod : D ty Unit   → Dμ ty → Dμ ty
 
   μ-ins : {ty : U} → ⟦ ty ⟧ Unit → List (μ ty) → List (μ ty)
   μ-ins {ty} x xs
     = let xs0 , xs1 = lsplit (ar ty x) xs
        in maybe (λ y → y ∷ xs1) [] (μ-plug x xs0)
 
-  Dμ-src : {ty : U} → Dμ ⊥' ty → List (μ ty)
-  Dμ-src (Dμ-B () d)
+  Dμ-src : {ty : U} → Dμ ty → List (μ ty)
   Dμ-src Dμ-nil = []
   Dμ-src (Dμ-ins x d) = Dμ-src d
   Dμ-src (Dμ-del x d) = μ-ins x (Dμ-src d)
   Dμ-src (Dμ-mod x d) = μ-ins (D-src x) (Dμ-src d)
 
-  Dμ-dst : {ty : U} → Dμ ⊥' ty → List (μ ty)
-  Dμ-dst (Dμ-B () d)
+  Dμ-dst : {ty : U} → Dμ ty → List (μ ty)
   Dμ-dst Dμ-nil = []
   Dμ-dst (Dμ-del x d) = Dμ-dst d
   Dμ-dst (Dμ-ins x d) = μ-ins x (Dμ-dst d)
   Dμ-dst (Dμ-mod x d) = μ-ins (D-dst x) (Dμ-dst d)
   
-  costμ : {ty : U} → Dμ ⊥' ty → ℕ
+  costμ : {ty : U} → Dμ ty → ℕ
   costμ Dμ-nil = 0
-  costμ (Dμ-B () d)
-  costμ {ty} (Dμ-ins x d) = size ty x + costμ d
-  costμ {ty} (Dμ-del x d) = size ty x + costμ d
+  costμ {ty} (Dμ-ins x d) = 1 + size ty x + costμ d
+  costμ {ty} (Dμ-del x d) = 1 + size ty x + costμ d
   costμ {ty} (Dμ-mod x d) = cost x + costμ d
 
-  _⊔μ_ : {ty : U} → Dμ ⊥' ty → Dμ ⊥' ty → Dμ ⊥' ty
+  _⊔μ_ : {ty : U} → Dμ ty → Dμ ty → Dμ ty
   d ⊔μ e with costμ d ≤?-ℕ costμ e
   ...| yes _ = d
   ...| no  _ = e
 
   {-# TERMINATING #-}
-  diffμ : {ty : U}(x y : List (μ ty)) → Dμ ⊥' ty
+  diffμ : {ty : U}(x y : List (μ ty)) → Dμ ty
   diffμ []       []       = Dμ-nil
   diffμ []       (y ∷ ys) = Dμ-ins (μ-hd y) (diffμ [] (μ-ch y ++ ys)) 
   diffμ (x ∷ xs) []       = Dμ-del (μ-hd x) (diffμ (μ-ch x ++ xs) [])
@@ -204,8 +192,7 @@ module RegDiff.Diff.Base
                       (diffμ (μ-ch x ++ xs) (μ-ch y ++ ys))
        in d3 ⊔μ (d1 ⊔μ d2)
 
-  applyμ : {ty : U} → Dμ ⊥' ty → List (μ ty) → Maybe (List (μ ty))
-  applyμ (Dμ-B () d) l
+  applyμ : {ty : U} → Dμ ty → List (μ ty) → Maybe (List (μ ty))
   applyμ Dμ-nil [] = just []
   applyμ Dμ-nil (x ∷ l) = nothing
   applyμ (Dμ-ins x d) l = μ-ins x <M> applyμ d l
@@ -221,10 +208,9 @@ module RegDiff.Diff.Base
   ...| just x' = μ-ins x' <M> applyμ d (μ-ch l₀ ++ l)
 
 
-  dμ-splitd : {ty : U}(n : ℕ) → Dμ ⊥' ty → Dμ ⊥' ty × Dμ ⊥' ty
+  dμ-splitd : {ty : U}(n : ℕ) → Dμ ty → Dμ ty × Dμ ty
   dμ-splitd zero    d      = Dμ-nil , d
   dμ-splitd (suc n) Dμ-nil = Dμ-nil , Dμ-nil
-  dμ-splitd (suc n) (Dμ-B () d)
   dμ-splitd {ty} (suc n) (Dμ-ins x d) 
     = let d0 , d1 = dμ-splitd (ar ty x + n) d 
        in Dμ-ins x d0 , d1
@@ -236,7 +222,7 @@ module RegDiff.Diff.Base
        in Dμ-mod x d0 , d1
   
   {-# TERMINATING #-}
-  dμ-ch : {ty : U} → Dμ ⊥' ty → List (Dμ ⊥' ty)
+  dμ-ch : {ty : U} → Dμ ty → List (Dμ ty)
   dμ-ch d with dμ-splitd 1 d
   ...| d0 , Dμ-nil = d0 ∷ []
   ...| d0 , d1     = d0 ∷ dμ-ch d1

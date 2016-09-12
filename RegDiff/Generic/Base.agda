@@ -199,6 +199,19 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
     → length (μ-ch x) ≡ ar ty (μ-hd x)
   μ-ch-ar-hd-lemma {ty} ⟨ x ⟩ = ch-ar-fgt-lemma ty x
 
+  μ-chv : {ty : U}(x : μ ty) → Vec (μ ty) (ar ty (μ-hd x))
+  μ-chv {ty} x = vec (μ-ch x) (μ-ch-ar-hd-lemma x)
+
+  data PlugView {ty : U} : μ ty → Set where
+    plugged : (hd : ⟦ ty ⟧ Unit)(chs : Vec (μ ty) (ar ty hd)) 
+            → PlugView ⟨ plugₜ ty hd chs ⟩
+
+  plug-view : {ty : U}(el : μ ty) 
+            → PlugView el
+  plug-view {ty} ⟨ el ⟩ 
+    rewrite sym (plugₜ-correct ty el)
+          = plugged (fgt ty el) (chv ty el)
+
 {-
   Finally, our "size" function
 -}

@@ -58,9 +58,8 @@ module RegDiff.Diff.Properties.Correctness
 -}
 
   apply-lemma 
-    : {A : Set}{{eqA : Eq A}}{ty : U}(d : D ⊥' ty A)
+    : {A : Set}{{eqA : Eq A}}{ty : U}(d : D ty A)
     → apply ty d (D-src d) ≡ just (D-dst d)
-  apply-lemma (DB ())
   apply-lemma D1 = refl
   apply-lemma {{eq _≟_}} (DA x y) 
     with x ≟ x
@@ -91,7 +90,7 @@ module RegDiff.Diff.Properties.Correctness
   Now, the fixpoint variants
 -}
 
-  ⊔μ-elim3 : {ty : U}(P : Dμ ⊥' ty → Set)(d e f : Dμ ⊥' ty)
+  ⊔μ-elim3 : {ty : U}(P : Dμ ty → Set)(d e f : Dμ ty)
           → P d → P e → P f → P (d ⊔μ (e ⊔μ f))
   ⊔μ-elim3 P d e f pd pe pf with costμ e ≤?-ℕ costμ f
   ...| yes _ with costμ d ≤?-ℕ costμ e
