@@ -6,19 +6,14 @@ open import Prelude.Vector
   and lists of locations!
 -}
 
-module RegDiff.Diff.Loc.Base
+module RegDiff.Diff.Loc.Fixpoint
       {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)
     where
 
-  open import RegDiff.Diff.Base v eqs
   open import RegDiff.Generic.Subtype.Base v
-  open import RegDiff.Generic.Derivative.Base v
-
-  Change : Set → U → Set
-  Change A ty = Σ U (λ k → Dir ty k × ⟦ k ⊗ k ⟧ A)
-
-  L : Set → U → Set
-  L A ty = List (Change A ty)
+  open import RegDiff.Diff.Regular v eqs
+  open import RegDiff.Diff.Fixpoint v eqs
+  open import RegDiff.Diff.Loc.Regular v eqs
 
   data Changeμ (ty : U) : Set where
     loc : (k : U) → Dirμ ty k → (x y : ⟦ k ⟧ Unit) → ar k x ≡ ar k y → Changeμ ty
@@ -28,27 +23,7 @@ module RegDiff.Diff.Loc.Base
   Lμ : U → Set
   Lμ = List ∘ Changeμ
 
-  walk : {A : Set}{ty tv : U}
-       → ({k : U} → Dir ty k → Dir tv k)
-       → L A ty → L A tv
-  walk f = map (id ×' (f ×' id)) 
-
-  go : {A : Set}{ty : U}(d : D ty A)
-     → L A ty
-  go D1 = []
-  go (DA x y) = [] -- (I , here , (x , y)) ∷ []
-  go (DK k x y) = ((K k) , (here , (x , y))) ∷ []
-  go (D⊗ d e) 
-    = let l0 = go d
-          l1 = go e
-       in walk fst l0 ++ walk snd l1
-  go (Di1 d) = walk left (go d)
-  go (Di2 d) = walk right (go d)
-  go {ty = ty ⊕ tv} (Ds1 x y) 
-    = ((ty ⊕ tv) , (here , (i1 x , i2 y))) ∷ []
-  go {ty = ty ⊕ tv} (Ds2 x y) 
-    = ((ty ⊕ tv) , (here , (i2 x , i1 y))) ∷ []
-
+  
   to-Changeμ : {ty : U} → L Unit ty → Lμ ty
   to-Changeμ [] = []
   to-Changeμ ((d₀ , dir , (dif0 , dif1)) ∷ ls) 
@@ -91,7 +66,7 @@ module RegDiff.Diff.Loc.Base
   goμ {ty = ty} (Dμ-del x d) 
     = let vs , ds = dμ-ch-split (ar ty x) (dμ-ch d)
        in del (hd here) x (vmap goμ vs) ∷ goμ ds
-  goμ {ty = ty} (Dμ-mod x d) 
+  goμ {ty = ty} (Dμ-mod (x , st) d) 
     = let x' = go x
        in to-Changeμ x' ++ concat (zipWith (λ dir op → map (app-dir dir) (goμ op)) 
                                            (rome ty (D-src x)) 

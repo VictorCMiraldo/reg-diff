@@ -7,11 +7,12 @@ open import Prelude.ListProperties
   for our diff primitives.
 -}
 
-module RegDiff.Diff.Properties.Correctness
+module RegDiff.Diff.Properties.Correctness.Regular
        {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)
     where
 
-  open import RegDiff.Diff.Base v eqs
+  open import RegDiff.Diff.Regular v eqs
+  open import RegDiff.Diff.Fixpoint v eqs
 
 {- 
   diff source and destination lemmas.
@@ -87,8 +88,34 @@ module RegDiff.Diff.Properties.Correctness
   ...| no ¬p = ⊥-elim (¬p refl)
 
 {-
+  Now some lemmas about stability
+-}
+
+  stable-ar-lemma 
+    : {A : Set}{ty : U}(d : D ty A)(hip : Stable d)
+    → ar ty (D-src d) ≡ ar ty (D-dst d)
+  stable-ar-lemma D1 hip = refl
+  stable-ar-lemma (DA x y) hip = refl
+  stable-ar-lemma (DK k x y) hip = refl
+  stable-ar-lemma (D⊗ d e) (hipd , hipe) 
+    = cong₂ _+_ (stable-ar-lemma d hipd) (stable-ar-lemma e hipe)
+  stable-ar-lemma (Di1 d) hip = stable-ar-lemma d hip
+  stable-ar-lemma (Di2 d) hip = stable-ar-lemma d hip
+  stable-ar-lemma (Ds1 _ _) ()
+  stable-ar-lemma (Ds2 _ _) ()
+
+{-
+  TODO: Fix the correctness proofs for fixpoints!!
+  
+        Since we didn't really change the algorithm I won't
+        bother with those for now.
+-}
+
+{-
   Now, the fixpoint variants
 -}
+
+{-
 
   ⊔μ-elim3 : {ty : U}(P : Dμ ty → Set)(d e f : Dμ ty)
           → P d → P e → P f → P (d ⊔μ (e ⊔μ f))
@@ -206,3 +233,4 @@ module RegDiff.Diff.Properties.Correctness
                  (Dμ-ins-dst-lemma y (x ∷ xs) ys)
                  (diffμ-dst-lemma (μ-ch x ++ xs) (y ∷ ys)) 
   
+-}
