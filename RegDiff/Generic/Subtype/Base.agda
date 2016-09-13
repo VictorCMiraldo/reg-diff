@@ -17,18 +17,26 @@ module RegDiff.Generic.Subtype.Base
   data Dirμ (ty : U) : U → Set where
     hd : {k : U} → Dir ty k → Dirμ ty k
     tl : {k : U} → Dir ty I → Dirμ ty k → Dirμ ty k
-    
 
-  fetch : {A : Set}{ty tv : U}
-        → Dir ty tv 
-        → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-  fetch here x = just x
-  fetch (left d) (i1 x) = fetch d x
-  fetch (left d) (i2 y) = nothing
-  fetch (right d) (i1 x) = nothing
-  fetch (right d) (i2 y) = fetch d y
-  fetch (fst d) x = fetch d (p1 x)
-  fetch (snd d) x = fetch d (p2 x)
+{-
+  All paths lead to rome!
+
+  "rome x" returns all directions to the parameter of x
+-}
+
+  rome : {A : Set}(ty : U)
+       → ⟦ ty ⟧ A → List (Dir ty I)
+  rome I x = here ∷ []
+  rome u1 x = []
+  rome (K k) x = []
+  rome (ty ⊕ tv) (i1 x) = map left (rome ty x)
+  rome (ty ⊕ tv) (i2 y) = map right (rome tv y)
+  rome (ty ⊗ tv) (x , y) = map fst (rome ty x) ++ map snd (rome tv y)
+
+{-
+  With directions set up, we can apply functions to a substructure
+  of an element.
+-}
 
   on : {A : Set}{ty tv : U}
       → Dir ty tv → (⟦ tv ⟧ A → Maybe (⟦ tv ⟧ A))
@@ -41,14 +49,6 @@ module RegDiff.Generic.Subtype.Base
   on (fst d) el (x , y) = (_, y) <M> on d el x
   on (snd d) el (x , y) = (x ,_) <M> on d el y
 
-  fetchμ : {tv ty : U}
-         → Dirμ ty tv
-         → μ ty
-         → Maybe (⟦ tv ⟧ (μ ty))
-  fetchμ (hd k) ⟨ x ⟩ = fetch k x
-  fetchμ (tl k d) ⟨ x ⟩ 
-    = maybe (fetchμ d) nothing (fetch k x)
-
   onμ : {ty tv : U}
        → Dirμ ty tv
        → (⟦ tv ⟧ (μ ty) → Maybe (⟦ tv ⟧ (μ ty))) 
@@ -56,12 +56,3 @@ module RegDiff.Generic.Subtype.Base
   onμ (hd c) el ⟨ x ⟩ = ⟨_⟩ <M> on c el x
   onμ (tl c dir) el ⟨ x ⟩ 
     = ⟨_⟩ <M> on c (onμ dir el) x
-
-  rome : {A : Set}(ty : U)
-       → ⟦ ty ⟧ A → List (Dir ty I)
-  rome I x = here ∷ []
-  rome u1 x = []
-  rome (K k) x = []
-  rome (ty ⊕ tv) (i1 x) = map left (rome ty x)
-  rome (ty ⊕ tv) (i2 y) = map right (rome tv y)
-  rome (ty ⊗ tv) (x , y) = map fst (rome ty x) ++ map snd (rome tv y)

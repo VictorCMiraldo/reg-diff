@@ -213,6 +213,28 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
           = plugged (fgt ty el) (chv ty el)
 
 {-
+  A handy definition to have is that of "shapely" functions.
+  They are the ones that do NOT change the arity of their
+  argument.
+-}
+  
+  Shapely : {A : Set}{ty : U}
+          → (⟦ ty ⟧ A → ⟦ ty ⟧ A)
+          → Set
+  Shapely {ty = ty} f = ∀ x → ar ty (f x) ≡ ar ty x
+
+{-
+  This allows us to apply these functions to the contents
+  of a fixpoint without compromising their structure!
+-}
+
+  μ-app-hd : {ty : U}(f : ⟦ ty ⟧ Unit → ⟦ ty ⟧ Unit)
+           → (hip : Shapely {Unit} {ty} f)
+           → μ ty → μ ty
+  μ-app-hd {ty} f hip x 
+    = ⟨ plugₜ ty (f (μ-hd x)) (vec-reindx (sym (hip (μ-hd x))) (μ-chv x)) ⟩
+
+{-
   Finally, our "size" function
 -}
 
