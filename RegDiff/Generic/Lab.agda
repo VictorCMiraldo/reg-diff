@@ -6,7 +6,11 @@ open import RegDiff.Generic.Konstants
 module RegDiff.Generic.Lab where
 
   open import RegDiff.Generic.Base konstants
+    public
   open import RegDiff.Generic.Subtype.Base konstants
+    public
+  open import RegDiff.Generic.Serialization.TypeSafe konstants
+    public
 
   TREE-F : U
   TREE-F = u1 ⊕ (K kℕ) ⊗ I ⊗ I
@@ -32,5 +36,5 @@ module RegDiff.Generic.Lab where
   t2 = Node 13 (Node 10 Leaf Leaf)
                Leaf
 
-  gogetit : Maybe (⟦ K kℕ ⟧ TreeNat)
-  gogetit = fetchμ leftnat t1
+  t1s : μW TREE-F
+  t1s = μ-w t1

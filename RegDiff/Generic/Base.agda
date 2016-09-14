@@ -246,3 +246,7 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
   size (ty ⊕ tv) (i1 x) = size ty x
   size (ty ⊕ tv) (i2 y) = size tv y
   size (ty ⊗ tv) (x , y) = size ty x + size tv y
+
+  {-# TERMINATING #-}
+  μ-size : {ty : U} → μ ty → ℕ
+  μ-size {ty} x = size ty (μ-hd x) + sum (map μ-size (μ-ch x))
