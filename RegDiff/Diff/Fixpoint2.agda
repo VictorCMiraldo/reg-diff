@@ -96,6 +96,10 @@ open import Prelude.Vector
   as we want to insert and delete as little as possible, and instead, try
   to modify as much as we can!
 
+  This choice is based on the assumption that most of the times,
+  information is inserted or delete in comparatively small parts of a file
+  in a given time.
+
   TODO:
     (1)
       It could be interesting if, instead of simply choosing the biggest subtree
