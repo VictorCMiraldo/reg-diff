@@ -248,5 +248,18 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
   size (ty ⊗ tv) (x , y) = size ty x + size tv y
 
   {-# TERMINATING #-}
+  cata : {A : Set}{ty : U}
+       → (⟦ ty ⟧ A → A) → μ ty → A
+  cata {A} {ty} f ⟨ x ⟩ = f (gmap ty (cata f) x)
+
   μ-size : {ty : U} → μ ty → ℕ
-  μ-size {ty} x = size ty (μ-hd x) + sum (map μ-size (μ-ch x))
+  μ-size {ty} = cata (sizeℕ ty)
+    where
+      sizeℕ : (ty : U)
+           → ⟦ ty ⟧ ℕ → ℕ
+      sizeℕ I x = x
+      sizeℕ u1 x = 1
+      sizeℕ (K k) x = 1
+      sizeℕ (ty ⊕ tv) (i1 x) = sizeℕ ty x
+      sizeℕ (ty ⊕ tv) (i2 y) = sizeℕ tv y
+      sizeℕ (ty ⊗ tv) (x , y) = sizeℕ ty x + sizeℕ tv y

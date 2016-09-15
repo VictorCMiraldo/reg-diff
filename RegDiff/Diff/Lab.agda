@@ -30,14 +30,15 @@ module RegDiff.Diff.Lab where
   Cons : ℕ → TreeNat → TreeNat
   Cons x l = ⟨ i2 (i2 (x , l)) ⟩
 
-  t1 t2 t3 : TreeNat
+  t1 t2 t3 t4 : TreeNat
   t1 = Node 10 Leaf (Cons 5 Leaf)
 
   t2 = Node 13 (Node 10 Leaf Leaf)
                Leaf
 
   t3 = Node 1 Leaf (Cons 2 Leaf)
-
+  
+  t4 = Node 10 t2 (Cons 5 Leaf)
   
 
   p12 : Dμ TREE-F
@@ -45,3 +46,6 @@ module RegDiff.Diff.Lab where
 
   p13 : Dμ TREE-F
   p13 = diffμ t1 t3
+
+  p14 : Dμ TREE-F
+  p14 = diffμ t1 t4
