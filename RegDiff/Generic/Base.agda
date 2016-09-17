@@ -240,11 +240,11 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
 
   size : {A : Set}(ty : U)
        → ⟦ ty ⟧ A → ℕ
-  size I x = 0
+  size I x = 1
   size u1 x = 1
   size (K k) x = 1
-  size (ty ⊕ tv) (i1 x) = size ty x
-  size (ty ⊕ tv) (i2 y) = size tv y
+  size (ty ⊕ tv) (i1 x) = 1 + size ty x
+  size (ty ⊕ tv) (i2 y) = 1 + size tv y
   size (ty ⊗ tv) (x , y) = size ty x + size tv y
 
   {-# TERMINATING #-}
@@ -260,6 +260,6 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
       sizeℕ I x = x
       sizeℕ u1 x = 1
       sizeℕ (K k) x = 1
-      sizeℕ (ty ⊕ tv) (i1 x) = sizeℕ ty x
-      sizeℕ (ty ⊕ tv) (i2 y) = sizeℕ tv y
+      sizeℕ (ty ⊕ tv) (i1 x) = 1 + sizeℕ ty x
+      sizeℕ (ty ⊕ tv) (i2 y) = 1 + sizeℕ tv y
       sizeℕ (ty ⊗ tv) (x , y) = sizeℕ ty x + sizeℕ tv y
