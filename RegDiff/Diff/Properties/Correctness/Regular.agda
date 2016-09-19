@@ -104,12 +104,19 @@ module RegDiff.Diff.Properties.Correctness.Regular
     = cong₂ _+_ (stable-ar-lemma d hipd) (stable-ar-lemma e hipe)
   stable-ar-lemma (Di1 d) hip = stable-ar-lemma d hip
   stable-ar-lemma (Di2 d) hip = stable-ar-lemma d hip
-  stable-ar-lemma (Ds1 _ _) ()
-  stable-ar-lemma (Ds2 _ _) ()
+  stable-ar-lemma (Ds1 x y) p = p
+  stable-ar-lemma (Ds2 x y) p = p
 
 {-
   Last but not least, cost function lemmas
 -}
+
+  ≤-refl : {n : ℕ} → n ≤ n
+  ≤-refl {zero} = z≤n
+  ≤-refl {suc n} = s≤s ≤-refl
+
+  postulate
+    +-exch : ∀ m n o p → (m + n) + (o + p) ≡ (m + o) + (n + p)
 
   cost-ubnd
     : {A : Set}(ty : U)(x y : ⟦ ty ⟧ A)
@@ -119,7 +126,7 @@ module RegDiff.Diff.Properties.Correctness.Regular
     with Eq.cmp (ty-eq k) x y
   ...| yes _ = s≤s z≤n
   ...| no  _ = s≤s (s≤s z≤n)
-  cost-ubnd u1 x y = s≤s (s≤s z≤n)
+  cost-ubnd u1 x y = (s≤s z≤n)
   cost-ubnd (ty ⊕ tv) (i1 x) (i1 y) 
     rewrite +-suc (size ty x) (size ty y)
           = ≤-step (≤-step (cost-ubnd ty x y))

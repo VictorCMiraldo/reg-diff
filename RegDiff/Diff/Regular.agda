@@ -88,7 +88,7 @@ module RegDiff.Diff.Regular
 
   cost : {A : Set}{ty : U}
        → D ty A → ℕ
-  cost D1 = 1
+  cost D1 = 0
   cost (DA x y) = 1
   cost (DK k x y)
     = dec-elim (const 0) (const 1) (Eq.cmp (ty-eq k) x y)
@@ -119,8 +119,8 @@ module RegDiff.Diff.Regular
   Stable (D⊗ d e) = Stable d × Stable e
   Stable (Di1 d) = Stable d
   Stable (Di2 d) = Stable d
-  Stable (Ds1 x x₁) = ⊥
-  Stable (Ds2 x x₁) = ⊥
+  Stable {ty = ty ⊕ tv} (Ds1 x y) = ar ty x ≡ ar tv y
+  Stable {ty = ty ⊕ tv} (Ds2 x y) = ar tv x ≡ ar ty y
 
   -- Stability is trivial do decide
   Stable-dec : {A : Set}{ty : U}(d : D ty A)
@@ -137,8 +137,10 @@ module RegDiff.Diff.Regular
   ...| yes q = yes (p , q)
   Stable-dec (Di1 d) = Stable-dec d
   Stable-dec (Di2 d) = Stable-dec d
-  Stable-dec (Ds1 x x₁) = no (λ z → z)
-  Stable-dec (Ds2 x x₁) = no (λ z → z)
+  Stable-dec {ty = ty ⊕ tv} (Ds1 x y) 
+    = ar ty x ≟-ℕ ar tv y
+  Stable-dec {ty = ty ⊕ tv} (Ds2 x y) 
+    = ar tv x ≟-ℕ ar ty y
 
 {- 
   Application is also very simple

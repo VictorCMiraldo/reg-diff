@@ -16,7 +16,8 @@ module RegDiff.Diff.Fixpoint
     Dμ-nil : Dμ ty
     Dμ-ins : ⟦ ty ⟧ Unit → Dμ ty → Dμ ty
     Dμ-del : ⟦ ty ⟧ Unit → Dμ ty → Dμ ty
-    Dμ-mod : Σ (D ty Unit) Stable → Dμ ty → Dμ ty
+    -- Dμ-mod : Σ (D ty Unit) Stable → Dμ ty → Dμ ty
+    Dμ-mod : D ty Unit → Dμ ty → Dμ ty
 
   μ-ins : {ty : U} → ⟦ ty ⟧ Unit → List (μ ty) → List (μ ty)
   μ-ins {ty} x xs
@@ -27,19 +28,19 @@ module RegDiff.Diff.Fixpoint
   Dμ-src Dμ-nil = []
   Dμ-src (Dμ-ins x d) = Dμ-src d
   Dμ-src (Dμ-del x d) = μ-ins x (Dμ-src d)
-  Dμ-src (Dμ-mod x d) = μ-ins (D-src (p1 x)) (Dμ-src d)
+  Dμ-src (Dμ-mod x d) = μ-ins (D-src x) (Dμ-src d)
 
   Dμ-dst : {ty : U} → Dμ ty → List (μ ty)
   Dμ-dst Dμ-nil = []
   Dμ-dst (Dμ-del x d) = Dμ-dst d
   Dμ-dst (Dμ-ins x d) = μ-ins x (Dμ-dst d)
-  Dμ-dst (Dμ-mod x d) = μ-ins (D-dst (p1 x)) (Dμ-dst d)
+  Dμ-dst (Dμ-mod x d) = μ-ins (D-dst x) (Dμ-dst d)
   
   costμ : {ty : U} → Dμ ty → ℕ
   costμ Dμ-nil = 0
-  costμ {ty} (Dμ-ins x d) = 1 + size ty x + costμ d
-  costμ {ty} (Dμ-del x d) = 1 + size ty x + costμ d
-  costμ {ty} (Dμ-mod x d) = cost (p1 x) + costμ d
+  costμ {ty} (Dμ-ins x d) = size ty x + costμ d
+  costμ {ty} (Dμ-del x d) = size ty x + costμ d
+  costμ {ty} (Dμ-mod x d) = cost x + costμ d
 
   _⊔μ_ : {ty : U} → Dμ ty → Dμ ty → Dμ ty
   d ⊔μ e with costμ d ≤?-ℕ costμ e
@@ -59,7 +60,7 @@ module RegDiff.Diff.Fixpoint
     = let dxy = diff ty (μ-hd x) (μ-hd y) 
           rxy = diffμ (μ-ch x ++ xs) (μ-ch y ++ ys)
        in ifd (Stable-dec dxy) 
-          then (λ p → Dμ-mod (dxy , p) rxy ⊔μ ins-or-del) 
+          then (λ p → Dμ-mod dxy rxy ⊔μ ins-or-del) 
           else (λ _ → ins-or-del)
     where
       ins-or-del = Dμ-ins (μ-hd y) (diffμ (x ∷ xs) (μ-ch y ++ ys))
@@ -76,7 +77,7 @@ module RegDiff.Diff.Fixpoint
   ...| no  _ = nothing
   applyμ (Dμ-mod x d) [] = nothing
   applyμ {ty} (Dμ-mod x d) (l₀ ∷ l) 
-    with apply ty (p1 x) (μ-hd l₀) 
+    with apply ty x (μ-hd l₀) 
   ...| nothing = nothing
   ...| just x' = μ-ins x' <M> applyμ d (μ-ch l₀ ++ l)
 
@@ -91,7 +92,7 @@ module RegDiff.Diff.Fixpoint
     = let d0 , d1 = dμ-splitd (ar ty x + n) d 
        in Dμ-del x d0 , d1
   dμ-splitd {ty} (suc n) (Dμ-mod x d) 
-    = let d0 , d1 = dμ-splitd (ar ty (D-src (p1 x)) + n) d 
+    = let d0 , d1 = dμ-splitd (ar ty (D-src x) + n) d 
        in Dμ-mod x d0 , d1
   
   {-# TERMINATING #-}

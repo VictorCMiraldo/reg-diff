@@ -146,7 +146,7 @@ module RegDiff.Diff.Fixpoint2
   costμ {ty} (del x x₁ d) 
     = 1 + size ty x + Al-size x₁ + costμ d
   costμ {ty} (mod x y hip d) 
-    = cost (diff ty x y) + size ty y + vsum (vmap costμ d)
+    = cost (diff ty x y) + vsum (vmap costμ d)
 
   _⊔μ_ : {ty : U} → Dμ ty → Dμ ty → Dμ ty
   p ⊔μ q with costμ p ≤?-ℕ costμ q
@@ -206,8 +206,13 @@ module RegDiff.Diff.Fixpoint2
           ifd (ar ty hdX ≟-ℕ 0)
           then (λ p₁ → let ial , ii = do-ins x chY (q₁ ∘ trans p₁ ∘ sym)
                         in ins hdY ial ii)
-          else (λ p₂ → let dal , dd = do-del chX p₂ y
-                        in del hdX dal dd))
+          else (λ p₂ → 
+            ifd (ar ty hdY ≟-ℕ 0)
+            then (λ q₂ → let dal , dd = do-del chX p₂ y
+                          in del hdX dal dd)
+            else (λ q₃ → let dal , dd = do-del chX p₂ y
+                             ial , ii = do-ins x chY q₃
+                          in ins hdY ial ii ⊔μ del hdX dal dd)))      
       where
         do-del : {k : ℕ} → Vec (μ ty) k → (¬ k ≡ 0) → μ ty
                → Al (μ ty) k × Dμ ty
