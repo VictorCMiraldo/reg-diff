@@ -33,6 +33,15 @@ module RegDiff.Generic.Subtype.Base
   rome (ty ⊕ tv) (i2 y) = map right (rome tv y)
   rome (ty ⊗ tv) (x , y) = map fst (rome ty x) ++ map snd (rome tv y)
 
+  romeᵢ : {A : Set}(ty : U)
+        → (x : ⟦ ty ⟧ A) → Vec (Dir ty I) (ar ty x)
+  romeᵢ I x = here ∷ []
+  romeᵢ u1 x = []
+  romeᵢ (K k) x = []
+  romeᵢ (ty ⊕ tv) (i1 x) = vmap left (romeᵢ ty x)
+  romeᵢ (ty ⊕ tv) (i2 y) = vmap right (romeᵢ tv y)
+  romeᵢ (ty ⊗ tv) (x , y) = vmap fst (romeᵢ ty x) ++v vmap snd (romeᵢ tv y)
+
 {-
   With directions set up, we can apply functions to a substructure
   of an element.

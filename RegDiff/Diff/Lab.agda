@@ -12,7 +12,9 @@ module RegDiff.Diff.Lab where
     as F1
   open import RegDiff.Diff.Fixpoint2 konstants keqs
     as F2
-  open import RegDiff.Diff.Experiments.Fix2Fix konstants keqs
+  open import RegDiff.Diff.Loc.Regular konstants keqs
+    public
+  open import RegDiff.Diff.Loc.Fixpoint konstants keqs
     public
 
   TREE-F : U

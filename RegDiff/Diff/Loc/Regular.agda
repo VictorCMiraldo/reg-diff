@@ -42,7 +42,10 @@ module RegDiff.Diff.Loc.Regular
      → L A ty
   go D1         = []
   go (DA x y)   = (I , here , (x , y)) ∷ []
-  go (DK k x y) = ((K k) , (here , (x , y))) ∷ []
+  go (DK k x y) 
+    with Eq.cmp (ty-eq k) x y
+  ...| yes _ = []
+  ...| no  _ = ((K k) , (here , (x , y))) ∷ []
   go (D⊗ d e)   = walk fst (go d) ++ walk snd (go e)
   go (Di1 d)    = walk left (go d)
   go (Di2 d)    = walk right (go d)
@@ -85,7 +88,7 @@ module RegDiff.Diff.Loc.Regular
 {-
   Now some useful lemmas!
 -}
-
+{-
   applyC-left
     : {A : Set}{{eqA : Eq A}}{ty tv : U}
     → (c : Change A ty)(x : ⟦ ty ⟧ A)
@@ -118,3 +121,4 @@ module RegDiff.Diff.Loc.Regular
   applyAll-correct (Di2 d) = {!!}
   applyAll-correct (Ds1 x y) = {!!}
   applyAll-correct (Ds2 x y) = {!!}
+-}
