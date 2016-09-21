@@ -32,6 +32,11 @@ module RegDiff.Diff.Lab where
   Cons : ℕ → TreeNat → TreeNat
   Cons x l = ⟨ i2 (i2 (x , l)) ⟩
 
+  _==_ : TreeNat → Maybe TreeNat → Maybe Bool
+  t == nothing = nothing
+  t == just u  = just (dec-elim (const true) (const false)
+                      (dec-eqμ t u))
+
   t1 t2 t3 t4 t5 t6 : TreeNat
   t1 = Node 10 Leaf (Cons 5 Leaf)
 
@@ -130,6 +135,9 @@ Dμ.Dμ-mod
                ∷ (mod (i1 unit) (i1 unit) refl []) ∷ [])) 
               ∷ ((mod (i2 (i2 (5 , unit))) (i2 (i2 (5 , unit))) refl 
                 ((mod (i1 unit) (i1 unit) refl []) ∷ [])) ∷ []))))
+
+  p56-locs : Lμ TREE-F
+  p56-locs = goμ p56-manual
 
   p56-cM : ℕ
   p56-cM = F2.costμ p56-manual

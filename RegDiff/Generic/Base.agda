@@ -32,6 +32,13 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
   data μ (ty : U) : Set where
     ⟨_⟩ : ⟦ ty ⟧ (μ ty) → μ ty
 
+  ⟨⟩-inj : {ty : U}{x y : ⟦ ty ⟧ (μ ty)}
+         → _≡_ {A = μ ty} ⟨ x ⟩ ⟨ y ⟩ → x ≡ y
+  ⟨⟩-inj refl = refl
+
+  unmu : {ty : U} → μ ty → ⟦ ty ⟧ (μ ty)
+  unmu ⟨ x ⟩ = x
+
 {-
   Generic map
 -}

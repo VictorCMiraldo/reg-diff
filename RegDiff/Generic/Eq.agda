@@ -35,3 +35,11 @@ module RegDiff.Generic.Eq
   ...| no prf = no (prf ∘ p2 ∘ ×-inj)
   ...| yes prf2 = yes (cong₂ _,_ prf1 prf2)
            
+
+  {-# TERMINATING #-}
+  dec-eqμ : {ty : U}(x y : μ ty)
+          → Dec (x ≡ y)
+  dec-eqμ {ty} ⟨ x ⟩ ⟨ y ⟩ 
+    with dec-eq {{eq dec-eqμ}} ty x y 
+  ...| yes p = yes (cong ⟨_⟩ p)
+  ...| no ¬p = no (¬p ∘ ⟨⟩-inj)

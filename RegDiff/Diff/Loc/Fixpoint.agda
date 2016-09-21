@@ -1,5 +1,6 @@
 open import Prelude
 open import Prelude.Vector
+open import Prelude.Monad
 
 {-
   Here we exploit the connection between patches
@@ -10,6 +11,8 @@ module RegDiff.Diff.Loc.Fixpoint
       {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)
     where
 
+  open Monad {{...}}
+
   open import RegDiff.Generic.Subtype.Base v
   open import RegDiff.Diff.Regular v eqs
   open import RegDiff.Diff.Fixpoint2 v eqs
@@ -18,8 +21,22 @@ module RegDiff.Diff.Loc.Fixpoint
   Ctxμ : U → Set
   Ctxμ ty = Σ (⟦ ty ⟧ Unit) (Al (μ ty) ∘ ar ty)
 
+  swap : {A : Set}{n : ℕ} → Fin n → Vec A n → A → Vec A n
+  swap () [] a
+  swap fz     (v ∷ vs) a = a ∷ vs
+  swap (fs i) (v ∷ vs) a = v ∷ (swap i vs a)
+
+  _▸_ : {ty : U} → μ ty → Ctxμ ty → μ ty
+  _▸_ {ty} x (el , (v , n)) = ⟨ plugₜ ty el (swap n v x) ⟩
+
+  extr : {ty : U} → Ctxμ ty → μ ty → Maybe (μ ty)
+  extr {ty} (el , (v , n)) x 
+    with dec-eqμ ⟨ plugₜ ty el v ⟩ x
+  ...| yes _ = just (lookup n v)
+  ...| no  _ = nothing
+
   data Changeμ (ty : U) : Set where
-    loc : (k : U) → Dirμ ty k → L Unit ty → Changeμ ty
+    loc : (k : U) → Dirμ ty k → L Unit k → Changeμ ty
     ins : Dirμ ty ty → Ctxμ ty → List (Changeμ ty) → Changeμ ty
     del : Dirμ ty ty → Ctxμ ty → List (Changeμ ty) → Changeμ ty
 
@@ -52,4 +69,36 @@ module RegDiff.Diff.Loc.Fixpoint
     ...| []       = vcat (vmap (λ dd → goμ* (p1 dd) (p2 dd)) (vzip refl ds d))
     ...| (l ∷ ls) = loc ty (hd here) (l ∷ ls) 
                   ∷ vcat (vmap (λ dd → goμ* (p1 dd) (p2 dd)) (vzip refl ds d))
-      
+
+{-
+  And now, applying these changes
+-}
+
+  L-on-hd : {A : Set}{ty : U}
+          → L Unit ty → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
+  L-on-hd {ty = ty} l x 
+    with applyAll l (fgt ty x)
+  ...| nothing   = nothing
+  ...| just hdX' = plug ty hdX' (ch ty x)
+
+  mutual
+    applyμ1 : {ty : U} → Changeμ ty → μ ty → Maybe (μ ty)
+    applyμ1 (loc k dir ls) el 
+      = onμ dir (L-on-hd ls) el
+    applyμ1 (ins x al d) el 
+      with onμ x (applyμ-open d) el
+    ...| nothing = nothing
+    ...| just el' = just (el' ▸ al)
+    applyμ1 (del x al d) el 
+      with extr al el
+    ...| nothing  = nothing
+    ...| just el' = applyμ d el'
+
+    applyμ-open
+      : {ty : U} → Lμ ty → ⟦ ty ⟧ (μ ty) 
+      → Maybe ( ⟦ ty ⟧ (μ ty))
+    applyμ-open l x = unmu <M> applyμ l ⟨ x ⟩
+
+    applyμ : {ty : U} → Lμ ty → μ ty → Maybe (μ ty)
+    applyμ [] x = just x
+    applyμ (l ∷ ls) x = applyμ1 l x >>= applyμ ls

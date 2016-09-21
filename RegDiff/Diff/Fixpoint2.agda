@@ -115,8 +115,7 @@ module RegDiff.Diff.Fixpoint2
   open import RegDiff.Diff.Regular v eqs
 
   Al : Set → ℕ → Set
-  Al A zero = Unit
-  Al A (suc n) = Vec A (suc n) × Fin (suc n)
+  Al A n = Vec A n × Fin n
 
   Al-size : {ty : U}{n : ℕ} → Al (μ ty) n → ℕ
   Al-size {n = zero}  al = 0
