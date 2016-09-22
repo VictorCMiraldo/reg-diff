@@ -137,6 +137,23 @@ module RegDiff.Diff.Fixpoint2
           → Vec (Dμ ty) (ar ty x)
           → Dμ ty
 
+  {-# TERMINATING #-}
+  Dμ-src : {ty : U} → Dμ ty → μ ty
+  Dμ-src (ins x ctx d) 
+    = Dμ-src d
+  Dμ-src {ty} (del x ctx d) 
+    = ⟨ plugₜ ty x (swap (p2 ctx) (p1 ctx) (Dμ-src d)) ⟩
+  Dμ-src {ty} (mod x y hip ds) 
+    = ⟨ plugₜ ty x (vmap Dμ-src ds) ⟩
+
+  {-# TERMINATING #-}
+  Dμ-dst : {ty : U} → Dμ ty → μ ty
+  Dμ-dst (del x ctx d) 
+    = Dμ-dst d
+  Dμ-dst {ty} (ins x ctx d) 
+    = ⟨ plugₜ ty x (swap (p2 ctx) (p1 ctx) (Dμ-dst d)) ⟩
+  Dμ-dst {ty} (mod x y hip ds) 
+    = ⟨ plugₜ ty y (vec-reindx hip (vmap Dμ-dst ds)) ⟩
 
   {-# TERMINATING #-}
   costμ : {ty : U} → Dμ ty → ℕ
@@ -212,16 +229,16 @@ module RegDiff.Diff.Fixpoint2
             else (λ q₃ → let dal , dd = do-del chX p₂ y
                              ial , ii = do-ins x chY q₃
                           in ins hdY ial ii ⊔μ del hdX dal dd)))      
-      where
-        do-del : {k : ℕ} → Vec (μ ty) k → (¬ k ≡ 0) → μ ty
-               → Al (μ ty) k × Dμ ty
-        do-del [] hip y       = ⊥-elim (hip refl)
-        do-del (v ∷ vs) hip y = alignl (v ∷ vs) y
+ 
+    do-del : {ty : U}{k : ℕ} → Vec (μ ty) k → (¬ k ≡ 0) → μ ty
+           → Al (μ ty) k × Dμ ty
+    do-del [] hip y       = ⊥-elim (hip refl)
+    do-del (v ∷ vs) hip y = alignl (v ∷ vs) y
 
-        do-ins : {k : ℕ} → μ ty → Vec (μ ty) k → (¬ k ≡ 0)
-               → Al (μ ty) k × Dμ ty
-        do-ins y [] hip       = ⊥-elim (hip refl)
-        do-ins y (v ∷ vs) hip = alignr y (v ∷ vs)
+    do-ins : {ty : U}{k : ℕ} → μ ty → Vec (μ ty) k → (¬ k ≡ 0)
+           → Al (μ ty) k × Dμ ty
+    do-ins y [] hip       = ⊥-elim (hip refl)
+    do-ins y (v ∷ vs) hip = alignr y (v ∷ vs)
 
     diffμ* : {n k : ℕ}{ty : U}
            → (hip : n ≡ k)

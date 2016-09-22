@@ -21,11 +21,6 @@ module RegDiff.Diff.Loc.Fixpoint
   Ctxμ : U → Set
   Ctxμ ty = Σ (⟦ ty ⟧ Unit) (Al (μ ty) ∘ ar ty)
 
-  swap : {A : Set}{n : ℕ} → Fin n → Vec A n → A → Vec A n
-  swap () [] a
-  swap fz     (v ∷ vs) a = a ∷ vs
-  swap (fs i) (v ∷ vs) a = v ∷ (swap i vs a)
-
   _▸_ : {ty : U} → μ ty → Ctxμ ty → μ ty
   _▸_ {ty} x (el , (v , n)) = ⟨ plugₜ ty el (swap n v x) ⟩
 
