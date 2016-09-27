@@ -128,6 +128,9 @@ module RegDiff.Diff.Fixpoint
   Al-size {n = suc n} (al , f)
     = vsum (vmap μ-size (vdrop al f))
 
+  Al-idx : {A : Set}{n : ℕ} → Al A n → Fin n
+  Al-idx (al , x) = x
+
   mutual
     data Dμ (ty : U) : Set where
       ins : (x : ⟦ ty ⟧ Unit)

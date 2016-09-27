@@ -6,7 +6,7 @@ module RegDiff.Diff.Properties.Sequential
     where
 
   open import RegDiff.Diff.Regular v eqs
-  open import RegDiff.Diff.Fixpoint2 v eqs
+  open import RegDiff.Diff.Fixpoint v eqs
   
   infix 30 _⟶_ _⟶μ_
 
@@ -33,3 +33,11 @@ module RegDiff.Diff.Properties.Sequential
     ...| sq | [ SQ ]
        = {!!}
   -}
+
+  ⟶μ-ins-mod
+    : {ty : U}(x y0 y1 : ⟦ ty ⟧ Unit)(al : Al (μ ty) (ar ty x))
+      (hip : ar ty y0 ≡ ar ty y1)(p : Dμ ty)(qs : Vec (Dμ ty) (ar ty y0))
+    → ins x al p ⟶μ mod y0 y1 hip qs
+    → Σ (x ≡ y0) (λ prf → p ⟶μ (lookup (Al-idx al) (vec-reindx (cong (ar ty) (sym prf)) qs)))
+  ⟶μ-ins-mod x y0 y1 al hip p qs hip₀
+    = {!!}

@@ -15,14 +15,14 @@ module RegDiff.Diff.Loc.Fixpoint
 
   open import RegDiff.Generic.Subtype.Base v
   open import RegDiff.Diff.Regular v eqs
-  open import RegDiff.Diff.Fixpoint2 v eqs
+  open import RegDiff.Diff.Fixpoint v eqs
   open import RegDiff.Diff.Loc.Regular v eqs
 
   Ctxμ : U → Set
   Ctxμ ty = Σ (⟦ ty ⟧ Unit) (Al (μ ty) ∘ ar ty)
 
-  _▸_ : {ty : U} → μ ty → Ctxμ ty → μ ty
-  _▸_ {ty} x (el , (v , n)) = ⟨ plugₜ ty el (swap n v x) ⟩
+  _▸_ : {ty : U} → μ ty → Ctxμ ty → ⟦ ty ⟧ (μ ty)
+  _▸_ {ty} x (el , (v , n)) = plugₜ ty el (swap n v x)
 
   extr : {ty : U} → Ctxμ ty → μ ty → Maybe (μ ty)
   extr {ty} (el , (v , n)) x 
@@ -81,18 +81,14 @@ module RegDiff.Diff.Loc.Fixpoint
     applyμ1 (loc k dir ls) el 
       = onμ dir (L-on-hd ls) el
     applyμ1 (ins x al d) el 
-      with onμ x (applyμ-open d) el
-    ...| nothing = nothing
-    ...| just el' = just (el' ▸ al)
-    applyμ1 (del x al d) el 
-      with extr al el
-    ...| nothing  = nothing
-    ...| just el' = applyμ d el'
+      = onμ x (((_▸ al) <M>_) ∘ applyμ-open d) el
+    applyμ1 (del x al d) el
+      = onμ x (λ k → extr al ⟨ k ⟩ >>= applyμ d >>= just ∘ unmu) el
 
     applyμ-open
       : {ty : U} → Lμ ty → ⟦ ty ⟧ (μ ty) 
-      → Maybe ( ⟦ ty ⟧ (μ ty))
-    applyμ-open l x = unmu <M> applyμ l ⟨ x ⟩
+      → Maybe (μ ty)
+    applyμ-open l x = applyμ l ⟨ x ⟩
 
     applyμ : {ty : U} → Lμ ty → μ ty → Maybe (μ ty)
     applyμ [] x = just x

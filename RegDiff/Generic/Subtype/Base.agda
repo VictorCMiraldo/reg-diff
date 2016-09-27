@@ -65,3 +65,18 @@ module RegDiff.Generic.Subtype.Base
   onμ (hd c) el ⟨ x ⟩ = ⟨_⟩ <M> on c el x
   onμ (tl c dir) el ⟨ x ⟩ 
     = ⟨_⟩ <M> on c (onμ dir el) x
+
+{-
+  And now, some properties!
+-}
+
+  Dir-refl : {ty : U} → Dir ty ty
+  Dir-refl = here
+
+  Dir-trans : {ty tv tu : U}
+            → Dir ty tv → Dir tv tu → Dir ty tu
+  Dir-trans here d1 = d1
+  Dir-trans (left d0) d1 = left (Dir-trans d0 d1)
+  Dir-trans (right d0) d1 = right (Dir-trans d0 d1)
+  Dir-trans (fst d0) d1 = fst (Dir-trans d0 d1)
+  Dir-trans (snd d0) d1 = snd (Dir-trans d0 d1)

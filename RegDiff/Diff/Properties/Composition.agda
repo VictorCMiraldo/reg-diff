@@ -6,7 +6,7 @@ module RegDiff.Diff.Properties.Composition
     where
 
   open import RegDiff.Diff.Regular v eqs
-  open import RegDiff.Diff.Fixpoint2 v eqs
+  open import RegDiff.Diff.Fixpoint v eqs
   open import RegDiff.Diff.Properties.Sequential v eqs
 
   comp : {A : Set}{ty : U}
@@ -50,5 +50,6 @@ module RegDiff.Diff.Properties.Composition
   compμ (del x al p) q hip = del x al (compμ p q hip)
   compμ (ins x al p) (del y am q) hip 
     = compμ p q (⟶μ-ins-del x y al am p q hip)
-  compμ (ins x al d) (mod y0 y1 hip₀ qs) hip = {!!}
+  compμ (ins x al d) (mod y0 y1 hip₀ qs) hip 
+    = ins y1 {!!} {!compμ !}
   compμ (mod x y hip₀ ds) q hip = {!!}

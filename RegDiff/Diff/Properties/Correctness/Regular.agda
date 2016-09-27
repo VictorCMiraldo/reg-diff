@@ -111,13 +111,6 @@ module RegDiff.Diff.Properties.Correctness.Regular
   Last but not least, cost function lemmas
 -}
 
-  ≤-refl : {n : ℕ} → n ≤ n
-  ≤-refl {zero} = z≤n
-  ≤-refl {suc n} = s≤s ≤-refl
-
-  postulate
-    +-exch : ∀ m n o p → (m + n) + (o + p) ≡ (m + o) + (n + p)
-
   cost-ubnd
     : {A : Set}(ty : U)(x y : ⟦ ty ⟧ A)
     → cost (diff ty x y) < size ty x + size ty y
