@@ -7,7 +7,7 @@ open import Prelude.Monad
   and lists of locations!
 -}
 
-module RegDiff.Diff.Loc.Regular
+module RegDiff.Diff.Views.Loc.Regular
       {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)
     where
 
