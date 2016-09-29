@@ -6,7 +6,11 @@ module RegDiff.Diff.Properties.Identity
     where
 
   open import RegDiff.Diff.Regular v eqs
-  -- open import RegDiff.Diff.Fixpoint v eqs
+  open import RegDiff.Diff.Fixpoint v eqs
+
+{-
+  An inductive characterization of when a diff is the identity diff
+-}
 
   IsID : {A : Set}{ty : U}
        → D ty A → Set
@@ -18,6 +22,20 @@ module RegDiff.Diff.Properties.Identity
   IsID (Di2 p) = IsID p
   IsID (Ds1 x y) = ⊥
   IsID (Ds2 x y) = ⊥
+
+  All : {n : ℕ}{A : Set}(P : A → Set) → Vec A n → Set
+  All P [] = Unit
+  All P (x ∷ xs) = P x × All P xs
+
+  {-# TERMINATING #-}
+  IsIDμ : {ty : U} → Dμ ty → Set
+  IsIDμ (ins _ _ _) = ⊥
+  IsIDμ (del _ _ _) = ⊥
+  IsIDμ (mod x y hip ds) = x ≡ y × All IsIDμ ds 
+
+{-
+  Decidability proofs
+-}
 
   IsID? : {A : Set}{{eq : Eq A}}{ty : U}
         → (p : D ty A) → Dec (IsID p)
@@ -35,6 +53,31 @@ module RegDiff.Diff.Properties.Identity
   IsID? (Di2 p) = IsID? p
   IsID? (Ds1 x y) = no (λ z → z)
   IsID? (Ds2 x y) = no (λ z → z)
+
+  All? : {n : ℕ}{A : Set}{P : A → Set}
+       → (dec : (a : A) → Dec (P a))
+       → (v : Vec A n) → Dec (All P v)
+  All? dec [] = yes unit
+  All? dec (x ∷ xs) 
+    with dec x
+  ...| no ¬h = no (¬h ∘ p1)
+  ...| yes h = dec-elim (yes ∘ (h ,_)) (λ k → no (k ∘ p2)) (All? dec xs)
+
+  {-# TERMINATING #-}
+  IsIDμ? : {ty : U}(p : Dμ ty) → Dec (IsIDμ p)
+  IsIDμ? (ins _ _ _) = no (λ z → z)
+  IsIDμ? (del _ _ _) = no (λ z → z)
+  IsIDμ? {ty} (mod x y hip ds) 
+    with dec-eq ty x y
+  ...| no ¬x≡y = no (¬x≡y ∘ p1)
+  ...| yes x≡y 
+    with All? IsIDμ? ds
+  ...| no ¬h = no (¬h ∘ p2)
+  ...| yes h = yes (x≡y , h)
+
+{-
+  Now some correctness proofs
+-}
 
   IsID-correct
     : {A : Set}{ty : U}
