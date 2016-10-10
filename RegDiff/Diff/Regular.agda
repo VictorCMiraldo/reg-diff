@@ -30,26 +30,33 @@ module RegDiff.Diff.Regular
 {- 
   Definition of patches for regular datatypes follow
 -}
+  USet : Set₁
+  USet = U → Set
 
-  data D : U → Set → Set where
-    D1  : {A : Set} → D u1 A
-    DA  : {A : Set}(x y : A) → D I A
+  data D (P : USet) : U → Set → Set where
+    DA  : {A : Set}{ty : U} → P ty → D P ty A
+    D1  : {A : Set} → D P u1 A
+    DI  : {A : Set}(x y : A) → D P I A
     DK  : {A : Set}(k : Fin n)
-        → (x y : lookup k v) → D (K k) A
+        → (x y : lookup k v) → D P (K k) A
     D⊗  : {A : Set}{ty tv : U}
-        → D ty A → D tv A → D (ty ⊗ tv) A
+        → D P ty A → D P tv A → D P (ty ⊗ tv) A
     Di1 : {A : Set}{ty tv : U}
-        → D ty A → D (ty ⊕ tv) A
+        → D P ty A → D P (ty ⊕ tv) A
     Di2 : {A : Set}{ty tv : U}
-        → D tv A → D (ty ⊕ tv) A
+        → D P tv A → D P (ty ⊕ tv) A
     Ds1 : {A : Set}{ty tv : U}
-        → ⟦ ty ⟧ A → ⟦ tv ⟧ A → D (ty ⊕ tv) A
+        → ⟦ ty ⟧ A → ⟦ tv ⟧ A → D P (ty ⊕ tv) A
     Ds2 : {A : Set}{ty tv : U}
-        → ⟦ tv ⟧ A → ⟦ ty ⟧ A → D (ty ⊕ tv) A
+        → ⟦ tv ⟧ A → ⟦ ty ⟧ A → D P (ty ⊕ tv) A
 
-  D-src : {A : Set}{ty : U} → D ty A → ⟦ ty ⟧ A
+  D' : U → Set → Set
+  D' = D (λ _ → ⊥) 
+
+  D-src : {A : Set}{ty : U} → D' ty A → ⟦ ty ⟧ A
+  D-src (DA ())
   D-src D1 = unit
-  D-src (DA x y) = x
+  D-src (DI x y) = x
   D-src (DK k x y) = x
   D-src (D⊗ d e) = D-src d , D-src e
   D-src (Di1 d) = i1 (D-src d)
@@ -57,9 +64,10 @@ module RegDiff.Diff.Regular
   D-src (Ds1 x y) = i1 x
   D-src (Ds2 x y) = i2 x
 
-  D-dst : {A : Set}{ty : U} → D ty A → ⟦ ty ⟧ A
+  D-dst : {A : Set}{ty : U} → D' ty A → ⟦ ty ⟧ A
+  D-dst (DA ())
   D-dst D1 = unit
-  D-dst (DA x y) = y
+  D-dst (DI x y) = y
   D-dst (DK k x y) = y
   D-dst (D⊗ d e) = D-dst d , D-dst e
   D-dst (Di1 d) = i1 (D-dst d)
@@ -72,9 +80,9 @@ module RegDiff.Diff.Regular
 -}
 
   diff : {A : Set}(ty : U)
-       → (x y : ⟦ ty ⟧ A) → D ty A
+       → (x y : ⟦ ty ⟧ A) → D' ty A
   diff I x y 
-    = DA x y
+    = DI x y
   diff u1 x y 
     = D1
   diff (K k) x y 
@@ -87,9 +95,10 @@ module RegDiff.Diff.Regular
     = D⊗ (diff ty x1 y1 ) (diff tv x2 y2)
 
   cost : {A : Set}{ty : U}
-       → D ty A → ℕ
+       → D' ty A → ℕ
+  cost (DA ())
   cost D1 = 0
-  cost (DA x y) = 1
+  cost (DI x y) = 1
   cost (DK k x y)
     = dec-elim (const 0) (const 1) (Eq.cmp (ty-eq k) x y)
   cost (D⊗ d e) = cost d + cost e
@@ -99,7 +108,7 @@ module RegDiff.Diff.Regular
   cost {A} {ty ⊕ tv} (Ds2 x y) = 1 + size tv x + size ty y
 
   _⊔_ : {A : Set}{ty : U}
-      → (d e : D ty A) → D ty A
+      → (d e : D' ty A) → D' ty A
   d ⊔ e with cost d ≤?-ℕ cost e
   ...| yes _ = d
   ...| no  _ = e
@@ -110,7 +119,6 @@ module RegDiff.Diff.Regular
 
   We say a patch is stable if it does not change any coproduct,
   and, hence, keeps the arity.
--}
 
   Stable : {A : Set}{ty : U} → D ty A → Set
   Stable D1 = Unit
@@ -141,14 +149,15 @@ module RegDiff.Diff.Regular
     = ar ty x ≟-ℕ ar tv y
   Stable-dec {ty = ty ⊕ tv} (Ds2 x y) 
     = ar tv x ≟-ℕ ar ty y
-
+-}
 {- 
   Application is also very simple
 -}
 
   apply : {A : Set}{{eqA : Eq A}}(ty : U)
-        → D ty A → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
-  apply {{eq _≟_}} I (DA x y) e 
+        → D' ty A → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
+  apply _ (DA ())
+  apply {{eq _≟_}} I (DI x y) e 
     with x ≟ e
   ...| yes _ = just y
   ...| no  _ = nothing

@@ -62,10 +62,11 @@ module RegDiff.Diff.Properties.Correctness.Regular
 -}
 
   apply-lemma 
-    : {A : Set}{{eqA : Eq A}}{ty : U}(d : D ty A)
+    : {A : Set}{{eqA : Eq A}}{ty : U}(d : D' ty A)
     → apply ty d (D-src d) ≡ just (D-dst d)
+  apply-lemma (DA ())
   apply-lemma D1 = refl
-  apply-lemma {{eq _≟_}} (DA x y) 
+  apply-lemma {{eq _≟_}} (DI x y) 
     with x ≟ x
   ...| yes _ = refl
   ...| no ¬p = ⊥-elim (¬p refl)
@@ -92,7 +93,6 @@ module RegDiff.Diff.Properties.Correctness.Regular
 
 {-
   Now some lemmas about stability
--}
 
   stable-ar-lemma 
     : {A : Set}{ty : U}(d : D ty A)(hip : Stable d)
@@ -107,6 +107,7 @@ module RegDiff.Diff.Properties.Correctness.Regular
   stable-ar-lemma (Ds1 x y) p = p
   stable-ar-lemma (Ds2 x y) p = p
 
+-}
 {-
   Last but not least, cost function lemmas
 -}
