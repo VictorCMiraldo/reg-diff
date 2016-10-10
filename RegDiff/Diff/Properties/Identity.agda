@@ -13,9 +13,10 @@ module RegDiff.Diff.Properties.Identity
 -}
 
   IsID : {A : Set}{ty : U}
-       → D ty A → Set
+       → D' ty A → Set
+  IsID (DA ())
   IsID D1       = Unit
-  IsID (DA x y) = x ≡ y
+  IsID (DI x y) = x ≡ y
   IsID (DK k x y) = x ≡ y
   IsID (D⊗ p q) = IsID p × IsID q
   IsID (Di1 p) = IsID p
@@ -23,12 +24,9 @@ module RegDiff.Diff.Properties.Identity
   IsID (Ds1 x y) = ⊥
   IsID (Ds2 x y) = ⊥
 
-  All : {n : ℕ}{A : Set}(P : A → Set) → Vec A n → Set
-  All P [] = Unit
-  All P (x ∷ xs) = P x × All P xs
-
   {-# TERMINATING #-}
-  IsIDμ : {ty : U} → Dμ ty → Set
+  IsIDμ : {ty : U} → Dμ' ty → Set
+  IsIDμ (aux () _)
   IsIDμ (ins _ _ _) = ⊥
   IsIDμ (del _ _ _) = ⊥
   IsIDμ (mod x y hip ds) = x ≡ y × All IsIDμ ds 
@@ -38,9 +36,10 @@ module RegDiff.Diff.Properties.Identity
 -}
 
   IsID? : {A : Set}{{eq : Eq A}}{ty : U}
-        → (p : D ty A) → Dec (IsID p)
+        → (p : D' ty A) → Dec (IsID p)
+  IsID? (DA ())
   IsID? D1 = yes unit
-  IsID? {{eq _≟_}} (DA x y) = x ≟ y
+  IsID? {{eq _≟_}} (DI x y) = x ≟ y
   IsID? (DK k x y) = Eq.cmp (ty-eq k) x y
   IsID? (D⊗ p q) 
     with IsID? p
@@ -57,14 +56,18 @@ module RegDiff.Diff.Properties.Identity
   All? : {n : ℕ}{A : Set}{P : A → Set}
        → (dec : (a : A) → Dec (P a))
        → (v : Vec A n) → Dec (All P v)
-  All? dec [] = yes unit
+  All? dec [] = yes []
   All? dec (x ∷ xs) 
     with dec x
-  ...| no ¬h = no (¬h ∘ p1)
-  ...| yes h = dec-elim (yes ∘ (h ,_)) (λ k → no (k ∘ p2)) (All? dec xs)
+  ...| no ¬h = no (λ { (pk ∷ _) → ¬h pk })
+  ...| yes h 
+    with All? dec xs
+  ...| no ¬hs = no (λ { (_ ∷ pks) → ¬hs pks })
+  ...| yes hs = yes (h ∷ hs)
 
   {-# TERMINATING #-}
-  IsIDμ? : {ty : U}(p : Dμ ty) → Dec (IsIDμ p)
+  IsIDμ? : {ty : U}(p : Dμ' ty) → Dec (IsIDμ p)
+  IsIDμ? (aux () _)
   IsIDμ? (ins _ _ _) = no (λ z → z)
   IsIDμ? (del _ _ _) = no (λ z → z)
   IsIDμ? {ty} (mod x y hip ds) 
@@ -81,11 +84,12 @@ module RegDiff.Diff.Properties.Identity
 
   IsID-correct
     : {A : Set}{ty : U}
-    → (p : D ty A)(hip : IsID p)
+    → (p : D' ty A)(hip : IsID p)
     → D-src p ≡ D-dst p
+  IsID-correct (DA ())
   IsID-correct D1 hip 
     = refl
-  IsID-correct (DA x y) hip 
+  IsID-correct (DI x y) hip 
     = hip
   IsID-correct (DK k x y) hip 
     = hip
