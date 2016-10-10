@@ -132,25 +132,30 @@ module RegDiff.Diff.Fixpoint
   Al-idx (al , x) = x
 
   mutual
-    data Dμ (ty : U) : Set where
+    data Dμ (P : USet)(ty : U) : Set where
+      aux : P ty → Dμ P ty → Dμ P ty
       ins : (x : ⟦ ty ⟧ Unit)
           → Al (μ ty) (ar ty x)
-          → Dμ ty
-          → Dμ ty
+          → Dμ P ty
+          → Dμ P ty
       del : (x : ⟦ ty ⟧ Unit)
           → Al (μ ty) (ar ty x)
-          → Dμ ty
-          → Dμ ty
+          → Dμ P ty
+          → Dμ P ty
       mod : (x y : ⟦ ty ⟧ Unit)
           → (hip : ar ty x ≡ ar ty y)
-          → Vec (Dμ ty) (ar ty x)
-          → Dμ ty
+          → Vec (Dμ P ty) (ar ty x)
+          → Dμ P ty
+
+  Dμ' : U → Set
+  Dμ' = Dμ (λ _ → ⊥)
 
 {-
   As usual we still have a source and a destination
 -}
   {-# TERMINATING #-}
-  Dμ-src : {ty : U} → Dμ ty → μ ty
+  Dμ-src : {ty : U} → Dμ' ty → μ ty
+  Dμ-src (aux () _)
   Dμ-src (ins x ctx d) 
     = Dμ-src d
   Dμ-src {ty} (del x ctx d) 
@@ -159,7 +164,8 @@ module RegDiff.Diff.Fixpoint
     = ⟨ plugₜ ty x (vmap Dμ-src ds) ⟩
 
   {-# TERMINATING #-}
-  Dμ-dst : {ty : U} → Dμ ty → μ ty
+  Dμ-dst : {ty : U} → Dμ' ty → μ ty
+  Dμ-dst (aux () _)
   Dμ-dst (del x ctx d) 
     = Dμ-dst d
   Dμ-dst {ty} (ins x ctx d) 
@@ -168,7 +174,8 @@ module RegDiff.Diff.Fixpoint
     = ⟨ plugₜ ty y (vec-reindx hip (vmap Dμ-dst ds)) ⟩
 
   {-# TERMINATING #-}
-  costμ : {ty : U} → Dμ ty → ℕ
+  costμ : {ty : U} → Dμ' ty → ℕ
+  costμ (aux () _)
   costμ {ty} (ins x x₁ d) 
     = 1 + size ty x + Al-size x₁ + costμ d
   costμ {ty} (del x x₁ d) 
@@ -176,7 +183,7 @@ module RegDiff.Diff.Fixpoint
   costμ {ty} (mod x y hip d) 
     = cost (diff ty x y) + vsum (vmap costμ d)
 
-  _⊔μ_ : {ty : U} → Dμ ty → Dμ ty → Dμ ty
+  _⊔μ_ : {ty : U} → Dμ' ty → Dμ' ty → Dμ' ty
   p ⊔μ q with costμ p ≤?-ℕ costμ q
   ...| yes _ = p
   ...| no  _ = q
@@ -197,12 +204,12 @@ module RegDiff.Diff.Fixpoint
       ...| no  _ = max (μ-size x , i) xs
       ...| yes _ = max curr xs
 
-  ⊔μ* : {n : ℕ}{ty : U} → Vec (Dμ ty) (suc n) → Fin (suc n)
+  ⊔μ* : {n : ℕ}{ty : U} → Vec (Dμ' ty) (suc n) → Fin (suc n)
   ⊔μ* {n} {ty} (v ∷ vs) 
     = min (costμ v , fz) (vzip refl vs (vmap fs (enum-fin n)))
     where  
       min : {k : ℕ} → ℕ × Fin (suc n) 
-          → Vec (Dμ ty × Fin (suc n)) k → Fin (suc n)
+          → Vec (Dμ' ty × Fin (suc n)) k → Fin (suc n)
       min (_ , i) [] = i
       min curr ((x , i) ∷ xs)
         with costμ x ≤?-ℕ (p1 curr)
@@ -226,7 +233,7 @@ module RegDiff.Diff.Fixpoint
 
   mutual
     {-# TERMINATING #-}
-    diffμ : {O : Oracle}{ty : U} → μ ty → μ ty → Dμ ty
+    diffμ : {O : Oracle}{ty : U} → μ ty → μ ty → Dμ' ty
     diffμ {O} {ty} x y
       with μ-chv x | μ-chv y
     ...| chX | chY
@@ -253,12 +260,12 @@ module RegDiff.Diff.Fixpoint
                           in ins hdY ial ii ⊔μ del hdX dal dd)))      
  
     do-del : {O : Oracle}{ty : U}{k : ℕ} → Vec (μ ty) k → (¬ k ≡ 0) → μ ty
-           → Al (μ ty) k × Dμ ty
+           → Al (μ ty) k × Dμ' ty
     do-del [] hip y       = ⊥-elim (hip refl)
     do-del {O} (v ∷ vs) hip y = alignl {O} (v ∷ vs) y
 
     do-ins : {O : Oracle}{ty : U}{k : ℕ} → μ ty → Vec (μ ty) k → (¬ k ≡ 0)
-           → Al (μ ty) k × Dμ ty
+           → Al (μ ty) k × Dμ' ty
     do-ins y [] hip       = ⊥-elim (hip refl)
     do-ins {O} y (v ∷ vs) hip = alignr {O} y (v ∷ vs)
 
@@ -266,23 +273,23 @@ module RegDiff.Diff.Fixpoint
            → (hip : n ≡ k)
            → Vec (μ ty) n
            → Vec (μ ty) k 
-           → Vec (Dμ ty) n
+           → Vec (Dμ' ty) n
     diffμ* refl []       []       = []
     diffμ* {O} refl (x ∷ xs) (y ∷ ys) 
       = diffμ {O} x y ∷ diffμ* {O} refl xs ys
 
     alignl : {O : Oracle}{n : ℕ}{ty : U}
-           → Vec (μ ty) (suc n) → μ ty → Al (μ ty) (suc n) × Dμ ty
+           → Vec (μ ty) (suc n) → μ ty → Al (μ ty) (suc n) × Dμ' ty
     alignl {O} v x 
       = let maxv = O x v
          in (v , maxv) , diffμ {O} (lookup maxv v) x
 
     alignr : {O : Oracle}{n : ℕ}{ty : U}
-           → μ ty → Vec (μ ty) (suc n) →  Al (μ ty) (suc n) × Dμ ty
+           → μ ty → Vec (μ ty) (suc n) →  Al (μ ty) (suc n) × Dμ' ty
     alignr {O} x v 
       = let maxv = O x v
          in (v , maxv) , diffμ {O} x (lookup maxv v)
 
 
-  diffμ-⋁ : {ty : U} → μ ty → μ ty → Dμ ty
+  diffμ-⋁ : {ty : U} → μ ty → μ ty → Dμ' ty
   diffμ-⋁ x y = diffμ {Oracle-biggest} x y
