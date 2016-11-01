@@ -154,3 +154,31 @@ module RegDiff.Diff.Fixpoint
     applyμ♭ : S (SI Δ) T T → μ T → Maybe (μ T)
     applyμ♭ s ⟨ x ⟩ = ⟨_⟩ <$> applyμₗ s x
 \end{code}
+
+  Domains and Ranges:
+
+\begin{code}
+    open import RegDiff.Diff.DomRan v eqs (μ T) μ-size
+      public
+
+    mutual
+      {-# TERMINATING #-}
+      SI-dom : {ty tv : U} → SI Δ ty tv → (⟦ ty ⟧ (μ T) → Set)
+      SI-dom (Svar x)     = dom SI-domran x ∘ unmu 
+      SI-dom (Sins x)     = dom SI-domran x
+      SI-dom (SY (x , _)) = (x ≡_)
+
+      SI-ran : {ty tv : U} → SI Δ ty tv → (⟦ tv ⟧ (μ T) → Set)
+      SI-ran (Svar x)     = ran SI-domran x ∘ unmu
+      SI-ran (Sins x)     = ran SI-domran x ∘ ⟨_⟩ 
+      SI-ran (SY (_ , y)) = (y ≡_)
+
+      SI-domran : HasDomRan (SI Δ)
+      SI-domran = hasdomran SI-dom SI-ran
+
+    domμ : {ty tv : U} → S (SI Δ) ty tv → ⟦ ty ⟧ (μ T) → Set
+    domμ = dom SI-domran
+
+    ranμ : {ty tv : U} → S (SI Δ) ty tv → ⟦ tv ⟧ (μ T) → Set
+    ranμ = ran SI-domran
+\end{code}

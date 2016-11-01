@@ -256,7 +256,7 @@ module RegDiff.Diff.Spine
   In fact, the patch between an element x and y is a spine
   that has maximal domain and range! 
 
-\begin{code}
+begin{code}
   Is-Just : {A : Set} → Maybe A → Set
   Is-Just (just _) = Unit
   Is-Just nothing  = ⊥
@@ -289,4 +289,22 @@ module RegDiff.Diff.Spine
     dom d (Ssnd x s) el        = dom d s el
     dom d (Si1 s) el           = dom d s el
     dom d (Si2 s) el           = dom d s el
+end{code}
+  
+
+  mutual
+    stripₗ : {ty tv : U}{P : UUSet}
+           → S P ty tv → ∃ (λ k → S P k tv)
+    stripₗ (SX {ty = ty} x) = ty , SX x
+    stripₗ (Ssym s) = {!stripᵣ s!}
+    stripₗ Scp = {!!}
+    stripₗ (S⊗ s s₁) = {!!}
+    stripₗ (Sfst x s) = {!!}
+    stripₗ (Ssnd x s) = {!!}
+    stripₗ (Si1 s) = {!!}
+    stripₗ (Si2 s) = {!!}
+
+    stripᵣ : {ty tv : U}{P : UUSet}
+           → S P ty tv → ∃ (λ k → S P ty k)
+    stripᵣ s = {!!}
 \end{code}
