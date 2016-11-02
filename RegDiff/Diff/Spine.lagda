@@ -58,11 +58,9 @@ module RegDiff.Diff.Spine
   Now, an S is something that describes a way of transforming
   an element (x : ⟦ ty ⟧ A) into and element (y : ⟦ tv ⟧ A).
 
-  This transformation happens in two cyclic phases: We 
-  first add as much information as possible to x,
-  then we pattern match as much as possible on y;
+  This transformation happens in two cyclic phases: pattern
+  matching on the right or adding information to the left.
   We keep repeating this until we are left with matching things.
-
   The change of phase happens by Ssym.
 
   The full datatype is as follows:
@@ -85,6 +83,9 @@ module RegDiff.Diff.Spine
          → S P ty tv → S P ty (k ⊕ tv)
 \end{code}
 %</S-def>
+
+  Note that each inhabitant s of (S P ty tv) is specifying a partial
+  function, trₛ : ⟦ ty ⟧ A → ⟦ tv ⟧ A. 
 
   As expected, We can map over S:
 
@@ -154,23 +155,28 @@ module RegDiff.Diff.Spine
   S-cost c (S⊗ s o) = S-cost c s + S-cost c o
   S-cost c (Sfst {k = k} x s) = size1 sized k x + S-cost c s
   S-cost c (Ssnd {k = k} x s) = size1 sized k x + S-cost c s
-  S-cost c (Si1 (Ssym (Si1 s))) = S-cost c s
-  S-cost c (Si2 (Ssym (Si2 s))) = S-cost c s
+  -- S-cost c (Si1 (Ssym (Si1 s))) = S-cost c s
+  -- S-cost c (Si2 (Ssym (Si2 s))) = S-cost c s
   S-cost c (Si1 s) = 1 + S-cost c s
   S-cost c (Si2 s) = 1 + S-cost c s
 
-  S-cost' : {ty tv : U} → S Δ ty tv → ℕ
-  S-cost' = S-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy)
-      
+  SΔ-cost : {ty tv : U} → S Δ ty tv → ℕ
+  SΔ-cost = S-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy)
+\end{code}
+
+
+\begin{code}      
   infixr 20 _<>_ _<>'_
   _<>_ : {ty tv : U}(s1 s2 : S Δ ty tv) → S Δ ty tv
-  s <> o with S-cost' s ≤?-ℕ S-cost' o 
+  s <> o with SΔ-cost s ≤?-ℕ SΔ-cost o 
   ...| yes _ = s
   ...| no  _ = o
 
   _<>'_ : {ty tv : U} → S Δ ty tv → List (S Δ ty tv) → S Δ ty tv
   s <>' [] = s
   s <>' (o ∷ os) = (s <> o) <>' os
+
+  
 \end{code}
 
   And finally, we can diff things! Note that spine-cp will NEVER be empty.
@@ -212,6 +218,10 @@ module RegDiff.Diff.Spine
   Now we can define applyₗ and applyᵣ. One adds constructors,
   the other pattern-matches. The phase change happens with Ssym.
 
+  Note that (applyₗ s) is the partial bijection defined by (s : S P ty tv).
+  We say that the PATCH between x and y is the s that defines
+  (applyₗ s) x ≡ y and maximizes the domain of (applyₗ s).
+
 \begin{code}
   mutual
     applyₗ : {ty tv : U}{P : UUSet}
@@ -245,66 +255,4 @@ module RegDiff.Diff.Spine
     applyᵣ doP (Si1 s) (i2 el) = nothing
     applyᵣ doP (Si2 s) (i1 el) = nothing
     applyᵣ doP (Si2 s) (i2 el) = applyᵣ doP s el
-\end{code}
-
-------------------------------------------------------------
--- Relations inherited from a S Δ.
-
-  Let (s : S Δ ty tv). If x ∈ (dom s) then Is-Just (applyₗ s x).
-  dually, If y ∈ (ran s) then Is-Just (applyᵣ s y)
-
-  In fact, the patch between an element x and y is a spine
-  that has maximal domain and range! 
-
-begin{code}
-  Is-Just : {A : Set} → Maybe A → Set
-  Is-Just (just _) = Unit
-  Is-Just nothing  = ⊥
-
-  mutual
-    ran : {ty tv : U}{P : UUSet}
-      → (doP : Appliable P)
-      → S P ty tv
-      → ⟦ tv ⟧ A → Set
-    ran r (SX x) el            = Is-Just (goᵣ r x el)
-    ran r (Ssym s) el          = dom r s el
-    ran r Scp el               = Unit
-    ran r (S⊗ s o) (el , dl)   = ran r s el × ran r o dl
-    ran r (Sfst x s) (el , dl) = x ≡ dl × ran r s el
-    ran r (Ssnd x s) (el , dl) = x ≡ el × ran r s dl
-    ran r (Si1 s) (i1 el)      = ran r s el
-    ran r (Si1 s) (i2 el)      = ⊥
-    ran r (Si2 s) (i1 el)      = ⊥
-    ran r (Si2 s) (i2 el)      = ran r s el
-
-    dom : {ty tv : U}{P : UUSet}
-        → (doP : Appliable P)
-        → S P ty tv
-        → ⟦ ty ⟧ A → Set
-    dom d (SX x) el            = Is-Just (goₗ d x el)
-    dom d (Ssym s) el          = ran d s el
-    dom d Scp el               = Unit
-    dom d (S⊗ s o) (el , dl)   = dom d s el × dom d o dl
-    dom d (Sfst x s) el        = dom d s el
-    dom d (Ssnd x s) el        = dom d s el
-    dom d (Si1 s) el           = dom d s el
-    dom d (Si2 s) el           = dom d s el
-end{code}
-  
-
-  mutual
-    stripₗ : {ty tv : U}{P : UUSet}
-           → S P ty tv → ∃ (λ k → S P k tv)
-    stripₗ (SX {ty = ty} x) = ty , SX x
-    stripₗ (Ssym s) = {!stripᵣ s!}
-    stripₗ Scp = {!!}
-    stripₗ (S⊗ s s₁) = {!!}
-    stripₗ (Sfst x s) = {!!}
-    stripₗ (Ssnd x s) = {!!}
-    stripₗ (Si1 s) = {!!}
-    stripₗ (Si2 s) = {!!}
-
-    stripᵣ : {ty tv : U}{P : UUSet}
-           → S P ty tv → ∃ (λ k → S P ty k)
-    stripᵣ s = {!!}
 \end{code}

@@ -54,8 +54,8 @@ module RegDiff.Diff.Lab where
     open SPINE ℕ (const 1) public
     open DOMRAN ℕ (const 1) public
 
-    r1 : List (S Δ QOOL QOOL)
-    r1 = spine (i2 (i1 5)) (i2 (i2 (1 , 5)))
+    r1 : S Δ QOOL QOOL
+    r1 = diff1 (i2 (i1 5)) (i2 (i2 (1 , 5)))
 
     r2 r3 : S Δ QOOL QOOL
 
@@ -127,7 +127,7 @@ module RegDiff.Diff.Lab where
        -- dom = ⊥ + (⊤ × ⊤)
        -- ran = ⊥ + (⊤ × (⊥ + (≡ 4) × ⊤))
 
-{-  
+
   module T3 where
 
     k0 k1 k2 : 2-3-Tree
@@ -148,7 +148,7 @@ module RegDiff.Diff.Lab where
     r2 = diffμ k1 k3 -- 30
 
     r3 = SX (Sins (Ssym (Si2 (Si2 (Ssnd 1 (Sfst (k2 , k2) (SX (Svar (diffμ k1 k1)))))))))
--}
-  open T2 public
+
+  open T3 public
 
 

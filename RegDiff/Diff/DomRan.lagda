@@ -3,7 +3,6 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
-open import Relation.Binary
 
 module RegDiff.Diff.DomRan
        {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)(A : Set)
@@ -61,3 +60,37 @@ module RegDiff.Diff.DomRan
   ran1 : {ty tv : U} → S Δ ty tv → ⟦ tv ⟧ A → Set
   ran1 = ran Δ-domran
 \end{code}
+
+  Now the tricky lemma!
+  If cost R < cost S then S ⊆ R.
+
+begin{code}
+  module CostLemma (P : UUSet)(domran : HasDomRan P)
+                   (costP : ∀{ty tv} → P ty tv → ℕ)
+      where
+
+    cost : {ty tv : U} → S P ty tv → ℕ
+    cost = S-cost costP
+
+    dom' : {ty tv : U} → S P ty tv → ⟦ ty ⟧ A → Set
+    dom' = dom domran
+
+    ran' : {ty tv : U} → S P ty tv → ⟦ tv ⟧ A → Set
+    ran' = ran domran
+
+    _⇒_ : {A : Set}(X Y : A → Set) → Set
+    X ⇒ Y = ∀ a → X a → Y a
+
+    mutual
+      cost-dom : {ty tv : U}(r s : S P ty tv)
+               → cost s ≤ cost r
+               → dom' s ⇒ dom' r
+      cost-dom (SX x) s hip a x₁ = {!!}
+      cost-dom (Ssym r) s hip a x = {!!}
+      cost-dom Scp s hip a x = {!!}
+      cost-dom (S⊗ r o) s hip a x = {!!}
+      cost-dom (Sfst x r) s hip a x₁ = {!!}
+      cost-dom (Ssnd x r) s hip a x₁ = {!!}
+      cost-dom (Si1 r) s hip a x = {!!}
+      cost-dom (Si2 r) s hip a x = {!!}
+end{code}
