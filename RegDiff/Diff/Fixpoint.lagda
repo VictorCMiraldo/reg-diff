@@ -69,29 +69,16 @@ module RegDiff.Diff.Fixpoint
 
     Sμ1-cost : {ty tv : U} → S (SI Δ) ty tv → ℕ
     Sμ1-cost = S-cost (SI-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy))
+\end{code}
 
+
+\begin{code}
     infixr 20 _<>_
     _<>_ : {ty tv : U} → S (SI Δ) ty tv → List (S (SI Δ) ty tv) →  S (SI Δ) ty tv
     s <> [] = s
     s <> (o ∷ os) with Sμ1-cost s ≤?-ℕ Sμ1-cost o 
     ...| yes _ = s <> os
     ...| no  _ = o <> os
-\end{code}
-
-  We also need a monadic map over S.
-
-\begin{code}
-    S-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
-           → (f : ∀{k v} → P k v → M (Q k v))
-           → S P ty tv → M (S Q ty tv)
-    S-mapM f (SX x) = f x >>= return ∘ SX
-    S-mapM f (Ssym s) = S-mapM f s >>= return ∘ Ssym
-    S-mapM f Scp = return Scp
-    S-mapM f (S⊗ s o) = S-mapM f s >>= λ s' → S-mapM f o >>= return ∘ (S⊗ s')
-    S-mapM f (Sfst x s) = S-mapM f s >>= return ∘ (Sfst x)
-    S-mapM f (Ssnd x s) = S-mapM f s >>= return ∘ (Ssnd x)
-    S-mapM f (Si1 s) = S-mapM f s >>= return ∘ Si1
-    S-mapM f (Si2 s) = S-mapM f s >>= return ∘ Si2
 \end{code}
 
   Diffing a value of a fixed point is defined next.
@@ -132,28 +119,7 @@ module RegDiff.Diff.Fixpoint
 
   Application is trivial.
 
-\begin{code}
-    mutual
-      applyₗ-SI : {ty tv : U} → SI Δ ty tv → ⟦ ty ⟧ (μ T) → Maybe (⟦ tv ⟧ (μ T))
-      applyₗ-SI (Svar x) el = ⟨_⟩ <$> applyμₗ x (unmu el)
-      applyₗ-SI (Sins x) el = unmu <$> applyμₗ x el
-      applyₗ-SI {ty} {tv} (SY x) el = goₗ apply-Δ {ty} {tv} x el
 
-      applyᵣ-SI : {ty tv : U} → SI Δ ty tv → ⟦ tv ⟧ (μ T) → Maybe (⟦ ty ⟧ (μ T))
-      applyᵣ-SI (Svar x) el = ⟨_⟩ <$> applyμᵣ x (unmu el)
-      applyᵣ-SI (Sins x) el = applyμᵣ x ⟨ el ⟩
-      applyᵣ-SI {ty} {tv} (SY x) el = goᵣ apply-Δ {ty} {tv} x el
-
-      {-# TERMINATING #-}
-      applyμₗ : {ty tv : U} → S (SI Δ) ty tv → ⟦ ty ⟧ (μ T) → Maybe (⟦ tv ⟧ (μ T))
-      applyμₗ s x = applyₗ (apply applyₗ-SI applyᵣ-SI) s x
-
-      applyμᵣ : {ty tv : U} → S (SI Δ) ty tv → ⟦ tv ⟧ (μ T) → Maybe (⟦ ty ⟧ (μ T))
-      applyμᵣ s x = applyᵣ (apply applyₗ-SI applyᵣ-SI) s x
-
-    applyμ♭ : S (SI Δ) T T → μ T → Maybe (μ T)
-    applyμ♭ s ⟨ x ⟩ = ⟨_⟩ <$> applyμₗ s x
-\end{code}
 
   Domains and Ranges:
 

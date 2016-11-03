@@ -18,9 +18,6 @@ module RegDiff.Diff.Spine
     where
 
   open Monad {{...}}
-
-  ty-eq : (k : Fin n) → Eq (lookup k v)
-  ty-eq k = lookupᵢ k eqs
 \end{code}
 
   First, we import the universe constructions
@@ -31,29 +28,14 @@ module RegDiff.Diff.Spine
 \begin{code}
   open import RegDiff.Generic.Base v
   open import RegDiff.Generic.Eq v eqs
-
-  UUSet : Set₁
-  UUSet = U → U → Set
+  open import RegDiff.Diff.Base v eqs A sized
+    public
 \end{code}
 
   As we already know, Δ models the trivial diff
   algorithm. Henceforth, we will use it as a primitive.
 
-%<*delta-def>
-\begin{code}
-  Δ : UUSet
-  Δ ty tv = ⟦ ty ⟧ A × ⟦ tv ⟧ A
 
-  cost-Δ : {ty tv : U} → Δ ty tv → ℕ
-  cost-Δ {ty} {tv} (x , y) with U-eq ty tv
-  cost-Δ {ty} {.ty} (x , y) | yes refl
-    with dec-eq ty x y
-  ...| yes _ = 0
-  ...| no  _ = size1 sized ty x + size1 sized ty y
-  cost-Δ {ty} {tv}  (x , y) | no _
-    = size1 sized ty x + size1 sized tv y
-\end{code}
-%</delta-def>
   
   Now, an S is something that describes a way of transforming
   an element (x : ⟦ ty ⟧ A) into and element (y : ⟦ tv ⟧ A).
@@ -89,22 +71,18 @@ module RegDiff.Diff.Spine
 
   As expected, We can map over S:
 
-%<*S-map-type>
 \begin{code}
-  S-map : {ty tv : U}{P Q : UUSet}
-        → (f : ∀{k v} → P k v → Q k v)
-        → S P ty tv → S Q ty tv
-\end{code}
-%</S-map-type>
-\begin{code}
-  S-map f (SX x) = SX (f x)
-  S-map f (Ssym s) = Ssym (S-map f s)
-  S-map f Scp = Scp
-  S-map f (S⊗ s o) = S⊗ (S-map f s) (S-map f o)
-  S-map f (Sfst x s) = Sfst x (S-map f s)
-  S-map f (Ssnd x s) = Ssnd x (S-map f s)
-  S-map f (Si1 s) = Si1 (S-map f s)
-  S-map f (Si2 s) = Si2 (S-map f s)
+  S-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
+         → (f : ∀{k v} → P k v → M (Q k v))
+         → S P ty tv → M (S Q ty tv)
+  S-mapM f (SX x) = f x >>= return ∘ SX
+  S-mapM f (Ssym s) = S-mapM f s >>= return ∘ Ssym
+  S-mapM f Scp = return Scp
+  S-mapM f (S⊗ s o) = S-mapM f s >>= λ s' → S-mapM f o >>= return ∘ (S⊗ s')
+  S-mapM f (Sfst x s) = S-mapM f s >>= return ∘ (Sfst x)
+  S-mapM f (Ssnd x s) = S-mapM f s >>= return ∘ (Ssnd x)
+  S-mapM f (Si1 s) = S-mapM f s >>= return ∘ Si1
+  S-mapM f (Si2 s) = S-mapM f s >>= return ∘ Si2
 \end{code}
 
   And we can compute the set of all ways of changing the first
@@ -128,8 +106,8 @@ module RegDiff.Diff.Spine
     spine : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (S Δ ty tv)
     spine {ty ⊗ tv} {tw ⊗ tz} (x1 , x2) (y1 , y2) 
       = S⊗ <$> (spine-cp x1 y1) <*> (spine-cp x2 y2)
-    spine {ty ⊕ tv} {tw ⊕ tz} (i1 x) (i1 y) = (Si1 ∘ Ssym ∘ Si1) <$> (spine-cp y x)
-    spine {ty ⊕ tv} {tw ⊕ tz} (i2 x) (i2 y) = (Si2 ∘ Ssym ∘ Si2) <$> (spine-cp y x)
+    -- spine {ty ⊕ tv} {tw ⊕ tz} (i1 x) (i1 y) = (Si1 ∘ Ssym ∘ Si1) <$> (spine-cp y x)
+    -- spine {ty ⊕ tv} {tw ⊕ tz} (i2 x) (i2 y) = (Si2 ∘ Ssym ∘ Si2) <$> (spine-cp y x)
     spine {ty} {tv ⊕ tw} x (i1 y) = Si1 <$> (spine-cp x y) 
     spine {ty} {tv ⊕ tw} x (i2 y) = Si2 <$> (spine-cp x y)
     spine {ty ⊕ tv} {tw} (i1 x) y = (Ssym ∘ Si1) <$> (spine-cp y x) 
@@ -194,26 +172,7 @@ module RegDiff.Diff.Spine
 
   First we need our parameter type to be "appliable"
 
-\begin{code}
-  record Appliable (Q : UUSet) : Set where
-    constructor apply
-    field
-      goₗ : ∀{ty tv} → Q ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      goᵣ : ∀{ty tv} → Q ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
 
-  open Appliable public
-
-  apply-Δ : Appliable Δ
-  apply-Δ 
-    = apply (λ {ty} {tv} → doit {ty} {tv}) 
-            (λ { {ty} {tv} (x , y) z → doit {tv} {ty} (y , x) z })
-    where
-      doit : {ty tv : U} → Δ ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      doit {ty} {tv} (x , y) z
-        with dec-eq ty x z
-      ...| yes _ = just y
-      ...| no  _ = nothing
-\end{code}
 
   Now we can define applyₗ and applyᵣ. One adds constructors,
   the other pattern-matches. The phase change happens with Ssym.
@@ -222,37 +181,3 @@ module RegDiff.Diff.Spine
   We say that the PATCH between x and y is the s that defines
   (applyₗ s) x ≡ y and maximizes the domain of (applyₗ s).
 
-\begin{code}
-  mutual
-    applyₗ : {ty tv : U}{P : UUSet}
-           → (doP : Appliable P)
-           → S P ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-    applyₗ doP (SX x) el = goₗ doP x el
-    applyₗ doP (Ssym s) el = applyᵣ doP s el
-    applyₗ doP Scp x = just x
-    applyₗ doP (S⊗ s o) (el , dl) = _,_ <$> applyₗ doP s el <*> applyₗ doP o dl
-    applyₗ doP (Sfst x s) el = (_, x) <$> applyₗ doP s el
-    applyₗ doP (Ssnd x s) el = (x ,_) <$> applyₗ doP s el
-    applyₗ doP (Si1 s) el = i1 <$> applyₗ doP s el
-    applyₗ doP (Si2 s) el = i2 <$> applyₗ doP s el
-
-    applyᵣ : {ty tv : U}{P : UUSet}
-           → (doP : Appliable P)
-           → S P ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
-    applyᵣ doP (SX x) el = goᵣ doP x el
-    applyᵣ doP (Ssym s) el = applyₗ doP s el
-    applyᵣ doP Scp x = just x
-    applyᵣ doP (S⊗ s o) (el , dl) =  _,_ <$> applyᵣ doP s el <*> applyᵣ doP o dl
-    applyᵣ doP (Sfst {k = k} x s) (el , x')
-      with dec-eq k x x' 
-    ...| yes _ = applyᵣ doP s el
-    ...| no  _ = nothing
-    applyᵣ doP (Ssnd {k = k} x s) (x' , el)
-      with dec-eq k x x' 
-    ...| yes _ = applyᵣ doP s el
-    ...| no  _ = nothing
-    applyᵣ doP (Si1 s) (i1 el) = applyᵣ doP s el
-    applyᵣ doP (Si1 s) (i2 el) = nothing
-    applyᵣ doP (Si2 s) (i1 el) = nothing
-    applyᵣ doP (Si2 s) (i2 el) = applyᵣ doP s el
-\end{code}

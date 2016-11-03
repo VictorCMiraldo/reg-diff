@@ -149,6 +149,6 @@ module RegDiff.Diff.Lab where
 
     r3 = SX (Sins (Ssym (Si2 (Si2 (Ssnd 1 (Sfst (k2 , k2) (SX (Svar (diffμ k1 k1)))))))))
 
-  open T3 public
+  open T2 public
 
 
