@@ -17,6 +17,8 @@ module RegDiff.Diff.Fixpoint.Base
   open import RegDiff.Generic.Base v
   open import RegDiff.Generic.Eq v eqs
 
+  _+ᵤ_ : (U → U → Set) → (U → U → Set) → (U → U → Set)
+  (P +ᵤ Q) ty tv = (P ty tv) ⊎ (Q ty tv)
   
 \end{code}
 
@@ -43,17 +45,27 @@ module RegDiff.Diff.Fixpoint.Base
 
 %<*SI-def>
 \begin{code}
-    data SI (P : UUSet) : U → U → Set where
-      Svar : S (SI P) T T → SI P I I
-      Sins : S (SI P) T I → SI P T T
-      SY   : {ty tv : U} → P ty tv → SI P ty tv
+
+    mutual
+      Patchμ : U → Set
+      Patchμ ty = S (SVar +ᵤ Cμ) ty
+
+      Cμ : U → U → Set
+      Cμ ty tv = C (CI +ᵤ (Sym (CI +ᵤ C Δ))) ty tv
+
+      data SVar : U → U → Set where
+        Svar : Patchμ T → SVar I I
+
+      data CI : U → U → Set where
+        Cins  : Cμ T I   → CI T T
+        Cs    : {ty : U} → Patchμ ty → CI ty ty
 \end{code}
 %</SI-def>
 
   For convenience, we define an Sμ:
 
 %<*Smu-def>
-\begin{code}
+begin{code}
     Sμ : UUSet → UUSet
     Sμ P = S (SI P)
 \end{code}
@@ -63,7 +75,7 @@ module RegDiff.Diff.Fixpoint.Base
   previous definitions and expand our cost function
   to handle SI's now:
 
-\begin{code}
+begin{code}
     {-# TERMINATING #-}
     SI-cost : {ty tv : U}{P : UUSet}
             → (costP : ∀{ty tv} → P ty tv → ℕ)
@@ -92,19 +104,33 @@ module RegDiff.Diff.Fixpoint.Base
 
 \begin{code}
     mutual
+{-
       {-# TERMINATING #-}
       refine : {ty tv : U} → Δ ty tv → List (SI Δ ty tv)
       refine {I} {I} (x , y)   = Svar <$> (spineμ x y)
       refine {ty} {tv} (x , y) = return (SY (x , y))
+-}
+      {-# TERMINATING #-}
+      refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ) ty ty)
+      refine-S {I}  (x , y) = (i1 ∘ Svar) <$> diffμ x y
+      refine-S {ty} (x , y) = i2          <$> changeμ x y
 
-      spineμ' : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Sμ Δ ty tv)
-      spineμ' x y = spine x y >>= S-mapM refine
+      spineμ : {ty : U} → ⟦ ty ⟧ (μ T) → ⟦ ty ⟧ (μ T) → List (Patchμ ty)
+      spineμ x y = spine-cp x y >>= S-mapM refine-S
 
-      spineμ : μ T → μ T → List (Sμ Δ T T)
-      spineμ ⟨ x ⟩ ⟨ y ⟩ 
-        =  spineμ' x y
+      changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ ty tv)
+      changeμ x y = change-sym x y 
+                >>= C-mapM (λ k → (i2 ∘ i2) <$> return k)
+
+      diffμ : μ T → μ T → List (Patchμ T)
+      diffμ ⟨ x ⟩ ⟨ y ⟩ 
+        =  spineμ x y
+        ++ ((SX ∘ i2 ∘ CX ∘ i1 ∘ Cins)      <$> changeμ x ⟨ y ⟩)
+        ++ ((SX ∘ i2 ∘ CX ∘ i2 ∘ i1 ∘ Cins) <$> changeμ y ⟨ x ⟩)
+{-
         ++ ((SX ∘ Sins)        <$> (spineμ' x ⟨ y ⟩))
         ++ ((Ssym ∘ SX ∘ Sins) <$> (spineμ' y ⟨ x ⟩))
+-}
 \end{code}
 
   Finally, we can choose the actual patch between all possibilities when we have computed
@@ -113,7 +139,7 @@ module RegDiff.Diff.Fixpoint.Base
   We have to stay in the List monad in order to guarantee that the algorithm
   is exploring all possiblities.
 
-\begin{code}
+begin{code}
     diffμ : μ T → μ T → Sμ Δ T T
     diffμ x y with spineμ x y
     ...| []     = SX (SY (unmu x , unmu y))
