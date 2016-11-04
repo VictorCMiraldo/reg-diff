@@ -4,7 +4,7 @@ open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
 
-module RegDiff.Diff.DomRan
+module RegDiff.Diff.Regular.Domains
        {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)(A : Set)
        {{eqA : Eq A}}(sized : A → ℕ)
     where
@@ -12,7 +12,7 @@ module RegDiff.Diff.DomRan
   open Monad {{...}}
 
   open import RegDiff.Generic.Base v
-  open import RegDiff.Diff.Spine v eqs A sized
+  open import RegDiff.Diff.Regular.Base v eqs A sized
 \end{code}
 
 \begin{code}

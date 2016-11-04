@@ -91,3 +91,7 @@ module RegDiff.Generic.Eq
     with dec-eq {{eq dec-eqμ}} ty x y 
   ...| yes p = yes (cong ⟨_⟩ p)
   ...| no ¬p = no (¬p ∘ ⟨⟩-inj)
+
+  instance
+    μ-eq : {T : U} → Eq (μ T)
+    μ-eq = eq dec-eqμ

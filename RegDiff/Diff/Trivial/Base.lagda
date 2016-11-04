@@ -1,9 +1,12 @@
+  This is the trivial diff algorithm. Nothing
+  surprising here.
+
 \begin{code}
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 
-module RegDiff.Diff.Base
+module RegDiff.Diff.Trivial.Base
        {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)(A : Set)
        {{eqA : Eq A}}(sized : A → ℕ)
     where
@@ -12,10 +15,16 @@ module RegDiff.Diff.Base
   open import RegDiff.Generic.Eq v eqs
 \end{code}
 
+  This module serves the purpose of defining a bunch of
+  auxiliary functions for later on.
+
 \begin{code}
   UUSet : Set₁
   UUSet = U → U → Set
 \end{code}
+
+  As usual, we say that the diagonal functor
+  is the trivial diff.
 
 %<*delta-def>
 \begin{code}
@@ -24,6 +33,7 @@ module RegDiff.Diff.Base
 \end{code}
 %</delta-def>
 
+  It has a cost function:
 
 \begin{code}
   cost-Δ : {ty tv : U} → Δ ty tv → ℕ
@@ -36,6 +46,8 @@ module RegDiff.Diff.Base
     = size1 sized ty x + size1 sized tv y
 \end{code}
 
+  And it can be applied in both directions:
+
 \begin{code}
   record Appliable (Q : UUSet) : Set where
     constructor apply
@@ -45,8 +57,8 @@ module RegDiff.Diff.Base
 
   open Appliable public
 
-  apply-Δ : Appliable Δ
-  apply-Δ 
+  Δ-apply : Appliable Δ
+  Δ-apply 
     = apply (λ {ty} {tv} → doit {ty} {tv}) 
             (λ { {ty} {tv} (x , y) z → doit {tv} {ty} (y , x) z })
     where

@@ -1,10 +1,7 @@
-  Here we define the base notion of the spine of two values.
-
-  First we set the stage:
-
-    We will be getting a spine of elements of type (⟦ ty ⊗ tv ⟧ A)
-    Here, we require that A is a setoid equipped with a measure
-    function over it's elements.
+  Here we define a refinement over the trivial diff.
+  Instead of storing both values as a whole,
+  we will store a bunch of transformations that
+  could transform one into the other.
 
 \begin{code}
 open import Prelude
@@ -12,40 +9,25 @@ open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
 
-module RegDiff.Diff.Spine
+module RegDiff.Diff.Regular.Base
        {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)(A : Set)
        {{eqA : Eq A}}(sized : A → ℕ)
     where
 
   open Monad {{...}}
-\end{code}
 
-  First, we import the universe constructions
-  for the correct parameters.
-
-  We also initialize some synonyms for convenience.
-
-\begin{code}
   open import RegDiff.Generic.Base v
   open import RegDiff.Generic.Eq v eqs
-  open import RegDiff.Diff.Base v eqs A sized
+  open import RegDiff.Diff.Trivial.Base v eqs A sized
     public
 \end{code}
 
-  As we already know, Δ models the trivial diff
-  algorithm. Henceforth, we will use it as a primitive.
+  An inhabitant of S represents a list of instructions on how
+  to transform one thing into another.
 
-
-  
-  Now, an S is something that describes a way of transforming
-  an element (x : ⟦ ty ⟧ A) into and element (y : ⟦ tv ⟧ A).
-
-  This transformation happens in two cyclic phases: pattern
-  matching on the right or adding information to the left.
-  We keep repeating this until we are left with matching things.
-  The change of phase happens by Ssym.
-
-  The full datatype is as follows:
+  This transformation works in two phases. By convention, we start by
+  adding information. As soon as we find an Ssym, the phase changes,
+  and we start pattern-matching.
 
 %<*S-def>
 \begin{code}
@@ -66,10 +48,8 @@ module RegDiff.Diff.Spine
 \end{code}
 %</S-def>
 
-  Note that each inhabitant s of (S P ty tv) is specifying a partial
-  function, trₛ : ⟦ ty ⟧ A → ⟦ tv ⟧ A. 
-
-  As expected, We can map over S:
+  As expected, S makes an indexed functor.
+  It will be usefull to monadically map over it later on.
 
 \begin{code}
   S-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
@@ -85,13 +65,7 @@ module RegDiff.Diff.Spine
   S-mapM f (Si2 s) = S-mapM f s >>= return ∘ Si2
 \end{code}
 
-  And we can compute the set of all ways of changing the first
-  element into the second element of a pair:
-
-  This can be seen as an arrow, in the category of relations,
-  between (for all A)
-
-    ⟦ ty ⊗ tv ⟧ ---> S Δ ty tv
+  Computing the inhabitants of S is fairly simple:
 
 \begin{code}
   mutual
@@ -106,8 +80,6 @@ module RegDiff.Diff.Spine
     spine : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (S Δ ty tv)
     spine {ty ⊗ tv} {tw ⊗ tz} (x1 , x2) (y1 , y2) 
       = S⊗ <$> (spine-cp x1 y1) <*> (spine-cp x2 y2)
-    -- spine {ty ⊕ tv} {tw ⊕ tz} (i1 x) (i1 y) = (Si1 ∘ Ssym ∘ Si1) <$> (spine-cp y x)
-    -- spine {ty ⊕ tv} {tw ⊕ tz} (i2 x) (i2 y) = (Si2 ∘ Ssym ∘ Si2) <$> (spine-cp y x)
     spine {ty} {tv ⊕ tw} x (i1 y) = Si1 <$> (spine-cp x y) 
     spine {ty} {tv ⊕ tw} x (i2 y) = Si2 <$> (spine-cp x y)
     spine {ty ⊕ tv} {tw} (i1 x) y = (Ssym ∘ Si1) <$> (spine-cp y x) 
@@ -121,7 +93,7 @@ module RegDiff.Diff.Spine
 \end{code}
 
   But we eventually need to choose one of them! In fact, the patch between
-  (x : ⟦ ty ⟧ A) and (y : ⟦ tv ⟧ A) is the spine with the lowest cost!
+  (x : ⟦ ty ⟧ A) and (y : ⟦ tv ⟧ A) is the one with the lowest cost!
 
 \begin{code}
   S-cost : {ty tv : U}{P : UUSet}
@@ -133,8 +105,6 @@ module RegDiff.Diff.Spine
   S-cost c (S⊗ s o) = S-cost c s + S-cost c o
   S-cost c (Sfst {k = k} x s) = size1 sized k x + S-cost c s
   S-cost c (Ssnd {k = k} x s) = size1 sized k x + S-cost c s
-  -- S-cost c (Si1 (Ssym (Si1 s))) = S-cost c s
-  -- S-cost c (Si2 (Ssym (Si2 s))) = S-cost c s
   S-cost c (Si1 s) = 1 + S-cost c s
   S-cost c (Si2 s) = 1 + S-cost c s
 
@@ -142,19 +112,20 @@ module RegDiff.Diff.Spine
   SΔ-cost = S-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy)
 \end{code}
 
+  Here we add some binary operators to choose
+  between S's
 
-\begin{code}      
-  infixr 20 _<>_ _<>'_
-  _<>_ : {ty tv : U}(s1 s2 : S Δ ty tv) → S Δ ty tv
-  s <> o with SΔ-cost s ≤?-ℕ SΔ-cost o 
-  ...| yes _ = s
-  ...| no  _ = o
+\begin{code} 
+  private
+    infixr 20 _<>_ _<>'_
+    _<>_ : {ty tv : U}(s1 s2 : S Δ ty tv) → S Δ ty tv
+    s <> o with SΔ-cost s ≤?-ℕ SΔ-cost o 
+    ...| yes _ = s
+    ...| no  _ = o
 
-  _<>'_ : {ty tv : U} → S Δ ty tv → List (S Δ ty tv) → S Δ ty tv
-  s <>' [] = s
-  s <>' (o ∷ os) = (s <> o) <>' os
-
-  
+    _<>'_ : {ty tv : U} → S Δ ty tv → List (S Δ ty tv) → S Δ ty tv
+    s <>' [] = s
+    s <>' (o ∷ os) = (s <> o) <>' os
 \end{code}
 
   And finally, we can diff things! Note that spine-cp will NEVER be empty.
@@ -166,18 +137,3 @@ module RegDiff.Diff.Spine
   ...| []     = SX (x , y)
   ...| s ∷ ss = s <>' ss
 \end{code}
-
-  Now, this is all too nice, but S is in fact defining two Prisms!
-  We can see this through the apply functions:
-
-  First we need our parameter type to be "appliable"
-
-
-
-  Now we can define applyₗ and applyᵣ. One adds constructors,
-  the other pattern-matches. The phase change happens with Ssym.
-
-  Note that (applyₗ s) is the partial bijection defined by (s : S P ty tv).
-  We say that the PATCH between x and y is the s that defines
-  (applyₗ s) x ≡ y and maximizes the domain of (applyₗ s).
-
