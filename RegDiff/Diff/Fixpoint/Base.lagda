@@ -51,13 +51,14 @@ module RegDiff.Diff.Fixpoint.Base
       Patchμ ty = S (SVar +ᵤ Cμ) ty
 
       Cμ : U → U → Set
-      Cμ ty tv = C (CI +ᵤ (Sym (CI +ᵤ C Δ))) ty tv
+      Cμ ty tv = (CID +ᵤ C (Sym (C Δ))) ty tv
 
       data SVar : U → U → Set where
         Svar : Patchμ T → SVar I I
 
-      data CI : U → U → Set where
-        Cins  : Cμ T I   → CI T T
+      data CID : U → U → Set where
+        Cins  : C Δ T I → CID T T
+        Cdel  : C Δ I T → CID T T
         -- Cs    : {ty : U} → Patchμ ty → CI ty ty
 \end{code}
 %</SI-def>
@@ -73,14 +74,9 @@ module RegDiff.Diff.Fixpoint.Base
       SVar+Cμ-cost (i2 y) = Cμ-cost y
 
       Cμ-cost : {ty tv : U} → Cμ ty tv → ℕ
-      Cμ-cost = C-cost CI+Sym-cost
-
-      CI+Sym-cost : {ty tv : U} → (CI +ᵤ Sym (CI +ᵤ C Δ)) ty tv → ℕ
-      CI+Sym-cost (i1 (Cins x)) = 1 + Cμ-cost x
-      -- CI+Sym-cost (i1 (Cs x))   = Patchμ-cost x
-      CI+Sym-cost (i2 (i1 (Cins x))) = 1 + Cμ-cost x
-      -- CI+Sym-cost (i2 (i1 (Cs x))) = Patchμ-cost x
-      CI+Sym-cost (i2 (i2 y)) = CΔ-cost y
+      Cμ-cost (i1 (Cins x)) = 1 + CΔ-cost x
+      Cμ-cost (i1 (Cdel x)) = 1 + CΔ-cost x
+      Cμ-cost (i2 y) = CSymCΔ-cost y
 \end{code}
 
   Diffing a value of a fixed point is defined next.
@@ -100,14 +96,15 @@ module RegDiff.Diff.Fixpoint.Base
       spineμ x y = spine-cp x y >>= S-mapM refine-S
 
       changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ ty tv)
-      changeμ x y = change-sym x y 
-                >>= C-mapM (λ k → (i2 ∘ i2) <$> return k)
+      changeμ x y = change-sym x y >>= return ∘ i2 
+    {- change-sym x y 
+                >>= C-mapM (λ k → (i2 ∘ i2) <$> return k) -}
 
       diffμ* : μ T → μ T → List (Patchμ T)
       diffμ* ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ x y
-        ++ ((SX ∘ i2 ∘ CX ∘ i1 ∘ Cins)      <$> changeμ x ⟨ y ⟩)
-        ++ ((SX ∘ i2 ∘ CX ∘ i2 ∘ i1 ∘ Cins) <$> changeμ y ⟨ x ⟩)
+        ++ ((SX ∘ i2 ∘ i1 ∘ Cins) <$> change x ⟨ y ⟩)
+        ++ ((SX ∘ i2 ∘ i1 ∘ Cdel) <$> change ⟨ x ⟩ y)
 \end{code}
 
 \begin{code}
@@ -119,7 +116,7 @@ module RegDiff.Diff.Fixpoint.Base
 
     diffμ : μ T → μ T → Patchμ T
     diffμ x y with diffμ* x y
-    ...| []     = SX (i2 (CX (i2 (i2 (CX (unmu y , unmu x))))))
+    ...| []     = SX (i2 (i2 (CX (CX (unmu y , unmu x)))))
     ...| s ∷ ss = s <μ> ss
 \end{code}
 

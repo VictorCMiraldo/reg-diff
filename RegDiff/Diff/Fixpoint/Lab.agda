@@ -50,14 +50,14 @@ module RegDiff.Diff.Fixpoint.Lab where
     open DIFF.Internal LIST-F public
 
     l0 l1 l2 l3 : list
-    l0 = (1 > #)
+    l0 = (1 > 5 > #)
     l1 = (1 > 4 > #)
     l2 = (1 > 50 > 4 > #)
     l3 = (1 > 50 > 4 > 20 > #)
 
     s1 : Patchμ LIST-F
     s1 = diffμ l2 l3
-
+{-
   module T2 where
     open DIFF.Internal 2-3-TREE-F public
 
@@ -74,5 +74,5 @@ module RegDiff.Diff.Fixpoint.Lab where
     r1 r2 : Patchμ 2-3-TREE-F
     r1 = diffμ t1 t2
     r2 = diffμ k1 k3
-
-  open T2 public
+-}
+  open T1 public
