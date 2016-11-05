@@ -58,42 +58,29 @@ module RegDiff.Diff.Fixpoint.Base
 
       data CI : U → U → Set where
         Cins  : Cμ T I   → CI T T
-        Cs    : {ty : U} → Patchμ ty → CI ty ty
+        -- Cs    : {ty : U} → Patchμ ty → CI ty ty
 \end{code}
 %</SI-def>
 
-  For convenience, we define an Sμ:
+\begin{code}
+    mutual
+      {-# TERMINATING #-}
+      Patchμ-cost : {ty : U} → Patchμ ty → ℕ
+      Patchμ-cost = S-cost SVar+Cμ-cost
+    
+      SVar+Cμ-cost : {ty tv : U} → (SVar +ᵤ Cμ) ty tv → ℕ
+      SVar+Cμ-cost (i1 (Svar x)) = Patchμ-cost x
+      SVar+Cμ-cost (i2 y) = Cμ-cost y
 
-%<*Smu-def>
-begin{code}
-    Sμ : UUSet → UUSet
-    Sμ P = S (SI P)
-\end{code}
-%</Smu-def>
+      Cμ-cost : {ty tv : U} → Cμ ty tv → ℕ
+      Cμ-cost = C-cost CI+Sym-cost
 
-  We piggyback on the
-  previous definitions and expand our cost function
-  to handle SI's now:
-
-begin{code}
-    {-# TERMINATING #-}
-    SI-cost : {ty tv : U}{P : UUSet}
-            → (costP : ∀{ty tv} → P ty tv → ℕ)
-            → SI P ty tv → ℕ
-    SI-cost c (Svar x) = S-cost (SI-cost c) x
-    SI-cost c (Sins x) = 1 + S-cost (SI-cost c) x
-    SI-cost c (SY x) = c x
-
-    SμΔ-cost : {ty tv : U} → Sμ Δ ty tv → ℕ
-    SμΔ-cost = S-cost (SI-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy))
-
-    private
-      infixr 20 _<>_
-      _<>_ : {ty tv : U} → Sμ Δ ty tv → List (Sμ Δ ty tv) →  Sμ Δ ty tv
-      s <> [] = s
-      s <> (o ∷ os) with SμΔ-cost s ≤?-ℕ SμΔ-cost o 
-      ...| yes _ = s <> os
-      ...| no  _ = o <> os
+      CI+Sym-cost : {ty tv : U} → (CI +ᵤ Sym (CI +ᵤ C Δ)) ty tv → ℕ
+      CI+Sym-cost (i1 (Cins x)) = 1 + Cμ-cost x
+      -- CI+Sym-cost (i1 (Cs x))   = Patchμ-cost x
+      CI+Sym-cost (i2 (i1 (Cins x))) = 1 + Cμ-cost x
+      -- CI+Sym-cost (i2 (i1 (Cs x))) = Patchμ-cost x
+      CI+Sym-cost (i2 (i2 y)) = CΔ-cost y
 \end{code}
 
   Diffing a value of a fixed point is defined next.
@@ -104,15 +91,9 @@ begin{code}
 
 \begin{code}
     mutual
-{-
-      {-# TERMINATING #-}
-      refine : {ty tv : U} → Δ ty tv → List (SI Δ ty tv)
-      refine {I} {I} (x , y)   = Svar <$> (spineμ x y)
-      refine {ty} {tv} (x , y) = return (SY (x , y))
--}
       {-# TERMINATING #-}
       refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ) ty ty)
-      refine-S {I}  (x , y) = (i1 ∘ Svar) <$> diffμ x y
+      refine-S {I}  (x , y) = (i1 ∘ Svar) <$> diffμ* x y
       refine-S {ty} (x , y) = i2          <$> changeμ x y
 
       spineμ : {ty : U} → ⟦ ty ⟧ (μ T) → ⟦ ty ⟧ (μ T) → List (Patchμ ty)
@@ -122,28 +103,24 @@ begin{code}
       changeμ x y = change-sym x y 
                 >>= C-mapM (λ k → (i2 ∘ i2) <$> return k)
 
-      diffμ : μ T → μ T → List (Patchμ T)
-      diffμ ⟨ x ⟩ ⟨ y ⟩ 
+      diffμ* : μ T → μ T → List (Patchμ T)
+      diffμ* ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ x y
         ++ ((SX ∘ i2 ∘ CX ∘ i1 ∘ Cins)      <$> changeμ x ⟨ y ⟩)
         ++ ((SX ∘ i2 ∘ CX ∘ i2 ∘ i1 ∘ Cins) <$> changeμ y ⟨ x ⟩)
-{-
-        ++ ((SX ∘ Sins)        <$> (spineμ' x ⟨ y ⟩))
-        ++ ((Ssym ∘ SX ∘ Sins) <$> (spineμ' y ⟨ x ⟩))
--}
 \end{code}
 
-  Finally, we can choose the actual patch between all possibilities when we have computed
-  all of them.
+\begin{code}
+    _<μ>_ : {ty : U} → Patchμ ty → List (Patchμ ty) → Patchμ ty
+    s <μ> []       = s
+    s <μ> (o ∷ os) with Patchμ-cost s ≤?-ℕ Patchμ-cost o
+    ...| yes _ = s <μ> os
+    ...| no  _ = o <μ> os
 
-  We have to stay in the List monad in order to guarantee that the algorithm
-  is exploring all possiblities.
-
-begin{code}
-    diffμ : μ T → μ T → Sμ Δ T T
-    diffμ x y with spineμ x y
-    ...| []     = SX (SY (unmu x , unmu y))
-    ...| s ∷ ss = s <> ss
+    diffμ : μ T → μ T → Patchμ T
+    diffμ x y with diffμ* x y
+    ...| []     = SX (i2 (CX (i2 (i2 (CX (unmu y , unmu x))))))
+    ...| s ∷ ss = s <μ> ss
 \end{code}
 
 
