@@ -45,21 +45,22 @@ module RegDiff.Diff.Fixpoint.Base
 
 %<*SI-def>
 \begin{code}
-
     mutual
       Patchμ : U → Set
-      Patchμ ty = S (SVar +ᵤ Cμ) ty
+      Patchμ ty = S (SVar +ᵤ Cμ Rec) ty
 
-      Cμ : U → U → Set
-      Cμ ty tv = (CID +ᵤ C (Sym (C Δ))) ty tv
+      data Rec : U → U → Set where
+        fix : Patchμ T → Rec I I
+        set : ∀{ty tv} → Δ ty tv → Rec ty tv
 
       data SVar : U → U → Set where
         Svar : Patchμ T → SVar I I
 
-      data CID : U → U → Set where
-        Cins  : C Δ T I → CID T T
-        Cdel  : C Δ I T → CID T T
-        -- Cs    : {ty : U} → Patchμ ty → CI ty ty
+      data Cμ (P : UUSet) : U → U → Set where
+        Cins  : C P I T → Cμ P T T
+        Cdel  : C P T I → Cμ P T T
+        Cmod  : {ty tv : U}
+              → C (Sym (C P)) ty tv → Cμ P ty tv
 \end{code}
 %</SI-def>
 
@@ -67,16 +68,24 @@ module RegDiff.Diff.Fixpoint.Base
     mutual
       {-# TERMINATING #-}
       Patchμ-cost : {ty : U} → Patchμ ty → ℕ
-      Patchμ-cost = S-cost SVar+Cμ-cost
-    
-      SVar+Cμ-cost : {ty tv : U} → (SVar +ᵤ Cμ) ty tv → ℕ
-      SVar+Cμ-cost (i1 (Svar x)) = Patchμ-cost x
-      SVar+Cμ-cost (i2 y) = Cμ-cost y
+      Patchμ-cost = S-cost (SVar+Cμ-cost Rec-cost)
 
-      Cμ-cost : {ty tv : U} → Cμ ty tv → ℕ
-      Cμ-cost (i1 (Cins x)) = 1 + CΔ-cost x
-      Cμ-cost (i1 (Cdel x)) = 1 + CΔ-cost x
-      Cμ-cost (i2 y) = CSymCΔ-cost y
+      Rec-cost : {ty tv : U} → Rec ty tv → ℕ
+      Rec-cost (fix x) = Patchμ-cost x
+      Rec-cost {ty} {tv} (set x) = cost-Δ {ty} {tv} x
+    
+      SVar+Cμ-cost : {ty tv : U}{P : UUSet} 
+                   → (costP : ∀{k v} → P k v → ℕ)
+                   → (SVar +ᵤ Cμ P) ty tv → ℕ
+      SVar+Cμ-cost c (i1 (Svar x)) = Patchμ-cost x
+      SVar+Cμ-cost c (i2 y)        = Cμ-cost c y
+
+      Cμ-cost : {ty tv : U}{P : UUSet} 
+              → (costP : ∀{k v} → P k v → ℕ)
+              → Cμ P ty tv → ℕ
+      Cμ-cost c (Cins x) = 1 + C-cost c x
+      Cμ-cost c (Cdel x) = 1 + C-cost c x
+      Cμ-cost c (Cmod y) = C-cost (C-cost c) y
 \end{code}
 
   Diffing a value of a fixed point is defined next.
@@ -87,24 +96,29 @@ module RegDiff.Diff.Fixpoint.Base
 
 \begin{code}
     mutual
+      refine-C : {ty tv : U} → Δ ty tv → List (Rec ty tv)
+      refine-C {I} {I} (x , y) = fix <$> diffμ* x y
+      refine-C         (x , y) = return (set (x , y))
+
       {-# TERMINATING #-}
-      refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ) ty ty)
+      refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ Rec) ty ty)
       refine-S {I}  (x , y) = (i1 ∘ Svar) <$> diffμ* x y
       refine-S {ty} (x , y) = i2          <$> changeμ x y
 
       spineμ : {ty : U} → ⟦ ty ⟧ (μ T) → ⟦ ty ⟧ (μ T) → List (Patchμ ty)
       spineμ x y = spine-cp x y >>= S-mapM refine-S
 
-      changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ ty tv)
-      changeμ x y = change-sym x y >>= return ∘ i2 
+      changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ Rec ty tv)
+      changeμ x y = change-sym x y >>= C-mapM (C-mapM refine-C) 
+                                   >>= return ∘ Cmod
     {- change-sym x y 
                 >>= C-mapM (λ k → (i2 ∘ i2) <$> return k) -}
 
       diffμ* : μ T → μ T → List (Patchμ T)
       diffμ* ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ x y
-        ++ ((SX ∘ i2 ∘ i1 ∘ Cins) <$> change x ⟨ y ⟩)
-        ++ ((SX ∘ i2 ∘ i1 ∘ Cdel) <$> change ⟨ x ⟩ y)
+        ++ ((SX ∘ i2 ∘ Cdel) <$> (change x ⟨ y ⟩ >>= C-mapM refine-C))
+        ++ ((SX ∘ i2 ∘ Cins) <$> (change ⟨ x ⟩ y >>= C-mapM refine-C))
 \end{code}
 
 \begin{code}
@@ -116,7 +130,7 @@ module RegDiff.Diff.Fixpoint.Base
 
     diffμ : μ T → μ T → Patchμ T
     diffμ x y with diffμ* x y
-    ...| []     = SX (i2 (i2 (CX (CX (unmu y , unmu x)))))
+    ...| []     = SX (i2 (Cmod (CX (CX (set (unmu x , unmu y))))))
     ...| s ∷ ss = s <μ> ss
 \end{code}
 

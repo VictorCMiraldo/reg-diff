@@ -146,8 +146,8 @@ module RegDiff.Diff.Regular.Base
   change {ty} {tv ⊕ tw} x (i1 y) = Ci1 <$> (change x y) 
   change {ty} {tv ⊕ tw} x (i2 y) = Ci2 <$> (change x y)
   change {ty} {tw ⊗ tz} x (y1 , y2)
-    =  {- return (CX (x , (y1 , y2)))
-    ++ -} (Cfst y2 <$> change x y1) 
+    =  return (CX (x , (y1 , y2)))
+    ++ (Cfst y2 <$> change x y1) 
     ++ (Csnd y1 <$> change x y2)
   change {ty}      x      y      = return (CX (x , y))
 
