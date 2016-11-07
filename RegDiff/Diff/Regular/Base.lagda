@@ -118,10 +118,12 @@ module RegDiff.Diff.Regular.Base
     CX   : {ty tv : U}   → P ty tv → C P ty tv
     Ci1  : {ty tv k : U} → C P ty tv → C P ty (tv ⊕ k)
     Ci2  : {ty tv k : U} → C P ty tv → C P ty (k ⊕ tv)
+{-
     Cfst : {ty tv k : U} → ⟦ k ⟧ A → C P ty tv → C P ty (tv ⊗ k)
     Csnd : {ty tv k : U} → ⟦ k ⟧ A → C P ty tv → C P ty (k ⊗ tv)
     C⊗   : {ty tv tw tz : U}
          → C P ty tw → C P tv tz → C P (ty ⊗ tv) (tw ⊗ tz)
+-}
 
   Sym : UUSet → UUSet
   Sym P ty tv = P tv ty
@@ -132,27 +134,37 @@ module RegDiff.Diff.Regular.Base
          → (f : ∀{k v} → P k v → M (Q k v))
          → C P ty tv → M (C Q ty tv)
   C-mapM f (CX x) = f x >>= return ∘ CX
+  C-mapM f (Ci1 s) = C-mapM f s >>= return ∘ Ci1
+  C-mapM f (Ci2 s) = C-mapM f s >>= return ∘ Ci2
+{-
   C-mapM f (C⊗ s o) = C-mapM f s >>= λ s' → C-mapM f o >>= return ∘ (C⊗ s')
   C-mapM f (Cfst k s) = C-mapM f s >>= return ∘ (Cfst k)
   C-mapM f (Csnd k s) = C-mapM f s >>= return ∘ (Csnd k)
-  C-mapM f (Ci1 s) = C-mapM f s >>= return ∘ Ci1
-  C-mapM f (Ci2 s) = C-mapM f s >>= return ∘ Ci2
+-}
 \end{code}
 
 \begin{code}
   change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C Δ ty tv)
+{-
   change {ty ⊗ tv} {tw ⊗ tz} (x1 , x2) (y1 , y2)
     = C⊗ <$> (change x1 y1) <*> (change x2 y2)
+-}
   change {ty} {tv ⊕ tw} x (i1 y) = Ci1 <$> (change x y) 
   change {ty} {tv ⊕ tw} x (i2 y) = Ci2 <$> (change x y)
+{-
   change {ty} {tw ⊗ tz} x (y1 , y2)
     =  return (CX (x , (y1 , y2)))
     ++ (Cfst y2 <$> change x y1) 
     ++ (Csnd y1 <$> change x y2)
+-}
   change {ty}      x      y      = return (CX (x , y))
 
-  change-sym : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym (C Δ)) ty tv)
-  change-sym x y = change x y >>= C-mapM (uncurry (flip change))
+  change-sym-Δ-aux : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym Δ) ty tv)
+  change-sym-Δ-aux x y = change x y >>= C-mapM (λ { (k , v) → return (v , k) }) 
+
+  change-sym : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym (C (Sym Δ))) ty tv)
+  change-sym x y = change x y 
+               >>= C-mapM (uncurry (flip change-sym-Δ-aux))
 \end{code}
 
 \begin{code}
@@ -162,15 +174,19 @@ module RegDiff.Diff.Regular.Base
   C-cost c (CX x) = c x
   C-cost c (Ci1 s) = 1 + C-cost c s
   C-cost c (Ci2 s) = 1 + C-cost c s
+{-
   C-cost c (C⊗ s o) = C-cost c s + C-cost c o
   C-cost c (Cfst {k = k} x s) = size1 sized k x + C-cost c s
   C-cost c (Csnd {k = k} x s) = size1 sized k x + C-cost c s
+-}
 
-  CΔ-cost : {ty tv : U} → C Δ ty tv → ℕ
-  CΔ-cost = C-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy)
+  CΔ-cost : {ty tv : U} → C (Sym Δ) ty tv → ℕ
+  CΔ-cost = C-cost (λ {ty} {tv} xy → cost-Δ {tv} {ty} xy)
 
-  CSymCΔ-cost : {ty tv : U} → C (Sym (C Δ)) ty tv → ℕ
-  CSymCΔ-cost = C-cost CΔ-cost
+  CSymCSym-cost : {ty tv : U}{P : UUSet}
+                → (costP : ∀{ty tv} → P ty tv → ℕ) 
+                → C (Sym (C (Sym P))) ty tv → ℕ
+  CSymCSym-cost c = C-cost (C-cost c)
 \end{code}
 
 \begin{code} 
@@ -188,8 +204,85 @@ module RegDiff.Diff.Regular.Base
 \end{code}
 
 \begin{code}
+  data Al (P : UUSet) : U → U → Set where
+    AX    : {ty tv : U} → P ty tv → Al P ty tv
+    A⊗    : {ty tv tw tz : U}
+          → Al P ty tw → Al P tv tz → Al P (ty ⊗ tv) (tw ⊗ tz)
+    Ap1   : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tv ⊗ tw)
+    Ap1ᵒ  : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P (ty ⊗ tw) tv
+    Ap2   : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tw ⊗ tv)
+    Ap2ᵒ  : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P (tw ⊗ ty) tv
+
+  Al-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
+          → (f : ∀{k v} → P k v → M (Q k v))
+          → Al P ty tv → M (Al Q ty tv)
+  Al-mapM f (AX x) = f x >>= return ∘ AX
+  Al-mapM f (A⊗ al bl)
+    = Al-mapM f al >>= λ al' → Al-mapM f bl >>= return ∘ (A⊗ al')
+  Al-mapM f (Ap1 x al) = Al-mapM f al >>= return ∘ (Ap1 x)
+  Al-mapM f (Ap1ᵒ x al) = Al-mapM f al >>= return ∘ (Ap1ᵒ x)
+  Al-mapM f (Ap2 x al) = Al-mapM f al >>= return ∘ (Ap2 x)
+  Al-mapM f (Ap2ᵒ x al) = Al-mapM f al >>= return ∘ (Ap2ᵒ x)
+
+  align : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (Al Δ ty tv)
+  align {ty ⊗ ty'} {tv ⊗ tv'} (x1 , x2) (y1 , y2) 
+    =  A⊗ <$> align x1 y1 <*> align x2 y2
+    ++ Ap1  y2 <$> align (x1 , x2) y1
+    ++ Ap2  y1 <$> align (x1 , x2) y2
+    ++ Ap1ᵒ x2 <$> align x1 (y1 , y2)
+    ++ Ap2ᵒ x1 <$> align x2 (y1 , y2)
+  align {ty ⊗ ty'} {tv} (x1 , x2) y 
+    =  Ap1ᵒ x2 <$> align x1 y
+    ++ Ap2ᵒ x1 <$> align x2 y
+  align {ty} {tv ⊗ tv'} x (y1 , y2) 
+    =  Ap1  y2 <$> align x y1
+    ++ Ap2  y1 <$> align x y2
+  align {ty} {tv} x y = return (AX (x , y))
+
+  Al-cost : {ty tv : U}{P : UUSet}
+          → (costP : ∀{ty tv} → P ty tv → ℕ)
+          → Al P ty tv → ℕ
+  Al-cost c (AX xy) = c xy
+  Al-cost c (A⊗ s o) = Al-cost c s + Al-cost c o
+  Al-cost c (Ap1  {tw = k} x s) = size1 sized k x + Al-cost c s
+  Al-cost c (Ap2  {tw = k} x s) = size1 sized k x + Al-cost c s
+  Al-cost c (Ap1ᵒ {tw = k} x s) = size1 sized k x + Al-cost c s
+  Al-cost c (Ap2ᵒ {tw = k} x s) = size1 sized k x + Al-cost c s
+
+  AlΔ-cost : {ty tv : U} → Al Δ ty tv → ℕ
+  AlΔ-cost = Al-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy)
+
+  change-Al : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A 
+            → List (C (Sym (C (Sym (Al Δ)))) ty tv)
+  change-Al x y = change-sym x y 
+              >>= C-mapM (C-mapM (λ { (v , k) → align v k }))
+\end{code}
+
+\begin{code}
   Patch : U → Set
-  Patch ty = S (C (Sym (C Δ))) ty
+  Patch ty = S (C (Sym (C (Sym (Al Δ))))) ty
+
+  infixl 20 _<>_ _<>'_
+  _<>_ : {ty : U} → Patch ty → Patch ty → Patch ty
+  s <> o = chooseS (CSymCSym-cost AlΔ-cost) s o
+
+  _<>'_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
+  s <>' []       = s
+  s <>' (o ∷ os) = (s <> o) <>' os
+
+  diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (Patch ty)
+  diff1* x y = spine-cp x y 
+           >>= S-mapM (uncurry change-Al)
+
+  diff1 : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch ty
+  diff1 x y with diff1* x y
+  ...| []     = SX (CX (CX (AX (x , y))))
+  ...| s ∷ ss = s <>' ss
+\end{code}
+
+begin{code}
+  Patch : U → Set
+  Patch ty = S (C (Sym (C (Sym Δ)))) ty
 
   infixl 20 _<>_ _<>'_
   _<>_ : {ty : U} → Patch ty → Patch ty → Patch ty
@@ -207,7 +300,7 @@ module RegDiff.Diff.Regular.Base
   diff1 x y with diff1* x y
   ...| []     = SX (CX (CX (y , x)))
   ...| s ∷ ss = s <>' ss
-\end{code}
+end{code}
 
 begin{code}
   diff1 : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → S Δ ty tv

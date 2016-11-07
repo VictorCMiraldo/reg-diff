@@ -47,7 +47,7 @@ module RegDiff.Diff.Fixpoint.Base
 \begin{code}
     mutual
       Patchμ : U → Set
-      Patchμ ty = S (SVar +ᵤ Cμ Rec) ty
+      Patchμ ty = S (SVar +ᵤ Cμ (Al Rec)) ty
 
       data Rec : U → U → Set where
         fix : Patchμ T → Rec I I
@@ -68,7 +68,7 @@ module RegDiff.Diff.Fixpoint.Base
     mutual
       {-# TERMINATING #-}
       Patchμ-cost : {ty : U} → Patchμ ty → ℕ
-      Patchμ-cost = S-cost (SVar+Cμ-cost Rec-cost)
+      Patchμ-cost = S-cost (SVar+Cμ-cost (Al-cost Rec-cost))
 
       Rec-cost : {ty tv : U} → Rec ty tv → ℕ
       Rec-cost (fix x) = Patchμ-cost x
@@ -96,21 +96,24 @@ module RegDiff.Diff.Fixpoint.Base
 
 \begin{code}
     mutual
-      refine-C : {ty tv : U} → Δ ty tv → List (Rec ty tv)
-      refine-C {I} {I} (x , y) = fix <$> diffμ* x y
-      refine-C         (x , y) = return (set (x , y))
+      refine-C : {ty tv : U} → Δ ty tv → List (Al Rec ty tv)
+      refine-C {I} {I} (x , y) = {!!} -- fix <$> diffμ* x y
+      refine-C         (x , y) = {!!} -- return (set (x , y))
 
       {-# TERMINATING #-}
-      refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ Rec) ty ty)
+      refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ (Al Rec)) ty ty)
       refine-S {I}  (x , y) = (i1 ∘ Svar) <$> diffμ* x y
       refine-S {ty} (x , y) = i2          <$> changeμ x y
 
       spineμ : {ty : U} → ⟦ ty ⟧ (μ T) → ⟦ ty ⟧ (μ T) → List (Patchμ ty)
       spineμ x y = spine-cp x y >>= S-mapM refine-S
 
-      changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ Rec ty tv)
-      changeμ x y = change-sym x y >>= C-mapM (C-mapM refine-C) 
+      changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ (Al Rec) ty tv)
+      changeμ x y = {!!}
+
+{- = change-sym x y >>= C-mapM (C-mapM refine-C) 
                                    >>= return ∘ Cmod
+-}
     {- change-sym x y 
                 >>= C-mapM (λ k → (i2 ∘ i2) <$> return k) -}
 
@@ -130,7 +133,7 @@ module RegDiff.Diff.Fixpoint.Base
 
     diffμ : μ T → μ T → Patchμ T
     diffμ x y with diffμ* x y
-    ...| []     = SX (i2 (Cmod (CX (CX (set (unmu x , unmu y))))))
+    ...| []     = SX (i2 (Cmod (CX (CX (AX (set (unmu x , unmu y)))))))
     ...| s ∷ ss = s <μ> ss
 \end{code}
 

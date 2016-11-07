@@ -57,7 +57,7 @@ module RegDiff.Diff.Fixpoint.Lab where
 
     s1 : Patchμ LIST-F
     s1 = diffμ l1 l2
-
+{-
   module T2 where
     open DIFF.Internal 2-3-TREE-F public
 
@@ -99,4 +99,5 @@ module RegDiff.Diff.Fixpoint.Lab where
                          (Cfst ⟨ i1 unit ⟩ (CX (fix Scp)))))))))))
                           (CX (fix Scp)))))))))))
 
-  open T2 public
+-}
+  open T1 public
