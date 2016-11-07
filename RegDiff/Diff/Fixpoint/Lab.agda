@@ -47,7 +47,8 @@ module RegDiff.Diff.Fixpoint.Lab where
   ...| no  _ = false
 
   module T1 where
-    open DIFF.Internal LIST-F public
+    -- open DIFF.Internal LIST-F public
+    open DOMAINS.Internal LIST-F public
 
     l0 l1 l2 l3 : list
     l0 = (1 > #)
@@ -55,9 +56,32 @@ module RegDiff.Diff.Fixpoint.Lab where
     l2 = (1 > 50 > 4 > #)
     l3 = (1 > 50 > 4 > 20 > #)
 
-    s1 : Sμ Δ LIST-F LIST-F
-    s1 = diffμ l1 l2
+    s2 s3 : Sμ Δ LIST-F LIST-F
+    s2 = Si2
+        (Ssym
+         (Si2
+          (S⊗ Scp
+           (SX
+            (Svar
+             (Si1 (Ssym (Si2 (Sfst ⟨ i1 unit ⟩ (SX (SY (unit , 4))))))))))))
 
+    s3 = SX
+       (Sins
+        (Ssym
+         (Si2
+          (Ssnd 1
+           (SX
+            (Svar
+             (SX
+              (Sins
+               (Ssym
+                (Si2
+                 (Sfst ⟨ i2 (4 , ⟨ i1 unit ⟩) ⟩
+                  (SX (SY (⟨ i1 unit ⟩ , 1))))))))))))))
+
+    s1 : Sμ Δ LIST-F LIST-F
+    s1 = diffμ l0 l1
+{-
   module T2 where
     open DIFF.Internal 2-3-TREE-F public
 
@@ -74,5 +98,6 @@ module RegDiff.Diff.Fixpoint.Lab where
     r1 r2 : Sμ Δ 2-3-TREE-F 2-3-TREE-F
     r1 = diffμ t1 t2
     r2 = diffμ k1 k3
+-}
+  open T1 public
 
-  open T2 public
