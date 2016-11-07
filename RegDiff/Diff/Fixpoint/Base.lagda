@@ -17,6 +17,8 @@ module RegDiff.Diff.Fixpoint.Base
   open import RegDiff.Generic.Base v
   open import RegDiff.Generic.Eq v eqs
 
+  _+ᵤ_ : (U → U → Set) → (U → U → Set) → (U → U → Set)
+  (P +ᵤ Q) ty tv = (P ty tv) ⊎ (Q ty tv)
   
 \end{code}
 
@@ -37,51 +39,69 @@ module RegDiff.Diff.Fixpoint.Base
       public
 \end{code}
 
-  The insight for fixpoints is that we can traverse trough a variable
-  as long as we can diff something of type T or we can
-  "skip" traversing a variable and insert something there instead.
+  The idea then, is to extend the Spine with an additional
+  constructor to traverse through variables.
+
+  The changes, are fairly different, though.
+
+  An insertion is one round of injections;
+  A deletion is one round of pattern-mathing;
+  A modification is one round of each!
+
+  At the end, we end up having to align products in the
+  same way we did for regular types and tie the know with a Rec
+  type, that lets one either "set" a value or go back to diffing 
+  the actual fixpoint again.
 
 %<*SI-def>
 \begin{code}
-    data SI (P : UUSet) : U → U → Set where
-      Svar : S (SI P) T T → SI P I I
-      Sins : S (SI P) T I → SI P T T
-      SY   : {ty tv : U} → P ty tv → SI P ty tv
+    mutual
+      Patchμ : U → Set
+      Patchμ ty = S (SVar +ᵤ Cμ (Al Rec)) ty
+
+      data Rec : U → U → Set where
+        fix : Patchμ T → Rec I I
+        set : ∀{ty tv} → Δ ty tv → Rec ty tv
+
+      data SVar : U → U → Set where
+        Svar : Patchμ T → SVar I I
+
+      data Cμ (P : UUSet) : U → U → Set where
+        Cins  : C      P  I T → Cμ P T T
+        Cdel  : C (Sym P) I T → Cμ P T T
+        Cmod  : {ty tv : U}
+              → C (Sym (C (Sym P))) ty tv → Cμ P ty tv
 \end{code}
 %</SI-def>
 
-  For convenience, we define an Sμ:
+  The workflow is as usual: we have cost functions
+  and we piggy back on the definitions from regular types for
+  everything.
 
-%<*Smu-def>
-\begin{code}
-    Sμ : UUSet → UUSet
-    Sμ P = S (SI P)
-\end{code}
-%</Smu-def>
-
-  We piggyback on the
-  previous definitions and expand our cost function
-  to handle SI's now:
+  There is a bunch of synonyms here to help the type-checker.
 
 \begin{code}
-    {-# TERMINATING #-}
-    SI-cost : {ty tv : U}{P : UUSet}
-            → (costP : ∀{ty tv} → P ty tv → ℕ)
-            → SI P ty tv → ℕ
-    SI-cost c (Svar x) = S-cost (SI-cost c) x
-    SI-cost c (Sins x) = 1 + S-cost (SI-cost c) x
-    SI-cost c (SY x) = c x
+    mutual
+      {-# TERMINATING #-}
+      Patchμ-cost : {ty : U} → Patchμ ty → ℕ
+      Patchμ-cost = S-cost (SVar+Cμ-cost (Al-cost Rec-cost))
 
-    SμΔ-cost : {ty tv : U} → Sμ Δ ty tv → ℕ
-    SμΔ-cost = S-cost (SI-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy))
+      Rec-cost : {ty tv : U} → Rec ty tv → ℕ
+      Rec-cost (fix x) = Patchμ-cost x
+      Rec-cost {ty} {tv} (set x) = cost-Δ {ty} {tv} x
+    
+      SVar+Cμ-cost : {ty tv : U}{P : UUSet} 
+                   → (costP : ∀{k v} → P k v → ℕ)
+                   → (SVar +ᵤ Cμ P) ty tv → ℕ
+      SVar+Cμ-cost c (i1 (Svar x)) = Patchμ-cost x
+      SVar+Cμ-cost c (i2 y)        = Cμ-cost c y
 
-    private
-      infixr 20 _<>_
-      _<>_ : {ty tv : U} → Sμ Δ ty tv → List (Sμ Δ ty tv) →  Sμ Δ ty tv
-      s <> [] = s
-      s <> (o ∷ os) with SμΔ-cost s ≤?-ℕ SμΔ-cost o 
-      ...| yes _ = s <> os
-      ...| no  _ = o <> os
+      Cμ-cost : {ty tv : U}{P : UUSet} 
+              → (costP : ∀{k v} → P k v → ℕ)
+              → Cμ P ty tv → ℕ
+      Cμ-cost c (Cins x) = 1 + C-cost c x
+      Cμ-cost c (Cdel x) = 1 + C-cost c x
+      Cμ-cost c (Cmod y) = C-cost (C-cost c) y
 \end{code}
 
   Diffing a value of a fixed point is defined next.
@@ -92,32 +112,47 @@ module RegDiff.Diff.Fixpoint.Base
 
 \begin{code}
     mutual
+      refine-Al : {ty tv : U} → Δ ty tv → List (Rec ty tv)
+      refine-Al {I} {I} (x , y) = fix <$> diffμ* x y
+      refine-Al         (x , y) = return (set (x , y))
+      
+      refine-CSym : {ty tv : U} → Δ ty tv → List (Sym (Al Rec) ty tv)
+      refine-CSym (x , y) = refine-C (y , x)
+
+      refine-C : {ty tv : U} → Δ ty tv → List (Al Rec ty tv)
+      refine-C {I} {I} (x , y) = (AX ∘ fix) <$> diffμ* x y
+      refine-C         (x , y) = align x y >>= Al-mapM refine-Al
+
       {-# TERMINATING #-}
-      refine : {ty tv : U} → Δ ty tv → List (SI Δ ty tv)
-      refine {I} {I} (x , y)   = Svar <$> (spineμ x y)
-      refine {ty} {tv} (x , y) = return (SY (x , y))
+      refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ (Al Rec)) ty ty)
+      refine-S {I}  (x , y) = (i1 ∘ Svar) <$> diffμ* x y
+      refine-S {ty} (x , y) = i2          <$> changeμ x y
 
-      spineμ' : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Sμ Δ ty tv)
-      spineμ' x y = spine x y >>= S-mapM refine
+      spineμ : {ty : U} → ⟦ ty ⟧ (μ T) → ⟦ ty ⟧ (μ T) → List (Patchμ ty)
+      spineμ x y = spine-cp x y >>= S-mapM refine-S
 
-      spineμ : μ T → μ T → List (Sμ Δ T T)
-      spineμ ⟨ x ⟩ ⟨ y ⟩ 
-        =  spineμ' x y
-        ++ ((SX ∘ Sins)        <$> (spineμ' x ⟨ y ⟩))
-        ++ ((Ssym ∘ SX ∘ Sins) <$> (spineμ' y ⟨ x ⟩))
+      changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ (Al Rec) ty tv)
+      changeμ x y = change-sym x y >>= CSym²-mapM refine-C 
+        >>= return ∘ Cmod
+
+      diffμ* : μ T → μ T → List (Patchμ T)
+      diffμ* ⟨ x ⟩ ⟨ y ⟩ 
+        =  spineμ x y
+        ++ ((SX ∘ i2 ∘ Cdel) <$> (change ⟨ y ⟩ x >>= C-mapM refine-CSym))
+        ++ ((SX ∘ i2 ∘ Cins) <$> (change ⟨ x ⟩ y >>= C-mapM refine-C))
 \end{code}
 
-  Finally, we can choose the actual patch between all possibilities when we have computed
-  all of them.
-
-  We have to stay in the List monad in order to guarantee that the algorithm
-  is exploring all possiblities.
-
 \begin{code}
-    diffμ : μ T → μ T → Sμ Δ T T
-    diffμ x y with spineμ x y
-    ...| []     = SX (SY (unmu x , unmu y))
-    ...| s ∷ ss = s <> ss
+    _<μ>_ : {ty : U} → Patchμ ty → List (Patchμ ty) → Patchμ ty
+    s <μ> []       = s
+    s <μ> (o ∷ os) with Patchμ-cost s ≤?-ℕ Patchμ-cost o
+    ...| yes _ = s <μ> os
+    ...| no  _ = o <μ> os
+
+    diffμ : μ T → μ T → Patchμ T
+    diffμ x y with diffμ* x y
+    ...| []     = SX (i2 (Cmod (CX (CX (AX (set (unmu x , unmu y)))))))
+    ...| s ∷ ss = s <μ> ss
 \end{code}
 
 
