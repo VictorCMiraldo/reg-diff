@@ -57,10 +57,10 @@ module RegDiff.Diff.Fixpoint.Base
         Svar : Patchμ T → SVar I I
 
       data Cμ (P : UUSet) : U → U → Set where
-        Cins  : C P I T → Cμ P T T
-        Cdel  : C P T I → Cμ P T T
+        Cins  : C      P  I T → Cμ P T T
+        Cdel  : C (Sym P) I T → Cμ P T T
         Cmod  : {ty tv : U}
-              → C (Sym (C P)) ty tv → Cμ P ty tv
+              → C (Sym (C (Sym P))) ty tv → Cμ P ty tv
 \end{code}
 %</SI-def>
 
@@ -100,6 +100,8 @@ module RegDiff.Diff.Fixpoint.Base
       refine-Al {I} {I} (x , y) = fix <$> diffμ* x y
       refine-Al         (x , y) = return (set (x , y))
       
+      refine-CSym : {ty tv : U} → Δ ty tv → List (Sym (Al Rec) ty tv)
+      refine-CSym (x , y) = refine-C (y , x)
 
       refine-C : {ty tv : U} → Δ ty tv → List (Al Rec ty tv)
       refine-C {I} {I} (x , y) = (AX ∘ fix) <$> diffμ* x y
@@ -114,19 +116,13 @@ module RegDiff.Diff.Fixpoint.Base
       spineμ x y = spine-cp x y >>= S-mapM refine-S
 
       changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ (Al Rec) ty tv)
-      changeμ x y = change-sym x y >>= CSym²-mapM (λ { (v , k) → refine-C (k , v) }) 
+      changeμ x y = change-sym x y >>= CSym²-mapM refine-C 
         >>= return ∘ Cmod
-
-{- = change-sym x y >>= C-mapM (C-mapM refine-C) 
-                                   >>= return ∘ Cmod
--}
-    {- change-sym x y 
-                >>= C-mapM (λ k → (i2 ∘ i2) <$> return k) -}
 
       diffμ* : μ T → μ T → List (Patchμ T)
       diffμ* ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ x y
-        ++ ((SX ∘ i2 ∘ Cdel) <$> (change x ⟨ y ⟩ >>= C-mapM refine-C))
+        ++ ((SX ∘ i2 ∘ Cdel) <$> (change ⟨ y ⟩ x >>= C-mapM refine-CSym))
         ++ ((SX ∘ i2 ∘ Cins) <$> (change ⟨ x ⟩ y >>= C-mapM refine-C))
 \end{code}
 
