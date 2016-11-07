@@ -50,14 +50,14 @@ module RegDiff.Diff.Fixpoint.Lab where
     open DIFF.Internal LIST-F public
 
     l0 l1 l2 l3 : list
-    l0 = (1 > 5 > #)
+    l0 = (1 > #)
     l1 = (1 > 4 > #)
     l2 = (3 > 50 > 4 > #)
     l3 = (1 > 50 > 4 > 20 > #)
 
     s1 : Patchμ LIST-F
-    s1 = diffμ l1 l2
-{-
+    s1 = diffμ l2 l3
+
   module T2 where
     open DIFF.Internal 2-3-TREE-F public
 
@@ -77,27 +77,9 @@ module RegDiff.Diff.Fixpoint.Lab where
 
     r2-expected 
       = Si2 (SX (i2 (Cmod (Ci2 (CX (Ci1 
-        (C⊗ (CX (set (5 , 4))) (C⊗ (CX (fix Scp)) 
-                {!!}))))))))
+        {!!}))))))
 
-    r2-computed = Si2
-                 (SX
-                  (i2
-                   (Cmod
-                    (Ci2
-                     (Csnd 5
-                      (CX
-                       (Ci1
-                        (C⊗ (CX (set (⟨ i2 (i1 (1 , ⟨ i1 unit ⟩ 
-                                           , ⟨ i1 unit ⟩)) ⟩ , 4)))
-                         (C⊗
-                          (CX
-                           (fix
-                            (SX
-                             (i2
-                              (Cins (Ci2 (Ci1 (Csnd 1 
-                         (Cfst ⟨ i1 unit ⟩ (CX (fix Scp)))))))))))
-                          (CX (fix Scp)))))))))))
+    r2-computed = {!!}
 
--}
-  open T1 public
+
+  open T2 public

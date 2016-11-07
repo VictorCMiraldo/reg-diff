@@ -96,9 +96,14 @@ module RegDiff.Diff.Fixpoint.Base
 
 \begin{code}
     mutual
+      refine-Al : {ty tv : U} → Δ ty tv → List (Rec ty tv)
+      refine-Al {I} {I} (x , y) = fix <$> diffμ* x y
+      refine-Al         (x , y) = return (set (x , y))
+      
+
       refine-C : {ty tv : U} → Δ ty tv → List (Al Rec ty tv)
-      refine-C {I} {I} (x , y) = {!!} -- fix <$> diffμ* x y
-      refine-C         (x , y) = {!!} -- return (set (x , y))
+      refine-C {I} {I} (x , y) = (AX ∘ fix) <$> diffμ* x y
+      refine-C         (x , y) = align x y >>= Al-mapM refine-Al
 
       {-# TERMINATING #-}
       refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ (Al Rec)) ty ty)
@@ -109,7 +114,8 @@ module RegDiff.Diff.Fixpoint.Base
       spineμ x y = spine-cp x y >>= S-mapM refine-S
 
       changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ (Al Rec) ty tv)
-      changeμ x y = {!!}
+      changeμ x y = change-sym x y >>= CSym²-mapM (λ { (v , k) → refine-C (k , v) }) 
+        >>= return ∘ Cmod
 
 {- = change-sym x y >>= C-mapM (C-mapM refine-C) 
                                    >>= return ∘ Cmod

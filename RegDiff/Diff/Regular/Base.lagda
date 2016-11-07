@@ -259,6 +259,11 @@ module RegDiff.Diff.Regular.Base
 \end{code}
 
 \begin{code}
+  CSym²-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
+          → (f : ∀{k v} → P k v → M (Q k v))
+          → C (Sym (C (Sym P))) ty tv → M (C (Sym (C (Sym Q))) ty tv)
+  CSym²-mapM f = C-mapM (C-mapM f)
+
   Patch : U → Set
   Patch ty = S (C (Sym (C (Sym (Al Δ))))) ty
 
