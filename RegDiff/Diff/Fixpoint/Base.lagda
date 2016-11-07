@@ -39,9 +39,19 @@ module RegDiff.Diff.Fixpoint.Base
       public
 \end{code}
 
-  The insight for fixpoints is that we can traverse trough a variable
-  as long as we can diff something of type T or we can
-  "skip" traversing a variable and insert something there instead.
+  The idea then, is to extend the Spine with an additional
+  constructor to traverse through variables.
+
+  The changes, are fairly different, though.
+
+  An insertion is one round of injections;
+  A deletion is one round of pattern-mathing;
+  A modification is one round of each!
+
+  At the end, we end up having to align products in the
+  same way we did for regular types and tie the know with a Rec
+  type, that lets one either "set" a value or go back to diffing 
+  the actual fixpoint again.
 
 %<*SI-def>
 \begin{code}
@@ -63,6 +73,12 @@ module RegDiff.Diff.Fixpoint.Base
               → C (Sym (C (Sym P))) ty tv → Cμ P ty tv
 \end{code}
 %</SI-def>
+
+  The workflow is as usual: we have cost functions
+  and we piggy back on the definitions from regular types for
+  everything.
+
+  There is a bunch of synonyms here to help the type-checker.
 
 \begin{code}
     mutual

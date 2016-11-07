@@ -22,11 +22,15 @@ module RegDiff.Diff.Regular.Base
     public
 \end{code}
 
-  An inhabitant of S represents a list of instructions on how
-  to transform one thing into another.
+  An inhabitant of S represents a spine. 
+  A Spine intuitively is the maximal shared prefix between two
+  elements of the same type.
 
-  This transformation works in two phases: Here, we the phases
-  are identifying common parts, then proceeding to change them.
+  Here we also add a Copy (Scp) instruction, representing
+  the fact that both elements are propositionally equal.
+
+  It is unsure to us, at this point, whether Scp should belong
+  here or to Δ.
 
 %<*S-def>
 \begin{code}
@@ -81,18 +85,19 @@ module RegDiff.Diff.Regular.Base
   S-cost : {ty : U}{P : UUSet}
          → (costP : ∀{ty} → P ty ty → ℕ)
          → S P ty → ℕ
-  S-cost c (SX x) = c x
-  S-cost c Scp = 0
+  S-cost c (SX x)   = c x
+  S-cost c Scp      = 0
   S-cost c (S⊗ s o) = S-cost c s + S-cost c o
-  S-cost c (Si1 s) = 1 + S-cost c s
-  S-cost c (Si2 s) = 1 + S-cost c s
+  S-cost c (Si1 s)  = S-cost c s
+  S-cost c (Si2 s)  = S-cost c s
 
   SΔ-cost : {ty : U} → S Δ ty → ℕ
   SΔ-cost = S-cost (λ {ty} xy → cost-Δ {ty} {ty} xy)
 \end{code}
 
   Here we add some binary operators to choose
-  between S's
+  between S's as long as we can compute the cost
+  of P's inside of S.
 
 \begin{code} 
   private
@@ -108,26 +113,26 @@ module RegDiff.Diff.Regular.Base
     chooseS* c s (o ∷ os) = chooseS* c (chooseS c s o) os
 \end{code}
 
-  And finally, we can diff things! Note that spine-cp will NEVER be empty.
-  In the worst case scenario, it gives a (SX (x , y)).
+  Now that we can extract the shared prefix between an (x , y : ⟦ ty ⟧ A),
+  we need to be able to change the non-agreeing parts.
+  
+  First we start by adapting coproducts. Here we are making the symmetric nature of this
+  step explicit.
 
-  But now, we need to be able to change things!
+  An inhabitant of C tells us which coproducts to insert or pattern-match
+  in order to bet the best candidate for alignment.
 
 \begin{code}
   data C (P : UUSet) : U → U → Set where
     CX   : {ty tv : U}   → P ty tv → C P ty tv
     Ci1  : {ty tv k : U} → C P ty tv → C P ty (tv ⊕ k)
     Ci2  : {ty tv k : U} → C P ty tv → C P ty (k ⊕ tv)
-{-
-    Cfst : {ty tv k : U} → ⟦ k ⟧ A → C P ty tv → C P ty (tv ⊗ k)
-    Csnd : {ty tv k : U} → ⟦ k ⟧ A → C P ty tv → C P ty (k ⊗ tv)
-    C⊗   : {ty tv tw tz : U}
-         → C P ty tw → C P tv tz → C P (ty ⊗ tv) (tw ⊗ tz)
--}
 
   Sym : UUSet → UUSet
   Sym P ty tv = P tv ty
 \end{code}
+
+  Just like S, we can map over these guys.
 
 \begin{code}
   C-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
@@ -136,27 +141,12 @@ module RegDiff.Diff.Regular.Base
   C-mapM f (CX x) = f x >>= return ∘ CX
   C-mapM f (Ci1 s) = C-mapM f s >>= return ∘ Ci1
   C-mapM f (Ci2 s) = C-mapM f s >>= return ∘ Ci2
-{-
-  C-mapM f (C⊗ s o) = C-mapM f s >>= λ s' → C-mapM f o >>= return ∘ (C⊗ s')
-  C-mapM f (Cfst k s) = C-mapM f s >>= return ∘ (Cfst k)
-  C-mapM f (Csnd k s) = C-mapM f s >>= return ∘ (Csnd k)
--}
 \end{code}
 
 \begin{code}
   change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C Δ ty tv)
-{-
-  change {ty ⊗ tv} {tw ⊗ tz} (x1 , x2) (y1 , y2)
-    = C⊗ <$> (change x1 y1) <*> (change x2 y2)
--}
   change {ty} {tv ⊕ tw} x (i1 y) = Ci1 <$> (change x y) 
   change {ty} {tv ⊕ tw} x (i2 y) = Ci2 <$> (change x y)
-{-
-  change {ty} {tw ⊗ tz} x (y1 , y2)
-    =  return (CX (x , (y1 , y2)))
-    ++ (Cfst y2 <$> change x y1) 
-    ++ (Csnd y1 <$> change x y2)
--}
   change {ty}      x      y      = return (CX (x , y))
 
   change-sym-Δ-aux : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym Δ) ty tv)
@@ -167,6 +157,9 @@ module RegDiff.Diff.Regular.Base
                >>= C-mapM (uncurry (flip change-sym-Δ-aux))
 \end{code}
 
+  We can also assign costs to them, in order to choose the
+  best one.
+
 \begin{code}
   C-cost : {ty tv : U}{P : UUSet}
          → (costP : ∀{ty tv} → P ty tv → ℕ)
@@ -174,11 +167,6 @@ module RegDiff.Diff.Regular.Base
   C-cost c (CX x) = c x
   C-cost c (Ci1 s) = 1 + C-cost c s
   C-cost c (Ci2 s) = 1 + C-cost c s
-{-
-  C-cost c (C⊗ s o) = C-cost c s + C-cost c o
-  C-cost c (Cfst {k = k} x s) = size1 sized k x + C-cost c s
-  C-cost c (Csnd {k = k} x s) = size1 sized k x + C-cost c s
--}
 
   CΔ-cost : {ty tv : U} → C (Sym Δ) ty tv → ℕ
   CΔ-cost = C-cost (λ {ty} {tv} xy → cost-Δ {tv} {ty} xy)
@@ -203,6 +191,14 @@ module RegDiff.Diff.Regular.Base
     chooseC* c s (o ∷ os) = chooseC* c (chooseC c s o) os
 \end{code}
 
+  Finally, we will be left with with two different products.
+  And this is where the notion of alignment comes into play.
+
+  An inhabitnat of Al represents a product alignment.
+  The workflow is the same as with S and C; Al makes
+  an indexed functor; we can compute it's cost, and
+  we can compute it's inhabitants.
+
 \begin{code}
   data Al (P : UUSet) : U → U → Set where
     AX    : {ty tv : U} → P ty tv → Al P ty tv
@@ -212,7 +208,9 @@ module RegDiff.Diff.Regular.Base
     Ap1ᵒ  : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P (ty ⊗ tw) tv
     Ap2   : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tw ⊗ tv)
     Ap2ᵒ  : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P (tw ⊗ ty) tv
+\end{code}
 
+\begin{code}
   Al-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
           → (f : ∀{k v} → P k v → M (Q k v))
           → Al P ty tv → M (Al Q ty tv)
@@ -223,7 +221,16 @@ module RegDiff.Diff.Regular.Base
   Al-mapM f (Ap1ᵒ x al) = Al-mapM f al >>= return ∘ (Ap1ᵒ x)
   Al-mapM f (Ap2 x al) = Al-mapM f al >>= return ∘ (Ap2 x)
   Al-mapM f (Ap2ᵒ x al) = Al-mapM f al >>= return ∘ (Ap2ᵒ x)
+\end{code}
 
+  Producing an alignment is where our options are really open.
+  We could check for permutations, or allow for different
+  types of alignments.
+
+  Obviusly, the more expressive the alignment, the more
+  expensive it's computation.
+
+\begin{code}
   align : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (Al Δ ty tv)
   align {ty ⊗ ty'} {tv ⊗ tv'} (x1 , x2) (y1 , y2) 
     =  A⊗ <$> align x1 y1 <*> align x2 y2
@@ -231,6 +238,8 @@ module RegDiff.Diff.Regular.Base
     ++ Ap2  y1 <$> align (x1 , x2) y2
     ++ Ap1ᵒ x2 <$> align x1 (y1 , y2)
     ++ Ap2ᵒ x1 <$> align x2 (y1 , y2)
+\end{code}
+\begin{code}
   align {ty ⊗ ty'} {tv} (x1 , x2) y 
     =  Ap1ᵒ x2 <$> align x1 y
     ++ Ap2ᵒ x1 <$> align x2 y
@@ -256,17 +265,28 @@ module RegDiff.Diff.Regular.Base
             → List (C (Sym (C (Sym (Al Δ)))) ty tv)
   change-Al x y = change-sym x y 
               >>= C-mapM (C-mapM (λ { (v , k) → align v k }))
-\end{code}
 
-\begin{code}
   CSym²-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
           → (f : ∀{k v} → P k v → M (Q k v))
           → C (Sym (C (Sym P))) ty tv → M (C (Sym (C (Sym Q))) ty tv)
   CSym²-mapM f = C-mapM (C-mapM f)
+\end{code}
 
+  Finally, we can diff values of regular types!
+
+  A Patch then is a skeleton followed by some pattern matching;
+  followed by some injections followed by some alignment.
+
+  Note that we could have made the symmetry of C internal
+  to it's definition. We are still not sure
+  which one to use.
+
+\begin{code}
   Patch : U → Set
   Patch ty = S (C (Sym (C (Sym (Al Δ))))) ty
+\end{code}
 
+\begin{code}
   infixl 20 _<>_ _<>'_
   _<>_ : {ty : U} → Patch ty → Patch ty → Patch ty
   s <> o = chooseS (CSymCSym-cost AlΔ-cost) s o
@@ -274,7 +294,11 @@ module RegDiff.Diff.Regular.Base
   _<>'_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
   s <>' []       = s
   s <>' (o ∷ os) = (s <> o) <>' os
+\end{code}
 
+  Here is the final algorithm.
+  
+\begin{code}
   diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (Patch ty)
   diff1* x y = spine-cp x y 
            >>= S-mapM (uncurry change-Al)
@@ -284,32 +308,3 @@ module RegDiff.Diff.Regular.Base
   ...| []     = SX (CX (CX (AX (x , y))))
   ...| s ∷ ss = s <>' ss
 \end{code}
-
-begin{code}
-  Patch : U → Set
-  Patch ty = S (C (Sym (C (Sym Δ)))) ty
-
-  infixl 20 _<>_ _<>'_
-  _<>_ : {ty : U} → Patch ty → Patch ty → Patch ty
-  s <> o = chooseS CSymCΔ-cost s o
-
-  _<>'_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
-  s <>' []       = s
-  s <>' (o ∷ os) = (s <> o) <>' os
-
-  diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (Patch ty)
-  diff1* x y = spine-cp x y 
-           >>= S-mapM (uncurry change-sym)
-
-  diff1 : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch ty
-  diff1 x y with diff1* x y
-  ...| []     = SX (CX (CX (y , x)))
-  ...| s ∷ ss = s <>' ss
-end{code}
-
-begin{code}
-  diff1 : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → S Δ ty tv
-  diff1 x y with spine-cp x y
-  ...| []     = SX (x , y)
-  ...| s ∷ ss = s <>' ss
-end{code}
