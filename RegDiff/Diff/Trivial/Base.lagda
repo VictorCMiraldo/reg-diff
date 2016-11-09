@@ -7,12 +7,11 @@ open import Prelude.Eq
 open import Prelude.Vector
 
 module RegDiff.Diff.Trivial.Base
-       {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)(A : Set)
-       {{eqA : Eq A}}(sized : A → ℕ)
+       {parms# : ℕ}(parms : Vec Set parms#)(eqs : VecI Eq parms)
     where
 
-  open import RegDiff.Generic.Base v
-  open import RegDiff.Generic.Eq v eqs
+  open import RegDiff.Generic.Multirec parms
+  open import RegDiff.Generic.Eq parms eqs
 \end{code}
 
   This module serves the purpose of defining a bunch of
@@ -20,7 +19,7 @@ module RegDiff.Diff.Trivial.Base
 
 \begin{code}
   UUSet : Set₁
-  UUSet = U → U → Set
+  UUSet = {n : ℕ} → Setⁿ n → U n → U n → Set
 \end{code}
 
   As usual, we say that the diagonal functor
@@ -29,42 +28,47 @@ module RegDiff.Diff.Trivial.Base
 %<*delta-def>
 \begin{code}
   Δ : UUSet
-  Δ ty tv = ⟦ ty ⟧ A × ⟦ tv ⟧ A
+  Δ A ty tv = ⟦ ty ⟧ A × ⟦ tv ⟧ A
 \end{code}
 %</delta-def>
 
   It has a cost function:
 
 \begin{code}
-  cost-Δ : {ty tv : U} → Δ ty tv → ℕ
-  cost-Δ {ty} {tv} (x , y) with U-eq ty tv
-  cost-Δ {ty} {.ty} (x , y) | yes refl
-    with dec-eq ty x y
+  cost-Δ : {n : ℕ}{ty tv : U n}{A : Setⁿ n}
+         → (sized : ∀{k} → A k → ℕ)
+         → Δ A ty tv → ℕ
+  cost-Δ {_} {ty} {tv}  f (x , y) with U-eq ty tv
+  cost-Δ {_} {ty} {.ty} f (x , y) | yes refl
+    with dec-eq {!!} ty x y
   ...| yes _ = 0
-  ...| no  _ = size1 sized ty x + size1 sized ty y
-  cost-Δ {ty} {tv}  (x , y) | no _
-    = size1 sized ty x + size1 sized tv y
+  ...| no  _ = size1 f ty x + size1 f ty y
+  cost-Δ {_} {ty} {tv}  f (x , y) | no _
+    = size1 f ty x + size1 f tv y
 \end{code}
 
   And it can be applied in both directions:
 
 \begin{code}
-  record Appliable (Q : UUSet) : Set where
+  record Appliable (Q : UUSet) : Set₁ where
     constructor apply
     field
-      goₗ : ∀{ty tv} → Q ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      goᵣ : ∀{ty tv} → Q ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
+      goₗ : {n : ℕ}{ty tv : U n}{A : Setⁿ n} 
+          → Q A ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
+      goᵣ : {n : ℕ}{ty tv : U n}{A : Setⁿ n} 
+          → Q A ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
 
   open Appliable public
 
   Δ-apply : Appliable Δ
   Δ-apply 
-    = apply (λ {ty} {tv} → doit {ty} {tv}) 
-            (λ { {ty} {tv} (x , y) z → doit {tv} {ty} (y , x) z })
+    = apply (λ {n} {ty} {tv} → doit {n} {ty} {tv}) 
+            (λ { {_} {ty} {tv} (x , y) z → doit {ty = tv} {tv = ty} (y , x) z })
     where
-      doit : {ty tv : U} → Δ ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      doit {ty} {tv} (x , y) z
-        with dec-eq ty x z
+      doit : {n : ℕ}{ty tv : U n}{A : Setⁿ n} 
+           → Δ A ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
+      doit {_} {ty} {tv} (x , y) z
+        with dec-eq {!!} ty x z
       ...| yes _ = just y
       ...| no  _ = nothing
 \end{code}

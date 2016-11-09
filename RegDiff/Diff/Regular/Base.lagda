@@ -16,7 +16,7 @@ module RegDiff.Diff.Regular.Base
 
   open Monad {{...}}
 
-  open import RegDiff.Generic.Base v
+  open import RegDiff.Generic.Multirec v
   open import RegDiff.Generic.Eq v eqs
   open import RegDiff.Diff.Trivial.Base v eqs A sized
     public
