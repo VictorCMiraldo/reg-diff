@@ -1,33 +1,40 @@
 open import Prelude
 open import Prelude.Vector
 
-module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
+module RegDiff.Generic.Regular {parms# : ℕ}(parms : Vec Set parms#) where
 
 {-
-  Here we define the universe of regular types and the
-  generic functions we need to perform diffing over them.
+  Here we define the universe of regular types over
+  n-variables and the generic functions we need to 
+  perform diffing over them.
 
   Constants will be handled by the vector passed around
   as a module parameter.
 -}
 
-  data U : Set where
-    I   : U
-    u1  : U
-    K   : (k : Fin n) → U
-    _⊕_ : (ty : U) → (tv : U) → U
-    _⊗_ : (ty : U) → (tv : U) → U
+  Setⁿ : ℕ → Set₁
+  Setⁿ n = Fin n → Set
+
+  _⇉_ : {n : ℕ} → Setⁿ n → Setⁿ n → Set
+  P ⇉ Q = ∀{k} → P k → Q k
+
+  data U (n : ℕ) : Set where
+    I    : Fin n         → U n
+    K    : Fin parms#    → U n
+    u1   :                 U n
+    _⊕_  : (ty tv : U n) → U n
+    _⊗_  : (ty tv : U n) → U n
 
   infixr 25 _⊗_
   infixr 22 _⊕_
 
-  ⟦_⟧ : U → Set → Set
-  ⟦ I       ⟧ A = A
-  ⟦ u1      ⟧ A = Unit
+  ⟦_⟧ : {n : ℕ} → U n → Setⁿ n → Set
+  ⟦ I x     ⟧ A = A x
   ⟦ K x     ⟧ A = lookup x parms
+  ⟦ u1      ⟧ A = Unit
   ⟦ ty ⊕ tv ⟧ A = ⟦ ty ⟧ A ⊎ ⟦ tv ⟧ A
   ⟦ ty ⊗ tv ⟧ A = ⟦ ty ⟧ A × ⟦ tv ⟧ A
-
+{-
   data μ (ty : U) : Set where
     ⟨_⟩ : ⟦ ty ⟧ (μ ty) → μ ty
 
@@ -37,39 +44,38 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
 
   unmu : {ty : U} → μ ty → ⟦ ty ⟧ (μ ty)
   unmu ⟨ x ⟩ = x
-
+-}
 {-
   Generic map
 -}
 
-  gmap : {A B : Set}(ty : U)(f : A → B)
+  gmap : {n : ℕ}{A B : Setⁿ n}(ty : U n)(f : A ⇉ B)
        → ⟦ ty ⟧ A → ⟦ ty ⟧ B
-  gmap I         f x       = f x
+  gmap (I i)     f x       = f x
   gmap u1        f x       = unit
   gmap (K k)     f x       = x
   gmap (ty ⊕ tv) f (i1 x)  = i1 (gmap ty f x)
   gmap (ty ⊕ tv) f (i2 y)  = i2 (gmap tv f y)
   gmap (ty ⊗ tv) f (x , y) = gmap ty f x , gmap tv f y
 
-  fgt : {A : Set}(ty : U) → ⟦ ty ⟧ A → ⟦ ty ⟧ Unit
-  fgt ty = gmap ty (const unit)
 
 {- 
   And generic size
 -}
 
-  size1 : {A : Set}(f : A → ℕ)(ty : U)
+  size1 : {n : ℕ}{A : Setⁿ n}(f : ∀{k} → A k → ℕ)(ty : U n)
        → ⟦ ty ⟧ A → ℕ
-  size1 f I x = (f x)
+  size1 f (I i) x = (f x)
   size1 f u1 x = 1
   size1 f (K k) x = 1
   size1 f (ty ⊕ tv) (i1 x) = 1 + size1 f ty x
   size1 f (ty ⊕ tv) (i2 y) = 1 + size1 f tv y
   size1 f (ty ⊗ tv) (x , y) = size1 f ty x + size1 f tv y
 
-  size0 : {A : Set}(ty : U) → ⟦ ty ⟧ A → ℕ
+  size0 : {n : ℕ}{A : Setⁿ n}(ty : U n) → ⟦ ty ⟧ A → ℕ
   size0 = size1 (const 1)
 
+{-
   {-# TERMINATING #-}
   cata : {A : Set}{ty : U}
        → (⟦ ty ⟧ A → A) → μ ty → A
@@ -81,3 +87,4 @@ module RegDiff.Generic.Base {n : ℕ}(parms : Vec Set n)  where
   sizeμ : {ty tv : U}
         → ⟦ ty ⟧ (μ tv) → ℕ
   sizeμ {ty = ty} = size1 ((5 +_) ∘ μ-size) ty
+-}
