@@ -1,7 +1,9 @@
 open import Prelude
 open import Prelude.Vector
 
-module RegDiff.Generic.Regular {parms# : ℕ}(parms : Vec Set parms#) where
+module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
+
+  open import RegDiff.Generic.Parms
 
 {-
   Here we define the universe of regular types over
@@ -12,15 +14,10 @@ module RegDiff.Generic.Regular {parms# : ℕ}(parms : Vec Set parms#) where
   as a module parameter.
 -}
 
-  Setⁿ : ℕ → Set₁
-  Setⁿ n = Fin n → Set
-
-  _⇉_ : {n : ℕ} → Setⁿ n → Setⁿ n → Set
-  P ⇉ Q = ∀{k} → P k → Q k
 
   data U (n : ℕ) : Set where
     I    : Fin n         → U n
-    K    : Fin parms#    → U n
+    K    : Fin ks#       → U n
     u1   :                 U n
     _⊕_  : (ty tv : U n) → U n
     _⊗_  : (ty tv : U n) → U n
@@ -28,28 +25,18 @@ module RegDiff.Generic.Regular {parms# : ℕ}(parms : Vec Set parms#) where
   infixr 25 _⊗_
   infixr 22 _⊕_
 
-  ⟦_⟧ : {n : ℕ} → U n → Setⁿ n → Set
+  ⟦_⟧ : {n : ℕ} → U n → Parms n → Set
   ⟦ I x     ⟧ A = A x
-  ⟦ K x     ⟧ A = lookup x parms
+  ⟦ K x     ⟧ A = lookup x ks
   ⟦ u1      ⟧ A = Unit
   ⟦ ty ⊕ tv ⟧ A = ⟦ ty ⟧ A ⊎ ⟦ tv ⟧ A
   ⟦ ty ⊗ tv ⟧ A = ⟦ ty ⟧ A × ⟦ tv ⟧ A
-{-
-  data μ (ty : U) : Set where
-    ⟨_⟩ : ⟦ ty ⟧ (μ ty) → μ ty
 
-  ⟨⟩-inj : {ty : U}{x y : ⟦ ty ⟧ (μ ty)}
-         → _≡_ {A = μ ty} ⟨ x ⟩ ⟨ y ⟩ → x ≡ y
-  ⟨⟩-inj refl = refl
-
-  unmu : {ty : U} → μ ty → ⟦ ty ⟧ (μ ty)
-  unmu ⟨ x ⟩ = x
--}
 {-
   Generic map
 -}
 
-  gmap : {n : ℕ}{A B : Setⁿ n}(ty : U n)(f : A ⇉ B)
+  gmap : {n : ℕ}{A B : Parms n}(ty : U n)(f : A ⇉ B)
        → ⟦ ty ⟧ A → ⟦ ty ⟧ B
   gmap (I i)     f x       = f x
   gmap u1        f x       = unit
@@ -63,7 +50,7 @@ module RegDiff.Generic.Regular {parms# : ℕ}(parms : Vec Set parms#) where
   And generic size
 -}
 
-  size1 : {n : ℕ}{A : Setⁿ n}(f : ∀{k} → A k → ℕ)(ty : U n)
+  size1 : {n : ℕ}{A : Parms n}(f : ∀{k} → A k → ℕ)(ty : U n)
        → ⟦ ty ⟧ A → ℕ
   size1 f (I i) x = (f x)
   size1 f u1 x = 1
@@ -72,19 +59,6 @@ module RegDiff.Generic.Regular {parms# : ℕ}(parms : Vec Set parms#) where
   size1 f (ty ⊕ tv) (i2 y) = 1 + size1 f tv y
   size1 f (ty ⊗ tv) (x , y) = size1 f ty x + size1 f tv y
 
-  size0 : {n : ℕ}{A : Setⁿ n}(ty : U n) → ⟦ ty ⟧ A → ℕ
-  size0 = size1 (const 1)
+  size-const : {n : ℕ}{A : Parms n}(ty : U n) → ⟦ ty ⟧ A → ℕ
+  size-const = size1 (const 1)
 
-{-
-  {-# TERMINATING #-}
-  cata : {A : Set}{ty : U}
-       → (⟦ ty ⟧ A → A) → μ ty → A
-  cata {A} {ty} f ⟨ x ⟩ = f (gmap ty (cata f) x)
-
-  μ-size : {ty : U} → μ ty → ℕ
-  μ-size {ty} = cata (suc ∘ size1 id ty)
-
-  sizeμ : {ty tv : U}
-        → ⟦ ty ⟧ (μ tv) → ℕ
-  sizeμ {ty = ty} = size1 ((5 +_) ∘ μ-size) ty
--}

@@ -4,7 +4,7 @@ open import Prelude.Eq
 module RegDiff.Diff.Fixpoint.Lab where
 
   open import RegDiff.Generic.Konstants
-  open import RegDiff.Generic.Base konstants public
+  open import RegDiff.Generic.Fixpoint konstants keqs public
   open import RegDiff.Generic.Eq konstants keqs public
 
   import RegDiff.Diff.Fixpoint.Base konstants keqs 
@@ -16,7 +16,7 @@ module RegDiff.Diff.Fixpoint.Lab where
   LIST-F = u1 ⊕ (K kℕ) ⊗ I
 
   list : Set
-  list = μ LIST-F
+  list = Fix LIST-F
 
   # : list
   # = ⟨ i1 unit ⟩
@@ -29,7 +29,7 @@ module RegDiff.Diff.Fixpoint.Lab where
   2-3-TREE-F = u1 ⊕ (K kℕ) ⊗ I ⊗ I ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I
 
   2-3-Tree : Set
-  2-3-Tree = μ 2-3-TREE-F
+  2-3-Tree = Fix 2-3-TREE-F
 
   Leaf : 2-3-Tree
   Leaf = ⟨ i1 unit ⟩
@@ -42,7 +42,7 @@ module RegDiff.Diff.Fixpoint.Lab where
 
   _==_ : 2-3-Tree → Maybe 2-3-Tree → Bool
   _ == nothing = false
-  t == just u with dec-eqμ t u 
+  t == just u with t ≟-Fix u 
   ...| yes _ = true
   ...| no  _ = false
 

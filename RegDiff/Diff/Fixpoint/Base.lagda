@@ -6,16 +6,17 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
+open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Fixpoint.Base
-       {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)
+       {ks# : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
     where
 
-  open Monad {{...}} renaming (μ to join)
+  open Monad {{...}}
   open Applicative {{...}}
 
-  open import RegDiff.Generic.Base v
-  open import RegDiff.Generic.Eq v eqs
+  open import RegDiff.Generic.Fixpoint ks keqs
+  open import RegDiff.Generic.Eq ks keqs
 
   _+ᵤ_ : (U → U → Set) → (U → U → Set) → (U → U → Set)
   (P +ᵤ Q) ty tv = (P ty tv) ⊎ (Q ty tv)
@@ -29,13 +30,27 @@ module RegDiff.Diff.Fixpoint.Base
 
 \begin{code}
   module Internal (T : U) where
+
+    PARMS : Fin 1 → Set
+    PARMS = const (Fix T)
+
+    WB-PARMS : WBParms PARMS
+    WB-PARMS 
+      = wb-parms 
+        (λ { {fz} → μ-size 
+           ; {fs ()} 
+           }) 
+        (λ { {fz} → _≟-Fix_ 
+           ; {fs ()} 
+           })
 \end{code}
 
   We then proceed to use the diff for regular types 
   applied to the correct parameters. 
 
 \begin{code}
-    open import RegDiff.Diff.Regular.Base v eqs (μ T) μ-size
+    open import RegDiff.Diff.Regular.Base ks keqs PARMS WB-PARMS
+      hiding (U)
       public
 \end{code}
 
@@ -113,29 +128,29 @@ module RegDiff.Diff.Fixpoint.Base
 \begin{code}
     mutual
       refine-Al : {ty tv : U} → Δ ty tv → List (Rec ty tv)
-      refine-Al {I} {I} (x , y) = fix <$> diffμ* x y
-      refine-Al         (x , y) = return (set (x , y))
+      refine-Al {Iₙ fz} {Iₙ fz} (x , y) = fix <$> diffμ* x y
+      refine-Al                 (x , y) = return (set (x , y))
       
       refine-CSym : {ty tv : U} → Δ ty tv → List (Sym (Al Rec) ty tv)
       refine-CSym (x , y) = refine-C (y , x)
 
       refine-C : {ty tv : U} → Δ ty tv → List (Al Rec ty tv)
-      refine-C {I} {I} (x , y) = (AX ∘ fix) <$> diffμ* x y
-      refine-C         (x , y) = align x y >>= Al-mapM refine-Al
+      refine-C {Iₙ fz} {Iₙ fz} (x , y) = (AX ∘ fix) <$> diffμ* x y
+      refine-C                 (x , y) = align x y >>= Al-mapM refine-Al
 
       {-# TERMINATING #-}
       refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ (Al Rec)) ty ty)
-      refine-S {I}  (x , y) = (i1 ∘ Svar) <$> diffμ* x y
-      refine-S {ty} (x , y) = i2          <$> changeμ x y
+      refine-S {Iₙ fz}  (x , y) = (i1 ∘ Svar) <$> diffμ* x y
+      refine-S {ty}     (x , y) = i2          <$> changeμ x y
 
-      spineμ : {ty : U} → ⟦ ty ⟧ (μ T) → ⟦ ty ⟧ (μ T) → List (Patchμ ty)
+      spineμ : {ty : U}(x y : ⟦ ty ⟧ (Fix T)) → List (Patchμ ty)
       spineμ x y = spine-cp x y >>= S-mapM refine-S
 
-      changeμ : {ty tv : U} → ⟦ ty ⟧ (μ T) → ⟦ tv ⟧ (μ T) → List (Cμ (Al Rec) ty tv)
+      changeμ : {ty tv : U} → ⟦ ty ⟧ (Fix T) → ⟦ tv ⟧ (Fix T) → List (Cμ (Al Rec) ty tv)
       changeμ x y = change-sym x y >>= CSym²-mapM refine-C 
-        >>= return ∘ Cmod
+                >>= return ∘ Cmod
 
-      diffμ* : μ T → μ T → List (Patchμ T)
+      diffμ* : Fix T → Fix T → List (Patchμ T)
       diffμ* ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ x y
         ++ ((SX ∘ i2 ∘ Cdel) <$> (change ⟨ y ⟩ x >>= C-mapM refine-CSym))
@@ -149,7 +164,7 @@ module RegDiff.Diff.Fixpoint.Base
     ...| yes _ = s <μ> os
     ...| no  _ = o <μ> os
 
-    diffμ : μ T → μ T → Patchμ T
+    diffμ : Fix T → Fix T → Patchμ T
     diffμ x y with diffμ* x y
     ...| []     = SX (i2 (Cmod (CX (CX (AX (set (unmu x , unmu y)))))))
     ...| s ∷ ss = s <μ> ss

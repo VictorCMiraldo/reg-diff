@@ -1,25 +1,26 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
+open import RegDiff.Generic.Parms
 
 module RegDiff.Generic.Eq 
-    {parms# : ℕ}(v : Vec Set parms#)(eqs : VecI Eq v) where
+    {ks# : ℕ}(ks : Vec Set ks#)(eqs : VecI Eq ks) where
 
-  open import RegDiff.Generic.Multirec v
+  open import RegDiff.Generic.Multirec ks
 
   I-inj : {n : ℕ}{k l : Fin n} → I k ≡ I l → k ≡ l
   I-inj refl = refl
 
-  K-inj : {n : ℕ}{i j : Fin parms#} → K {n = n} i ≡ K j → i ≡ j
+  K-inj : {n : ℕ}{i j : Fin ks#} → K {n = n} i ≡ K j → i ≡ j
   K-inj refl = refl
 
-  ⊗-inj : {n : ℕ}{a b c d : U n} → a ⊗ b ≡ c ⊗ d → a ≡ c × b ≡ d
+  ⊗-inj : {n : ℕ}{a b c d : Uₙ n} → a ⊗ b ≡ c ⊗ d → a ≡ c × b ≡ d
   ⊗-inj refl = refl , refl
 
-  ⊕-inj : {n : ℕ}{a b c d : U n} → a ⊕ b ≡ c ⊕ d → a ≡ c × b ≡ d
+  ⊕-inj : {n : ℕ}{a b c d : Uₙ n} → a ⊕ b ≡ c ⊕ d → a ≡ c × b ≡ d
   ⊕-inj refl = refl , refl
 
-  U-eq : {n : ℕ}(ty tv : U n) → Dec (ty ≡ tv)
+  U-eq : {n : ℕ}(ty tv : Uₙ n) → Dec (ty ≡ tv)
   U-eq (I x) (I y) with x ≟-Fin y
   ...| yes h0  = yes (cong I h0)
   ...| no  abs = no (abs ∘ I-inj)
@@ -59,9 +60,9 @@ module RegDiff.Generic.Eq
   ...| yes h0 | no abs = no (abs ∘ p2 ∘ ⊗-inj)
   ...| yes h0 | yes h1 = yes (cong₂ _⊗_ h0 h1)
 
-  dec-eq : {n : ℕ}{A : Setⁿ n}
+  dec-eq : {n : ℕ}{A : Parms n}
          → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
-         → (ty : U n)(x y : ⟦ ty ⟧ A)
+         → (ty : Uₙ n)(x y : ⟦ ty ⟧ A)
          → Dec (x ≡ y)
   dec-eq e (I k) x y 
     = e x y
@@ -88,11 +89,6 @@ module RegDiff.Generic.Eq
     with dec-eq e tv x2 y2
   ...| no prf = no (prf ∘ p2 ∘ ×-inj)
   ...| yes prf2 = yes (cong₂ _,_ prf1 prf2)
-
-  ⟨⟩-inj : {n : ℕ}{F : Fam n}{k : Fin n}
-           {x y : ⟦ lookup k F ⟧ (Fix F)}
-         → _≡_ {A = Fix F k} ⟨ x ⟩ ⟨ y ⟩ → x ≡ y
-  ⟨⟩-inj refl = refl
 
   {-# TERMINATING #-}
   _≟_ : {n : ℕ}{F : Fam n}{k : Fin n}

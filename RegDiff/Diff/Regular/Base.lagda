@@ -8,17 +8,18 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
+open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Base
-       {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)(A : Set)
-       {{eqA : Eq A}}(sized : A → ℕ)
+       {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
+       {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
     where
 
   open Monad {{...}}
 
-  open import RegDiff.Generic.Multirec v
-  open import RegDiff.Generic.Eq v eqs
-  open import RegDiff.Diff.Trivial.Base v eqs A sized
+  open import RegDiff.Generic.Multirec ks
+  open import RegDiff.Generic.Eq ks keqs
+  open import RegDiff.Diff.Trivial.Base ks keqs A WBA
     public
 \end{code}
 
@@ -66,7 +67,7 @@ module RegDiff.Diff.Regular.Base
   mutual
     spine-cp : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (S Δ ty)
     spine-cp {ty} x y
-      with dec-eq ty x y 
+      with dec-eq _≟-A_ ty x y 
     ...| no  _ = spine x y
     ...| yes _ = return Scp
     

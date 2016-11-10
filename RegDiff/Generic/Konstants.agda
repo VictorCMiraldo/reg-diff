@@ -1,8 +1,13 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
+open import RegDiff.Generic.Parms
 
 module RegDiff.Generic.Konstants where
+
+{-
+  Here we provide some toy constants
+-}
 
   konstants : Vec Set _
   konstants = ℕ ∷ Bool ∷ []
@@ -18,3 +23,6 @@ module RegDiff.Generic.Konstants where
 
   kBool : Fin 2
   kBool = fs fz
+
+
+

@@ -4,23 +4,37 @@ open import Prelude.Eq
 module RegDiff.Diff.Regular.Lab where
 
   open import RegDiff.Generic.Konstants
-  open import RegDiff.Generic.Base konstants public
+  open import RegDiff.Generic.Parms
+  open ToyParms
+  open import RegDiff.Generic.Regular konstants public
+    hiding (U)
   open import RegDiff.Generic.Eq konstants keqs public
 
-  import RegDiff.Diff.Regular.Base konstants keqs 
-    as DIFF
+  open import RegDiff.Diff.Regular.Base konstants keqs PARMS WB-PARMS
+    public
+
   -- import RegDiff.Diff.Regular.Domains konstants keqs
   --  as DOMAINS
 
   Type1 : U
-  Type1 = u1 ⊕ I ⊕ I ⊗ I
+  Type1 = u1 ⊕ I x₁ ⊕ I x₁ ⊗ I x₁
 
   Type2 : U
   Type2 = (K kℕ) 
-        ⊕ (K kBool) ⊗ I 
-        ⊕ I ⊗ ((K kℕ) ⊕ I)
-        ⊕ I ⊗ I
+        ⊕ (K kBool) ⊗ I x₂
+        ⊕ I x₁ ⊗ ((K kℕ) ⊕ I x₂)
+        ⊕ I x₁ ⊗ I x₁
 
+  Type3 : U
+  Type3 = u1 ⊕ I x₃ ⊕ I x₃ ⊗ I x₃
+
+  d1 : Patch Type1
+  d1 = diff1 (i2 (i1 6)) (i2 (i2 (1 , 6)))
+
+  d3 : Patch Type3
+  d3 = diff1 (i2 (i1 (weighted 1))) (i2 (i2 (weighted 100 , weighted 30)))
+
+{-
   module T1 where
   
     open DIFF    ℕ (const 1) public
@@ -33,4 +47,5 @@ module RegDiff.Diff.Regular.Lab where
     d2 = diff1 (i2 (i1 (true , 5))) (i1 5)
 
 
-  open T1 public
+  open T1
+-}
