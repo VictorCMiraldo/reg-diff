@@ -7,7 +7,7 @@ open import Prelude.Eq
 open import Prelude.Vector
 open import RegDiff.Generic.Parms
 
-module RegDiff.Diff.Trivial.Base
+module RegDiff.Diff.TrivialCopy.Base
        {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
        {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
     where
@@ -39,7 +39,7 @@ module RegDiff.Diff.Trivial.Base
 %<*delta-def>
 \begin{code}
   Δ : UUSet
-  Δ ty tv = ⟦ ty ⟧ A × ⟦ tv ⟧ A
+  Δ ty tv = ty ≡ tv ⊎ ⟦ ty ⟧ A × ⟦ tv ⟧ A
 \end{code}
 %</delta-def>
 
@@ -47,16 +47,16 @@ module RegDiff.Diff.Trivial.Base
 
 \begin{code}
   cost-Δ : {ty tv : U} → Δ ty tv → ℕ
-  cost-Δ {ty} {tv}  (x , y) with U-eq ty tv
-  cost-Δ {ty} {.ty} (x , y) | yes refl
-    with dec-eq _≟-A_ ty x y
-  ...| yes _ = 0
-  ...| no  _ = size1 sized ty x + size1 sized ty y
-  cost-Δ {ty} {tv}  (x , y) | no _
-    = size1 sized ty x + size1 sized tv y
+  cost-Δ           (i1 _)       = 0
+  cost-Δ {ty} {tv} (i2 (x , y)) = size1 sized ty x + size1 sized tv y
 
   delta : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → Δ ty tv
-  delta x y = (x , y)
+  delta {ty} {tv} x y with U-eq ty tv
+  ...| no _ = i2 (x , y)
+  delta {ty} {.ty} x y | yes refl
+    with dec-eq _≟-A_ ty x y 
+  ...| yes _ = i1 refl
+  ...| no  _ = i2 (x , y)
 \end{code}
 
   And it can be applied in both directions:
@@ -72,15 +72,23 @@ module RegDiff.Diff.Trivial.Base
 
   open Appliable public
 
+  appₗ : {ty tv : U}
+       → Δ ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
+  appₗ {ty} {.ty} (i1 refl)    z = just z
+  appₗ {ty} {tv}  (i2 (x , y)) z
+    with dec-eq _≟-A_ ty x z
+  ...| yes _ = just y
+  ...| no  _ = nothing
+
+  appᵣ : {ty tv : U}
+       → Δ ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
+  appᵣ {ty} {.ty} (i1 refl)    z = just z
+  appᵣ {ty} {tv}  (i2 (x , y)) z
+    with dec-eq _≟-A_ tv y z
+  ...| yes _ = just x
+  ...| no  _ = nothing
+
   Δ-apply : Appliable Δ
   Δ-apply 
-    = apply (λ {ty} {tv} → doit {ty} {tv}) 
-            (λ { {ty} {tv} (x , y) z → doit {ty = tv} {tv = ty} (y , x) z })
-    where
-      doit : {ty tv : U}
-           → Δ ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      doit {ty} {tv} (x , y) z
-        with dec-eq _≟-A_ ty x z
-      ...| yes _ = just y
-      ...| no  _ = nothing
+    = apply appₗ appᵣ      
 \end{code}

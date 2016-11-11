@@ -76,7 +76,7 @@ module RegDiff.Diff.Regular.Base
       = S⊗ <$> (spine-cp x1 y1) <*> (spine-cp x2 y2)
     spine {tv ⊕ tw} (i1 x) (i1 y) = Si1 <$> (spine-cp x y) 
     spine {tv ⊕ tw} (i2 x) (i2 y) = Si2 <$> (spine-cp x y)
-    spine {ty}      x      y      = return (SX (x , y))
+    spine {ty}      x      y      = return (SX (delta {ty} {ty} x y))
 \end{code}
 
   But we eventually need to choose one of them! In fact, the patch between
@@ -148,7 +148,7 @@ module RegDiff.Diff.Regular.Base
   change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C Δ ty tv)
   change {ty} {tv ⊕ tw} x (i1 y) = Ci1 <$> (change x y) 
   change {ty} {tv ⊕ tw} x (i2 y) = Ci2 <$> (change x y)
-  change {ty}      x      y      = return (CX (x , y))
+  change {ty} {tv}      x      y = return (CX (delta {ty} {tv} x y))
 
   change-sym-Δ-aux : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym Δ) ty tv)
   change-sym-Δ-aux x y = change x y >>= C-mapM (λ { (k , v) → return (v , k) }) 

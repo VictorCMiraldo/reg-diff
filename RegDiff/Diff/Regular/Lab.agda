@@ -12,6 +12,8 @@ module RegDiff.Diff.Regular.Lab where
 
   open import RegDiff.Diff.Regular.Base konstants keqs PARMS WB-PARMS
     public
+  open import RegDiff.Diff.Regular.Apply konstants keqs PARMS WB-PARMS
+    public
 
   -- import RegDiff.Diff.Regular.Domains konstants keqs
   --  as DOMAINS

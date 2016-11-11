@@ -16,7 +16,6 @@ module RegDiff.Diff.Regular.Apply
   open import RegDiff.Generic.Multirec ks
   open import RegDiff.Generic.Eq ks keqs
   open import RegDiff.Diff.Regular.Base ks keqs A WBA
-    public
 \end{code}
 
   The application functions in both directions makes it easy
@@ -24,9 +23,9 @@ module RegDiff.Diff.Regular.Apply
 
 \begin{code}
   S-apply : {ty : U}{P : UUSet}
-         → (doP : Appliable P)
+         → (∀{k} → P k k → ⟦ k ⟧ A → Maybe (⟦ k ⟧ A))
          → S P ty → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
-  S-apply doP (SX x) el          = goₗ doP x el
+  S-apply doP (SX x) el          = doP x el
   S-apply doP Scp x              = just x
   S-apply doP (S⊗ s o) (el , dl) = _,_ <$> S-apply doP s el <*> S-apply doP o dl
   S-apply doP (Si1 s) (i1 el)    = i1 <$> S-apply doP s el
@@ -53,26 +52,57 @@ module RegDiff.Diff.Regular.Apply
   C-Appliable : {P : UUSet} → Appliable P → Appliable (C P)
   C-Appliable doP = apply (C-applyₗ doP) (C-applyᵣ doP)
 
+  Sym-Appliable : {P : UUSet} → Appliable P → Appliable (Sym P)
+  Sym-Appliable (apply a1 a2) = apply a2 a1
+
   Al-applyₗ : {ty tv : U}{P : UUSet}
             → (doP : Appliable P)
             → Al P ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-  Al-applyₗ doP (AX x) el = {!!}
-  Al-applyₗ doP (A⊗ a a') el = {!!}
-  Al-applyₗ doP (Ap1 x a) el = {!!}
-  Al-applyₗ doP (Ap1ᵒ x a) el = {!!}
-  Al-applyₗ doP (Ap2 x a) el = {!!}
-  Al-applyₗ doP (Ap2ᵒ x a) el = {!!}
+  Al-applyₗ doP (AX x) el = goₗ doP x el
+  Al-applyₗ doP (A⊗ a a') (el , dl) = _,_ <$> Al-applyₗ doP a el <*> Al-applyₗ doP a' dl
+  Al-applyₗ doP (Ap1 x a) el = (_, x) <$> Al-applyₗ doP a el
+  Al-applyₗ doP (Ap1ᵒ {tw = tw} x a) (el , x') 
+    with dec-eq _≟-A_ tw x x'
+  ...| yes h = Al-applyₗ doP a el  
+  ...| no  h = nothing
+  Al-applyₗ doP (Ap2 x a) el = (x ,_) <$> Al-applyₗ doP a el
+  Al-applyₗ doP (Ap2ᵒ {tw = tw} x a) (x' , el) 
+    with dec-eq _≟-A_ tw x x'
+  ...| yes h = Al-applyₗ doP a el  
+  ...| no  h = nothing
 
+  Al-applyᵣ : {ty tv : U}{P : UUSet}
+            → (doP : Appliable P)
+            → Al P ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
+  Al-applyᵣ doP (AX x) el = goᵣ doP x el
+  Al-applyᵣ doP (A⊗ a a') (el , dl) = _,_ <$> Al-applyᵣ doP a el <*> Al-applyᵣ doP a' dl
+  Al-applyᵣ doP (Ap1ᵒ x a) el = (_, x) <$> Al-applyᵣ doP a el
+  Al-applyᵣ doP (Ap1 {tw = tw} x a) (el , x') 
+    with dec-eq _≟-A_ tw x x'
+  ...| yes h = Al-applyᵣ doP a el  
+  ...| no  h = nothing
+  Al-applyᵣ doP (Ap2ᵒ x a) el = (x ,_) <$> Al-applyᵣ doP a el
+  Al-applyᵣ doP (Ap2 {tw = tw} x a) (x' , el) 
+    with dec-eq _≟-A_ tw x x'
+  ...| yes h = Al-applyᵣ doP a el  
+  ...| no  h = nothing
+
+  Al-Appliable : {P : UUSet} → Appliable P → Appliable (Al P)
+  Al-Appliable doP = apply (Al-applyₗ doP) (Al-applyᵣ doP)
 \end{code}
 
-    S-applyₗ doP (Sfst x s) el = (_, x) <$> S-applyₗ doP s el
-    S-applyₗ doP (Ssnd x s) el = (x ,_) <$> S-applyₗ doP s el
+\begin{code}
+  private
+    patch-appliable : Appliable (C (Sym (C (Sym (Al Δ)))))
+    patch-appliable = (C-Appliable 
+                      (Sym-Appliable 
+                      (C-Appliable 
+                      (Sym-Appliable 
+                      (Al-Appliable Δ-apply)))))
 
-    S-applyᵣ doP (Sfst {k = k} x s) (el , x')
-      with dec-eq k x x' 
-    ...| yes _ = S-applyᵣ doP s el
-    ...| no  _ = nothing
-    S-applyᵣ doP (Ssnd {k = k} x s) (x' , el)
-      with dec-eq k x x' 
-    ...| yes _ = S-applyᵣ doP s el
-    ...| no  _ = nothing
+  Patch-applyₗ : {ty : U} → Patch ty → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
+  Patch-applyₗ = S-apply (goₗ patch-appliable)
+
+  Patch-applyᵣ : {ty : U} → Patch ty → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
+  Patch-applyᵣ = S-apply (goᵣ patch-appliable)
+\end{code}
