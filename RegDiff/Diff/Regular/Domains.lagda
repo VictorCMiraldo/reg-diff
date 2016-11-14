@@ -1,96 +1,85 @@
 \begin{code}
 open import Prelude
+  renaming ( either to either-prelude
+           ; split  to split-prelude
+           )
+  hiding (_+_; _*_; ⊥)
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
+open import Prelude.RelCalc.Core
+open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Domains
-       {n : ℕ}(v : Vec Set n)(eqs : VecI Eq v)(A : Set)
-       {{eqA : Eq A}}(sized : A → ℕ)
+       {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
+       {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
     where
 
   open Monad {{...}}
 
-  open import RegDiff.Generic.Base v
-  open import RegDiff.Diff.Regular.Base v eqs A sized
+  open import RegDiff.Generic.Multirec ks
+  open import RegDiff.Generic.Eq ks keqs
+  open import RegDiff.Diff.Regular.Base ks keqs A WBA
 \end{code}
 
 \begin{code}
-  record HasDomRan (Q : UUSet) : Set₁ where
-    constructor hasdomran 
-    field
-      qdom : ∀{ty tv} → Q ty tv → ⟦ ty ⟧ A → Set
-      qran : ∀{ty tv} → Q ty tv → ⟦ tv ⟧ A → Set
-
-  open HasDomRan
+  HasRel : UUSet → Set₁
+  HasRel Q = ∀{ty tv} → Q ty tv → ⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A
 \end{code}
 
 \begin{code}
-  Δ-domran : HasDomRan Δ
-  Δ-domran 
-    = hasdomran (λ { (x , _) → (x ≡_) }) 
-                (λ { (_ , y) → (y ≡_) })
+  ≣ₗ : ∀{a}{A B : Set a} → A → (B ⟵ A)
+  ≣ₗ a _ a' = a ≡ a'
 
-  mutual
-    ran : {ty tv : U}{P : UUSet} → (doP : HasDomRan P)
-        → S P ty tv → ⟦ tv ⟧ A → Set
-    ran r (SX x)     = qran r x
-    ran r (Ssym s)   = dom r s
-    ran r Scp        = const Unit
-    ran r (S⊗ s o)   = ran r s >< ran r o
-    ran r (Sfst x s) = ran r s >< (x ≡_)
-    ran r (Ssnd x s) = (x ≡_)  >< ran r s
-    ran r (Si1 s)    = ran r s -|- const ⊥
-    ran r (Si2 s)    = const ⊥ -|- ran r s
-
-    dom : {ty tv : U}{P : UUSet} → (doP : HasDomRan P)
-        → S P ty tv → ⟦ ty ⟧ A → Set
-    dom d (SX x)     = qdom d x
-    dom d (Ssym s)   = ran d s
-    dom d Scp        = const Unit
-    dom d (S⊗ s o)   = dom d s >< dom d o
-    dom d (Sfst x s) = dom d s
-    dom d (Ssnd x s) = dom d s
-    dom d (Si1 s)    = dom d s
-    dom d (Si2 s)    = dom d s
-
-  dom1 : {ty tv : U} → S Δ ty tv → ⟦ ty ⟧ A → Set
-  dom1 = dom Δ-domran
-
-  ran1 : {ty tv : U} → S Δ ty tv → ⟦ tv ⟧ A → Set
-  ran1 = ran Δ-domran
+  ≣ᵣ : ∀{a}{A B : Set a} → B → (B ⟵ A)
+  ≣ᵣ b b' _ = b ≡ b'
 \end{code}
 
-  Now the tricky lemma!
-  If cost R < cost S then S ⊆ R.
+\begin{code}
+  Δ-rel : HasRel Δ
+  Δ-rel (x , y) = λ y' x' → y' ≡ y × x ≡ x' 
+\end{code}
 
-begin{code}
-  module CostLemma (P : UUSet)(domran : HasDomRan P)
-                   (costP : ∀{ty tv} → P ty tv → ℕ)
-      where
+\begin{code}
+  S-rel  : {ty : U}{P : UUSet}
+         → (doP : HasRel P)
+         → S P ty → EndoRel (⟦ ty ⟧ A)
+  S-rel doP (SX x)   = doP x
+  S-rel doP Scp      = ID
+  S-rel doP (S⊗ s o) = S-rel doP s * S-rel doP o
+  S-rel doP (Si1 s)  = S-rel doP s + ⊥
+  S-rel doP (Si2 s)  = ⊥ + S-rel doP s
 
-    cost : {ty tv : U} → S P ty tv → ℕ
-    cost = S-cost costP
+  C-rel : {ty tv : U}{P : UUSet}(doP : HasRel P)
+        → C P ty tv → (⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A)
+  C-rel doP (CX x)  = doP x 
+  C-rel doP (Ci1 c) = ι₁ ∙ C-rel doP c
+  C-rel doP (Ci2 c) = ι₂ ∙ C-rel doP c
 
-    dom' : {ty tv : U} → S P ty tv → ⟦ ty ⟧ A → Set
-    dom' = dom domran
+  Sym-rel : {ty tv : U}{P : UUSet}(doP : HasRel P)
+          → Sym P ty tv → (⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A)
+  Sym-rel doP s = (doP s) ᵒ
 
-    ran' : {ty tv : U} → S P ty tv → ⟦ tv ⟧ A → Set
-    ran' = ran domran
+  Al-rel : {ty tv : U}{P : UUSet}(doP : HasRel P)
+         → Al P ty tv → (⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A)  
+  Al-rel doP (AX x)     = doP x
+  Al-rel doP (A⊗ a a')  = Al-rel doP a * Al-rel doP a'
+  Al-rel doP (Ap1  x a) = split (Al-rel doP a) (≣ᵣ x)
+  Al-rel doP (Ap2  x a) = split (≣ᵣ x)         (Al-rel doP a)
+  Al-rel doP (Ap1ᵒ x a) = π₁ ∙ (Al-rel doP a * ≣ᵣ x)
+  Al-rel doP (Ap2ᵒ x a) = π₂ ∙ (≣ᵣ x         * Al-rel doP a)
+\end{code}
 
-    _⇒_ : {A : Set}(X Y : A → Set) → Set
-    X ⇒ Y = ∀ a → X a → Y a
+\begin{code}
+  CSymCSymAlΔ-rel : HasRel (C (Sym (C (Sym (Al (Δ))))))
+  CSymCSymAlΔ-rel 
+    = λ {ty} {tv} → C-rel   {ty} {tv} (
+      λ {ty} {tv} → Sym-rel {ty} {tv} (
+      λ {ty} {tv} → C-rel   {ty} {tv} (
+      λ {ty} {tv} → Sym-rel {ty} {tv} (
+      λ {ty} {tv} → Al-rel  {ty} {tv} (
+      λ {ty} {tv} → Δ-rel   {ty} {tv}))))) 
 
-    mutual
-      cost-dom : {ty tv : U}(r s : S P ty tv)
-               → cost s ≤ cost r
-               → dom' s ⇒ dom' r
-      cost-dom (SX x) s hip a x₁ = {!!}
-      cost-dom (Ssym r) s hip a x = {!!}
-      cost-dom Scp s hip a x = {!!}
-      cost-dom (S⊗ r o) s hip a x = {!!}
-      cost-dom (Sfst x r) s hip a x₁ = {!!}
-      cost-dom (Ssnd x r) s hip a x₁ = {!!}
-      cost-dom (Si1 r) s hip a x = {!!}
-      cost-dom (Si2 r) s hip a x = {!!}
-end{code}
+  Patch-rel : ∀{ty} → Patch ty → EndoRel (⟦ ty ⟧ A)
+  Patch-rel p = S-rel CSymCSymAlΔ-rel p
+\end{code}

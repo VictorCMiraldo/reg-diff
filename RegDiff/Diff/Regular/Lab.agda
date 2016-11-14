@@ -14,9 +14,8 @@ module RegDiff.Diff.Regular.Lab where
     public
   open import RegDiff.Diff.Regular.Apply konstants keqs PARMS WB-PARMS
     public
-
-  -- import RegDiff.Diff.Regular.Domains konstants keqs
-  --  as DOMAINS
+  open import RegDiff.Diff.Regular.Domains konstants keqs PARMS WB-PARMS
+    public
 
   Type1 : U
   Type1 = u1 ⊕ I x₁ ⊕ I x₁ ⊗ I x₁
