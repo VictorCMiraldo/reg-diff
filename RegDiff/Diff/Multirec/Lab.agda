@@ -10,6 +10,8 @@ module RegDiff.Diff.Multirec.Lab where
 
   import RegDiff.Diff.Multirec.Base konstants keqs 
     as DIFF
+  import RegDiff.Diff.Multirec.Apply konstants keqs
+    as APPLY
 
   RTREE-NAT : Fam 2
   RTREE-NAT
@@ -35,6 +37,7 @@ module RegDiff.Diff.Multirec.Lab where
   fork n xs = ⟨ n , xs ⟩
 
   open DIFF.Internal RTREE-NAT public
+  open APPLY.Internal RTREE-NAT public
 
   t1 t2 t3 : rtree
   t1 = fork 3 

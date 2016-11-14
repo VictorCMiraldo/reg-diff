@@ -55,6 +55,9 @@ module RegDiff.Diff.Regular.Apply
   Sym-Appliable : {P : UUSet} → Appliable P → Appliable (Sym P)
   Sym-Appliable (apply a1 a2) = apply a2 a1
 
+  SymCSym-Appliable : {P : UUSet} → Appliable P → Appliable (Sym (C (Sym P)))
+  SymCSym-Appliable doP = Sym-Appliable (C-Appliable (Sym-Appliable doP))
+
   Al-applyₗ : {ty tv : U}{P : UUSet}
             → (doP : Appliable P)
             → Al P ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)

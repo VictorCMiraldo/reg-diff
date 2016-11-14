@@ -20,6 +20,9 @@ module RegDiff.Diff.Multirec.Base
 
   _+ᵤ_ : {n : ℕ} → (Uₙ n → Uₙ n → Set) → (Uₙ n → Uₙ n → Set) → (Uₙ n → Uₙ n → Set)
   (P +ᵤ Q) ty tv = (P ty tv) ⊎ (Q ty tv)
+
+  WB-FAM : {n : ℕ}{fam : Fam n} → WBParms (Fix fam)
+  WB-FAM = wb-parms Fam-size _≟_
   
 \end{code}
 
@@ -28,16 +31,10 @@ module RegDiff.Diff.Multirec.Base
 
 \begin{code}
   module Internal {fam# : ℕ}(fam : Fam fam#) where
-
-    PARMS : Fin fam# → Set
-    PARMS = Fix fam
-
-    WB-PARMS : WBParms PARMS
-    WB-PARMS = wb-parms Fam-size _≟_
 \end{code}
 
 \begin{code}
-    open import RegDiff.Diff.Regular.Base ks keqs PARMS WB-PARMS
+    open import RegDiff.Diff.Regular.Base ks keqs (Fix fam) WB-FAM
       public
 \end{code}
 

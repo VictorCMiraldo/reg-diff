@@ -12,7 +12,7 @@ module RegDiff.Diff.Fixpoint.Lab where
   -- import RegDiff.Diff.Fixpoint.Domains konstants keqs
   --  as DOMAINS
 
-  LIST-F : U
+  LIST-F : Uₙ 1
   LIST-F = u1 ⊕ (K kℕ) ⊗ I
 
   list : Set
@@ -25,7 +25,7 @@ module RegDiff.Diff.Fixpoint.Lab where
   _>_ : ℕ → list → list
   x > xs = ⟨ i2 (x , xs) ⟩
 
-  2-3-TREE-F : U
+  2-3-TREE-F : Uₙ 1
   2-3-TREE-F = u1 ⊕ (K kℕ) ⊗ I ⊗ I ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I
 
   2-3-Tree : Set
@@ -57,7 +57,7 @@ module RegDiff.Diff.Fixpoint.Lab where
 
     s1 : Patchμ LIST-F
     s1 = diffμ l2 l3
-
+{-
   module T2 where
     open DIFF.Internal 2-3-TREE-F public
 
@@ -74,5 +74,5 @@ module RegDiff.Diff.Fixpoint.Lab where
     r1 r2 : Patchμ 2-3-TREE-F
     r1 = diffμ t1 t2
     r2 = diffμ k1 k3
-
-  open T2 public
+-}
+  open T1 public
