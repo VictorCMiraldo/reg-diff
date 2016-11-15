@@ -1,8 +1,5 @@
 open import Prelude
-  renaming ( either to either-prelude
-           ; split  to split-prelude
-           )
-  hiding (_+_; _*_; ⊥)
+  hiding (⊥)
 
 module Prelude.RelCalc.Core where
 
@@ -26,6 +23,14 @@ module Prelude.RelCalc.Core where
 
   _≡-Rel_ : ∀{a}{A B : Set a}(R S : B ⟵ A) → Set a
   R ≡-Rel S = R ⊆ S × S ⊆ R
+
+  ≡-Rel-refl : ∀{a}{A B : Set a}{R : B ⟵ A}
+             → R ≡-Rel R
+  ≡-Rel-refl = id , id
+
+  ≡-Rel-sym : ∀{a}{A B : Set a}{R S : B ⟵ A}
+            → R ≡-Rel S → S ≡-Rel R
+  ≡-Rel-sym (ps , pr) = pr , ps
 
   postulate
     -- univalence axiom for relations!
@@ -66,7 +71,7 @@ module Prelude.RelCalc.Core where
   ∪-uni-r : ∀{a}{A B : Set a}(R S X : B ⟵ A)
           → R ⊆ X → S ⊆ X → R ∪ S ⊆ X
   ∪-uni-r R S X hip1 hip2
-    = either-prelude hip1 hip2
+    = either hip1 hip2
   
   ∩-uni-l : ∀{a}{A B : Set a}(R S X : B ⟵ A)
           → X ⊆ (R ∩ S) → (X ⊆ R) × (X ⊆ S)
@@ -76,17 +81,28 @@ module Prelude.RelCalc.Core where
   ∩-uni-r : ∀{a}{A B : Set a}(R S X : B ⟵ A)
           → X ⊆ R → X ⊆ S → X ⊆ (R ∩ S)
   ∩-uni-r R S X hip1 hip2
-    = split-prelude hip1 hip2
+    = split hip1 hip2
 
 {- 
   Our bicategory follows:
 -}
 
+  record _∙_ {a}{A B C : Set a}(R : C ⟵ B)(S : B ⟵ A)(c : C)(x : A) : Set a
+    where
+      constructor _,_
+      field
+        witness  : B
+        composes : (R c witness) × (S witness x)
+
+  p1∙ : {A B C : Set}{R : C ⟵ B}{S : B ⟵ A}{c : C}{a : A} → (R ∙ S) c a → B
+  p1∙ rs = _∙_.witness rs
+
+  p2∙ : {A B C : Set}{R : C ⟵ B}{S : B ⟵ A}{c : C}{a : A}
+      (prf : (R ∙ S) c a) → (R c (p1∙ prf)) × (S (p1∙ prf) a)
+  p2∙ rs = _∙_.composes rs
+
   _ᵒ : ∀{a}{A B : Set a} → (A ⟵ B) → (B ⟵ A)
   (R ᵒ) x y = R y x
-
-  _∙_ : ∀{a}{A B C : Set a} → (C ⟵ B) → (B ⟵ A) → (C ⟵ A)
-  (R ∙ S) c a = ∃ (λ b → R c b × S b a)
 
   ID : ∀{a}{A : Set a} → A ⟵ A
   ID x y = x ≡ y
@@ -96,6 +112,7 @@ module Prelude.RelCalc.Core where
   infixl 25 _∩_
   infixl 24 _∪_
   infix  20 _⊆_
+  infix  10 _≡-Rel_
 
 {- 
   Every functions defines a relation:
@@ -106,52 +123,30 @@ module Prelude.RelCalc.Core where
 
 {-
 
-  Coproducts
+  Knapkin rules
 
 -}
 
-  ι₁ : ∀{a}{A B : Set a} → (A ⊎ B) ⟵ A
-  ι₁ = fun i1
+  knapkin-ll
+    : ∀{a}{A B C : Set a}(R : C ⟵ B)(f : A → B)
+    → {c : C}{a : A}
+    → R c (f a) → (R ∙ fun f) c a
+  knapkin-ll R f {c} {a} hip = f a , hip , refl
 
-  ι₂ : ∀{a}{A B : Set a} → (A ⊎ B) ⟵ B
-  ι₂ = fun i2
+  knapkin-lr
+    : ∀{a}{A B C : Set a}(R : C ⟵ B)(f : A → C)
+    → {a : A}{b : B}
+    → R (f a) b → (fun f ᵒ ∙ R) a b
+  knapkin-lr R f {a} {b} hip = (f a) , (refl , hip)
 
-  either-def : ∀{a}{A B C : Set a} → (C ⟵ A) → (C ⟵ B) → C ⟵ (A ⊎ B)
-  either-def R S = R ∙ ι₁ ᵒ ∪ S ∙ ι₂ ᵒ
+  knapkin-rl
+    : ∀{a}{A B C : Set a}(R : C ⟵ B)(f : A → B)
+    → {c : C}{a : A}
+    → (R ∙ fun f) c a → R c (f a)
+  knapkin-rl R f (_ , h1 , refl) = h1
 
-  either : ∀{a}{A B C : Set a} → (C ⟵ A) → (C ⟵ B) → C ⟵ (A ⊎ B)
-  either R S x (i1 y) = R x y
-  either R S x (i2 y) = S x y
-
-  _+-def_ : ∀{a}{A B C D : Set a} → (C ⟵ A) → (D ⟵ B) → (C ⊎ D) ⟵ (A ⊎ B)
-  (R +-def S) = either (ι₁ ∙ R) (ι₂ ∙ S)
-
-  _+_ : ∀{a}{A B C D : Set a} → (C ⟵ A) → (D ⟵ B) → (C ⊎ D) ⟵ (A ⊎ B)
-  (R + S) (i1 x) (i1 y) = R x y
-  (R + S) (i1 x) (i2 y) = Bot
-  (R + S) (i2 x) (i1 y) = Bot
-  (R + S) (i2 x) (i2 y) = S x y
-
-{-
-
-  Products
-
--}
-
-  π₁ : ∀{a}{A B : Set a} → A ⟵ (A × B)
-  π₁ = fun p1
-
-  π₂ : ∀{a}{A B : Set a} → B ⟵ (A × B)
-  π₂ = fun p2
-
-  split-def : ∀{a}{A B C : Set a} → (A ⟵ C) → (B ⟵ C) → (A × B) ⟵ C 
-  split-def R S = π₁ ᵒ ∙ R ∩ π₂ ᵒ ∙ S
-
-  split : ∀{a}{A B C : Set a} → (A ⟵ C) → (B ⟵ C) → (A × B) ⟵ C 
-  split R S (a , b) c = R a c × S b c
-
-  _*-def_ : ∀{a}{A B C D : Set a} → (C ⟵ A) → (D ⟵ B) → (C × D) ⟵ (A × B)
-  R *-def S = split (R ∙ π₁) (S ∙ π₂)
-
-  _*_ : ∀{a}{A B C D : Set a} → (C ⟵ A) → (D ⟵ B) → (C × D) ⟵ (A × B)
-  (R * S) (c , d) (a , b) = R c a × S d b
+  knapkin-rr
+    : ∀{a}{A B C : Set a}(R : C ⟵ B)(f : A → C)
+    → {a : A}{b : B}
+    → (fun f ᵒ ∙ R) a b → R (f a) b
+  knapkin-rr R f {a} {b} (_ , refl , h1) = h1

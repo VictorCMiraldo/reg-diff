@@ -95,10 +95,3 @@ module Prelude where
   just-inj : ∀{a}{A : Set a}{x y : A}
            → _≡_ {a} {Maybe A} (just x) (just y) → x ≡ y
   just-inj refl = refl
-
-  _><_ : ∀{a b}{A B : Set a} → (A → Set b) → (B → Set b) → A × B → Set b
-  (P >< Q) (x , y) = P x × Q y
-
-  _-|-_ : ∀{a b}{A B : Set a} → (A → Set b) → (B → Set b) → (A ⊎ B) → Set b
-  (P -|- Q) (i1 x) = P x
-  (P -|- Q) (i2 y) = Q y

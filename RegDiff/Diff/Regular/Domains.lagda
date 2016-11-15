@@ -1,13 +1,9 @@
 \begin{code}
-open import Prelude
-  renaming ( either to either-prelude
-           ; split  to split-prelude
-           )
-  hiding (_+_; _*_; ⊥)
+open import Prelude hiding (⊥)
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
-open import Prelude.RelCalc.Core
+open import Prelude.RelCalc.Base
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Domains
@@ -46,9 +42,9 @@ module RegDiff.Diff.Regular.Domains
          → S P ty → EndoRel (⟦ ty ⟧ A)
   S-rel doP (SX x)   = doP x
   S-rel doP Scp      = ID
-  S-rel doP (S⊗ s o) = S-rel doP s * S-rel doP o
-  S-rel doP (Si1 s)  = S-rel doP s + ⊥
-  S-rel doP (Si2 s)  = ⊥ + S-rel doP s
+  S-rel doP (S⊗ s o) = S-rel doP s >< S-rel doP o
+  S-rel doP (Si1 s)  = S-rel doP s -|- ⊥
+  S-rel doP (Si2 s)  = ⊥ -|- S-rel doP s
 
   C-rel : {ty tv : U}{P : UUSet}(doP : HasRel P)
         → C P ty tv → (⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A)
@@ -63,11 +59,11 @@ module RegDiff.Diff.Regular.Domains
   Al-rel : {ty tv : U}{P : UUSet}(doP : HasRel P)
          → Al P ty tv → (⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A)  
   Al-rel doP (AX x)     = doP x
-  Al-rel doP (A⊗ a a')  = Al-rel doP a * Al-rel doP a'
-  Al-rel doP (Ap1  x a) = split (Al-rel doP a) (≣ᵣ x)
-  Al-rel doP (Ap2  x a) = split (≣ᵣ x)         (Al-rel doP a)
-  Al-rel doP (Ap1ᵒ x a) = π₁ ∙ (Al-rel doP a * ≣ᵣ x)
-  Al-rel doP (Ap2ᵒ x a) = π₂ ∙ (≣ᵣ x         * Al-rel doP a)
+  Al-rel doP (A⊗ a a')  = Al-rel doP a >< Al-rel doP a'
+  Al-rel doP (Ap1  x a) = < Al-rel doP a ∣ ≣ᵣ x         >
+  Al-rel doP (Ap2  x a) = < ≣ᵣ x         ∣ Al-rel doP a >
+  Al-rel doP (Ap1ᵒ x a) = π₁ ∙ (Al-rel doP a >< ≣ᵣ x)
+  Al-rel doP (Ap2ᵒ x a) = π₂ ∙ (≣ᵣ x         >< Al-rel doP a)
 \end{code}
 
 \begin{code}

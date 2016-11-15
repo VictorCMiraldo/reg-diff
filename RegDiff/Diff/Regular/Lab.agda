@@ -1,5 +1,7 @@
 open import Prelude
 open import Prelude.Eq
+open import Prelude.RelCalc.Base
+
 
 module RegDiff.Diff.Regular.Lab where
 
