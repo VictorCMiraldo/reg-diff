@@ -61,3 +61,19 @@ module RegDiff.Diff.Multirec.Lab where
          % fork 6 #
          % fork 5 (fork 1 # % #)
          % # )
+
+  t1t2 : Patchμ (T (fs fz))
+  t1t2 = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
+            (SX
+             (i1
+              (Svar
+               (Si2
+                (S⊗ Scp
+                 (SX
+                  (i1
+                   (Svar
+                    (Si2
+                     (S⊗
+                      (SX
+                       (i1 (Svar (S⊗ (SX (i2 (Cmod (CX (CX (AX (set (5 , 8)))))))) Scp))))
+                      Scp))))))))))
