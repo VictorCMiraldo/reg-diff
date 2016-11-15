@@ -1,4 +1,4 @@
-open import Prelude
+open import Prelude hiding (⊥)
 open import Prelude.Eq
 open import Prelude.RelCalc.Base
 
@@ -16,7 +16,7 @@ module RegDiff.Diff.Regular.Lab where
     public
   open import RegDiff.Diff.Regular.Apply konstants keqs PARMS WB-PARMS
     public
-  open import RegDiff.Diff.Regular.Domains konstants keqs PARMS WB-PARMS
+  open import RegDiff.Diff.Regular.Domain konstants keqs PARMS WB-PARMS
     public
 
   Type1 : U

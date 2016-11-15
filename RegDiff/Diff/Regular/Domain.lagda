@@ -6,12 +6,10 @@ open import Prelude.Monad
 open import Prelude.RelCalc.Base
 open import RegDiff.Generic.Parms
 
-module RegDiff.Diff.Regular.Domains
+module RegDiff.Diff.Regular.Domain
        {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
        {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
     where
-
-  open Monad {{...}}
 
   open import RegDiff.Generic.Multirec ks
   open import RegDiff.Generic.Eq ks keqs
@@ -25,15 +23,21 @@ module RegDiff.Diff.Regular.Domains
 
 \begin{code}
   ≣ₗ : ∀{a}{A B : Set a} → A → (B ⟵ A)
-  ≣ₗ a _ a' = a ≡ a'
+  ≣ₗ a = fun (const a) ᵒ
 
   ≣ᵣ : ∀{a}{A B : Set a} → B → (B ⟵ A)
-  ≣ᵣ b b' _ = b ≡ b'
+  ≣ᵣ b = fun (const b)
 \end{code}
 
 \begin{code}
   Δ-rel : HasRel Δ
-  Δ-rel (x , y) = λ y' x' → y' ≡ y × x ≡ x' 
+  Δ-rel {ty} {tv} (x , y) 
+    with U-eq ty tv
+  ...| no _ = _∙_ {B = Unit} (≣ᵣ y) (≣ₗ x)
+  Δ-rel {ty} {.ty} (x , y) | yes refl
+    with dec-eq _≟-A_ ty x y
+  ...| no  _ = _∙_ {B = Unit} (≣ᵣ y) (≣ₗ x)
+  ...| yes _ = ID
 \end{code}
 
 \begin{code}
@@ -46,18 +50,15 @@ module RegDiff.Diff.Regular.Domains
   S-rel doP (Si1 s)  = S-rel doP s -|- ⊥
   S-rel doP (Si2 s)  = ⊥ -|- S-rel doP s
 
-  C-rel : {ty tv : U}{P : UUSet}(doP : HasRel P)
-        → C P ty tv → (⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A)
+  C-rel : {P : UUSet}(doP : HasRel P) → HasRel (C P)
   C-rel doP (CX x)  = doP x 
   C-rel doP (Ci1 c) = ι₁ ∙ C-rel doP c
   C-rel doP (Ci2 c) = ι₂ ∙ C-rel doP c
 
-  Sym-rel : {ty tv : U}{P : UUSet}(doP : HasRel P)
-          → Sym P ty tv → (⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A)
+  Sym-rel : {P : UUSet}(doP : HasRel P) → HasRel (Sym P)
   Sym-rel doP s = (doP s) ᵒ
 
-  Al-rel : {ty tv : U}{P : UUSet}(doP : HasRel P)
-         → Al P ty tv → (⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A)  
+  Al-rel : {P : UUSet}(doP : HasRel P) → HasRel (Al P)
   Al-rel doP (AX x)     = doP x
   Al-rel doP (A⊗ a a')  = Al-rel doP a >< Al-rel doP a'
   Al-rel doP (Ap1  x a) = < Al-rel doP a ∣ ≣ᵣ x         >
@@ -67,14 +68,16 @@ module RegDiff.Diff.Regular.Domains
 \end{code}
 
 \begin{code}
+  CSymCSym-rel : {P : UUSet} → HasRel P →  HasRel (C (Sym (C (Sym P))))
+  CSymCSym-rel doP
+    = C-rel (λ k → Sym-rel (λ {ty} {tv} k → 
+                   C-rel   (λ {ty} {tv} k → 
+                   Sym-rel (λ {ty} {tv} k → 
+                              doP {ty} {tv} k) {ty} {tv} k) {ty} {tv} k) k)
+   
+
   CSymCSymAlΔ-rel : HasRel (C (Sym (C (Sym (Al (Δ))))))
-  CSymCSymAlΔ-rel 
-    = λ {ty} {tv} → C-rel   {ty} {tv} (
-      λ {ty} {tv} → Sym-rel {ty} {tv} (
-      λ {ty} {tv} → C-rel   {ty} {tv} (
-      λ {ty} {tv} → Sym-rel {ty} {tv} (
-      λ {ty} {tv} → Al-rel  {ty} {tv} (
-      λ {ty} {tv} → Δ-rel   {ty} {tv}))))) 
+  CSymCSymAlΔ-rel = CSymCSym-rel (Al-rel (λ {ty} {tv} → Δ-rel {ty} {tv}))
 
   Patch-rel : ∀{ty} → Patch ty → EndoRel (⟦ ty ⟧ A)
   Patch-rel p = S-rel CSymCSymAlΔ-rel p

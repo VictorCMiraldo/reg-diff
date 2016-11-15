@@ -1,6 +1,7 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
+open import Prelude.RelCalc.Base
 
 module RegDiff.Diff.Multirec.Lab where
 
@@ -12,6 +13,8 @@ module RegDiff.Diff.Multirec.Lab where
     as DIFF
   import RegDiff.Diff.Multirec.Apply konstants keqs
     as APPLY
+  import RegDiff.Diff.Multirec.Domain konstants keqs
+    as DOMAIN
 
   RTREE-NAT : Fam 2
   RTREE-NAT
@@ -37,7 +40,10 @@ module RegDiff.Diff.Multirec.Lab where
   fork n xs = ⟨ n , xs ⟩
 
   open DIFF.Internal RTREE-NAT public
-  open APPLY.Internal RTREE-NAT public
+  -- open APPLY.Internal RTREE-NAT public
+  open import RegDiff.Diff.Regular.Domain konstants keqs (Fix RTREE-NAT) DIFF.WB-FAM
+    public
+  open DOMAIN.Internal RTREE-NAT public
 
   t1 t2 t3 : rtree
   t1 = fork 3 

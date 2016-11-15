@@ -41,17 +41,18 @@ module Prelude.RelCalc.Core where
   Top and bottom
 -}
 
-  ⊤ : ∀{a}{A B : Set a} → (B ⟵ A)
-  ⊤ x y = Top
+  abstract
+    ⊤ : ∀{a}{A B : Set a} → (B ⟵ A)
+    ⊤ x y = Top
 
-  ⊥ : ∀{a}{A B : Set a} → (B ⟵ A)
-  ⊥ x y = Bot
+    ⊥ : ∀{a}{A B : Set a} → (B ⟵ A)
+    ⊥ x y = Bot
 
-  R⊆⊤ : ∀{a}{A B : Set a}(R : A ⟵ B) → R ⊆ ⊤
-  R⊆⊤ R _ = top
+    R⊆⊤ : ∀{a}{A B : Set a}(R : A ⟵ B) → R ⊆ ⊤
+    R⊆⊤ R _ = top
 
-  ⊥⊆R : ∀{a}{A B : Set a}(R : A ⟵ B) → ⊥ ⊆ R
-  ⊥⊆R R ()
+    ⊥⊆R : ∀{a}{A B : Set a}(R : A ⟵ B) → ⊥ ⊆ R
+    ⊥⊆R R ()
 
 {-
   Meet and Join with universsals
@@ -101,8 +102,9 @@ module Prelude.RelCalc.Core where
       (prf : (R ∙ S) c a) → (R c (p1∙ prf)) × (S (p1∙ prf) a)
   p2∙ rs = _∙_.composes rs
 
-  _ᵒ : ∀{a}{A B : Set a} → (A ⟵ B) → (B ⟵ A)
-  (R ᵒ) x y = R y x
+  record _ᵒ {a}{A B : Set a}(R : B ⟵ A)(x : A)(b : B) : Set a where
+    constructor cons-ᵒ
+    field un : R b x
 
   ID : ∀{a}{A : Set a} → A ⟵ A
   ID x y = x ≡ y
@@ -118,8 +120,9 @@ module Prelude.RelCalc.Core where
   Every functions defines a relation:
 -}
 
-  fun : ∀{a}{A B : Set a}(f : A → B) → (B ⟵ A)
-  fun f b a = b ≡ f a
+  record fun {a}{A B : Set a}(f : A → B)(b : B)(x : A) : Set a
+    where constructor cons-fun
+          field un : b ≡ f x
 
 {-
 
@@ -131,22 +134,22 @@ module Prelude.RelCalc.Core where
     : ∀{a}{A B C : Set a}(R : C ⟵ B)(f : A → B)
     → {c : C}{a : A}
     → R c (f a) → (R ∙ fun f) c a
-  knapkin-ll R f {c} {a} hip = f a , hip , refl
+  knapkin-ll R f {c} {a} hip = f a , hip , (cons-fun refl)
 
   knapkin-lr
     : ∀{a}{A B C : Set a}(R : C ⟵ B)(f : A → C)
     → {a : A}{b : B}
     → R (f a) b → (fun f ᵒ ∙ R) a b
-  knapkin-lr R f {a} {b} hip = (f a) , (refl , hip)
+  knapkin-lr R f {a} {b} hip = (f a) , (cons-ᵒ (cons-fun refl) , hip)
 
   knapkin-rl
     : ∀{a}{A B C : Set a}(R : C ⟵ B)(f : A → B)
     → {c : C}{a : A}
     → (R ∙ fun f) c a → R c (f a)
-  knapkin-rl R f (_ , h1 , refl) = h1
+  knapkin-rl R f (_ , h1 , cons-fun refl) = h1
 
   knapkin-rr
     : ∀{a}{A B C : Set a}(R : C ⟵ B)(f : A → C)
     → {a : A}{b : B}
     → (fun f ᵒ ∙ R) a b → R (f a) b
-  knapkin-rr R f {a} {b} (_ , refl , h1) = h1
+  knapkin-rr R f {a} {b} (_ , cons-ᵒ (cons-fun refl) , h1) = h1

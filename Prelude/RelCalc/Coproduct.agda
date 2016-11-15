@@ -21,18 +21,18 @@ module Prelude.RelCalc.Coproduct where
                   → X ≡-Rel [ R ∣ S ] 
                   → R ≡-Rel X ∙ ι₁
     coprod-uni-r1 {X = X} r s (prf1 , prf2)
-      = (λ {c} {a} hip → i1 a , prf2 (cons-either hip) , refl) 
+      = (λ {c} {a} hip → i1 a , prf2 (cons-either hip) , cons-fun refl) 
       , (λ {c} {a} hip → let wit , hprf = hip
-                         in [_∣_].un (prf1 (subst (X c) (p2 hprf) (p1 hprf))))
+                         in [_∣_].un (prf1 (subst (X c) (fun.un (p2 hprf)) (p1 hprf))))
 
     coprod-uni-r2 : ∀{a}{A B C : Set a}{X : C ⟵ (A ⊎ B)}
                   → (R : C ⟵ A)(S : C ⟵ B)
                   → X ≡-Rel [ R ∣ S ] 
                   → S ≡-Rel X ∙ ι₂
     coprod-uni-r2 {X = X} r s (prf1 , prf2)
-      = (λ {c} {b} hip → i2 b , prf2 (cons-either hip) , refl) 
+      = (λ {c} {b} hip → i2 b , prf2 (cons-either hip) , cons-fun refl) 
       , (λ {c} {b} hip → let wit , hprf = hip
-                         in [_∣_].un (prf1 (subst (X c) (p2 hprf) (p1 hprf))))
+                         in [_∣_].un (prf1 (subst (X c) (fun.un (p2 hprf)) (p1 hprf))))
 
     private
       coprod-uni-l-aux1 : ∀{a}{A B C : Set a}{X : C ⟵ (A ⊎ B)}
