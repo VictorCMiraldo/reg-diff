@@ -95,6 +95,7 @@
 \DeclareUnicodeCharacter {7522}{$_i$}
 \DeclareUnicodeCharacter {119924}{$\mathcal{M}$}
 \DeclareUnicodeCharacter {8346}{$_p$}
+\DeclareUnicodeCharacter {8345}{$_n$}
 \DeclareUnicodeCharacter {120028}{$\mathcal{M}$}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,10 +112,76 @@ University of Utrecht}}
 \begin{document}
   \maketitle
 
-\section{Introduction}
+\section{Our Universe}
+  
+  The universe we are using is a variant of Regular types,
+but instead of having only one type variable, we handle $n$
+type variables. The codes are description of regular functors on $n$ variables:
 
+\Agda{RegDiff/Generic/Regular}{U-def}
 
-\section{Your Section}
+  Constructor \IC{I} refers to the $n$-th type variable whereas \IC{K} refers
+to a constant type. Value \textit{ks\#} is passed as a module parameter.
+The denotation is defined as:
+
+\Agda{RegDiff/Generic/Parms}{Parms-def}
+
+\Agda{RegDiff/Generic/Regular}{U-denotation}
+
+  A mutually recursive family can be easily encoded
+in this setting. All we need is $n$ types that refer to $n$ type-variables
+each!
+
+\Agda{RegDiff/Generic/Multirec}{Fam-def}
+
+\Agda{RegDiff/Generic/Multirec}{Fix-def}
+
+  This universe is enough to model Context-Free grammars, and hence, provides
+the basic barebones for diffing elements of an arbitrary programming language.
+In the future, it could be interesting to see what kind of diffing functionality
+indexed functors could provide, as these could have scoping rules and other
+advanced features built into them. 
+
+\subsection{Agda Details}
+
+  As we mentioned above, our codes represent functors on $n$ variables. Obviously, to 
+program with them, we need to apply these to something. The denotation receives a
+function $\F{Fin}\;n \rightarrow \F{Set}$, denoted $\F{Parms}\;n$, which can be seen as a valuation for
+each type variable.
+
+\newcommand{\Interp}[2]{\F{$\llbracket$} #1 \F{$\rrbracket$}_{#2}}
+  In the following sections, we will be dealing with values of $\Interp{ty}{A}$ for some class of valuations $A$, though.
+We need to have decidable equality for $A\;k$ and some mapping from $A\;k$ to $\mathbb{N}$ for all $k$.
+We call such valuations a \emph{well-behaved parameter}:
+
+\Agda{RegDiff/Generic/Parms}{WBParms-def}
+
+  In fact, the following sections discuss functionality that is completely independent from the aforementioned
+parameters. We will be passing them as Agda module parameters. The first diffing technique we discuss
+is the trivial diff. It's module is declared as follows:
+
+\Agda{RegDiff/Diff/Trivial/Base}{Trivial-module-decl}
+
+  We stick to this nomenclature throughtout the code. The first line handles constant types: 
+\textit{ks\#} is how many constant types we have, $ks$ is the vector of such types and $keqs$ is an indexed 
+vector with decidable equality over such types. The second line handles parameters: \textit{parms\#} is
+how many type-variables our codes will have, $A$ is the valuation we are using and $WBA$ is a proof that
+$A$ is \emph{well behaved}.
+
+  We then declare the following synonyms:
+
+\Agda{RegDiff/Diff/Trivial/Base}{Trivial-defs}
+
+\section{Diffing}
+
+  Intuitively, a \textit{Patch} is some description of a transformation, that can
+be \textit{applied}, performing the described transformation and can be \textit{computed}, by
+detecting how to transform one value into another.
+
+  The easiest way to do so is using the diagonal functor:
+
+\Agda{RegDiff/Diff/Trivial/Base}{delta-def}  
+  
 
 \section{Conclusion}
   
