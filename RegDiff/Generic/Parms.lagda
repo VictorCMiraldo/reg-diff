@@ -1,22 +1,36 @@
+\begin{code}
 open import Prelude
 open import Prelude.Eq
 
 module RegDiff.Generic.Parms where
+\end{code}
 
+%<*Parms-def>
+\begin{code}
   Parms : ℕ → Set₁
   Parms n = Fin n → Set
+\end{code}
+%</Parms-def>
 
+\begin{code}
   _⇉_ : {n : ℕ} → Parms n → Parms n → Set
   P ⇉ Q = ∀{k} → P k → Q k
+\end{code}
 
-  -- Well behaved parameters are those that
-  -- have a size function and decidable equality!
+  Well behaved parameters are those that
+  have a size function and decidable equality!
+
+%<*WBParms-def>
+\begin{code}
   record WBParms {n : ℕ}(A : Parms n) : Set where
     constructor wb-parms
     field 
       parm-size : ∀{k} → A k → ℕ
       parm-cmp  : ∀{k}(x y : A k) → Dec (x ≡ y)
+\end{code}
+%</WBParms-def>
 
+\begin{code}
   open WBParms public
 
 {-
@@ -77,3 +91,4 @@ module RegDiff.Generic.Parms where
            ; {fs (fs fz)} → heavy-eq
            ; {fs (fs (fs ()))} _
            }) 
+\end{code}

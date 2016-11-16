@@ -6,12 +6,18 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import RegDiff.Generic.Parms
+\end{code}
 
+%<*Trivial-module-decl>
+\begin{code}
 module RegDiff.Diff.Trivial.Base
        {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
        {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
     where
+\end{code}
+%</Trivial-module-decl>
 
+\begin{code}
   open import RegDiff.Generic.Multirec ks
   open import RegDiff.Generic.Eq ks keqs
 \end{code}
@@ -19,6 +25,7 @@ module RegDiff.Diff.Trivial.Base
   This module serves the purpose of defining a bunch of
   auxiliary functions for later on.
 
+%<*Trivial-defs>
 \begin{code}
   U : Set
   U = Uₙ parms#
@@ -32,6 +39,7 @@ module RegDiff.Diff.Trivial.Base
   UUSet : Set₁
   UUSet = U → U → Set
 \end{code}
+%</Trivial-defs>
 
   As usual, we say that the diagonal functor
   is the trivial diff.
@@ -45,6 +53,7 @@ module RegDiff.Diff.Trivial.Base
 
   It has a cost function:
 
+%<*Trivial-cost-def>
 \begin{code}
   cost-Δ : {ty tv : U} → Δ ty tv → ℕ
   cost-Δ {ty} {tv}  (x , y) with U-eq ty tv
@@ -54,7 +63,10 @@ module RegDiff.Diff.Trivial.Base
   ...| no  _ = size1 sized ty x + size1 sized ty y
   cost-Δ {ty} {tv}  (x , y) | no _
     = size1 sized ty x + size1 sized tv y
+\end{code}
+%</Trivial-cost-def>
 
+\begin{code}
   delta : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → Δ ty tv
   delta x y = (x , y)
 \end{code}
