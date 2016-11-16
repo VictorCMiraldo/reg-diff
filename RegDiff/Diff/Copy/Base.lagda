@@ -1,94 +1,55 @@
-  This is the trivial diff algorithm. Nothing
-  surprising here.
-
 \begin{code}
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
+open import Prelude.Monad
 open import RegDiff.Generic.Parms
 
-module RegDiff.Diff.TrivialCopy.Base
+module RegDiff.Diff.Copy.Base
        {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
        {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
     where
 
+  open Monad {{...}}
+
   open import RegDiff.Generic.Multirec ks
   open import RegDiff.Generic.Eq ks keqs
+  open import RegDiff.Diff.Trivial.Base ks keqs A WBA
+    public
 \end{code}
 
-  This module serves the purpose of defining a bunch of
-  auxiliary functions for later on.
+  Here we add the first patch instruction 
+  to our arsenal: Copy
 
 \begin{code}
-  U : Set
-  U = Uₙ parms#
-
-  sized : {p : Fin parms#} → A p → ℕ
-  sized = parm-size WBA
-
-  _≟-A_ : {p : Fin parms#}(x y : A p) → Dec (x ≡ y)
-  _≟-A_ = parm-cmp WBA
-
-  UUSet : Set₁
-  UUSet = U → U → Set
+  data Cpy (P : UUSet) : U → U → Set where
+    set : {ty tv  : U} → P ty tv  → Cpy P ty tv
+    cpy : {ty     : U}            → Cpy P ty ty
 \end{code}
 
-  As usual, we say that the diagonal functor
-  is the trivial diff.
-
-%<*delta-def>
 \begin{code}
-  Δ : UUSet
-  Δ ty tv = ty ≡ tv ⊎ ⟦ ty ⟧ A × ⟦ tv ⟧ A
-\end{code}
-%</delta-def>
-
-  It has a cost function:
-
-\begin{code}
-  cost-Δ : {ty tv : U} → Δ ty tv → ℕ
-  cost-Δ           (i1 _)       = 0
-  cost-Δ {ty} {tv} (i2 (x , y)) = size1 sized ty x + size1 sized tv y
-
-  delta : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → Δ ty tv
-  delta {ty} {tv} x y with U-eq ty tv
-  ...| no _ = i2 (x , y)
-  delta {ty} {.ty} x y | yes refl
-    with dec-eq _≟-A_ ty x y 
-  ...| yes _ = i1 refl
-  ...| no  _ = i2 (x , y)
+  Cpy-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
+           → (f : ∀{k v} → P k v → M (Q k v))
+           → Cpy P ty tv → M (Cpy Q ty tv)
+  Cpy-mapM f (set x) = f x >>= return ∘ set
+  Cpy-mapM f cpy     = return cpy
 \end{code}
 
-  And it can be applied in both directions:
+\begin{code}
+  Cpy-cost : {ty tv : U}{P : UUSet}
+           → (doP : P ty tv → ℕ)
+           → Cpy P ty tv → ℕ
+  Cpy-cost doP (set x) = doP x
+  Cpy-cost doP cpy     = 0
+\end{code}
 
 \begin{code}
-  record Appliable (Q : UUSet) : Set₁ where
-    constructor apply
-    field
-      goₗ : {ty tv : U}
-          → Q ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      goᵣ : {ty tv : U}
-          → Q ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
-
-  open Appliable public
-
-  appₗ : {ty tv : U}
-       → Δ ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-  appₗ {ty} {.ty} (i1 refl)    z = just z
-  appₗ {ty} {tv}  (i2 (x , y)) z
-    with dec-eq _≟-A_ ty x z
-  ...| yes _ = just y
-  ...| no  _ = nothing
-
-  appᵣ : {ty tv : U}
-       → Δ ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
-  appᵣ {ty} {.ty} (i1 refl)    z = just z
-  appᵣ {ty} {tv}  (i2 (x , y)) z
-    with dec-eq _≟-A_ tv y z
-  ...| yes _ = just x
-  ...| no  _ = nothing
-
-  Δ-apply : Appliable Δ
-  Δ-apply 
-    = apply appₗ appᵣ      
+  copy : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → Cpy Δ ty tv
+  copy {ty} {tv} x y 
+    with U-eq ty tv
+  ...| no _ = set (x , y)
+  copy {ty} {.ty} x y | yes refl
+    with dec-eq _≟-A_ ty x y
+  ...| no  _ = set (x , y)
+  ...| yes _ = cpy
 \end{code}
