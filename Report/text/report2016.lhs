@@ -14,7 +14,7 @@
 %% Margin specs
 
 \geometry{margin=0.8in%
-         ,top=0.2in%
+         ,top=1in%
          }
 
 %% My commands
@@ -156,15 +156,18 @@ We call such valuations a \emph{well-behaved parameter}:
 
 \Agda{RegDiff/Generic/Parms}{WBParms-def}
 
-  In fact, the following sections discuss functionality that is completely independent from the aforementioned
-parameters. We will be passing them as Agda module parameters. The first diffing technique we discuss
+  I still have no good justification for the \textit{parm-size} field. Later on I sketch what I believe
+is the real meaning of the cost function.
+
+  The following sections discuss functionality that does not depent on \emph{parameters to codes}. 
+We will be passing them as Agda module parameters. The first diffing technique we discuss
 is the trivial diff. It's module is declared as follows:
 
 \Agda{RegDiff/Diff/Trivial/Base}{Trivial-module-decl}
 
   We stick to this nomenclature throughtout the code. The first line handles constant types: 
 \textit{ks\#} is how many constant types we have, $ks$ is the vector of such types and $keqs$ is an indexed 
-vector with decidable equality over such types. The second line handles parameters: \textit{parms\#} is
+vector with a proof of decidable equality over such types. The second line handles parameters: \textit{parms\#} is
 how many type-variables our codes will have, $A$ is the valuation we are using and $WBA$ is a proof that
 $A$ is \emph{well behaved}.
 
@@ -174,15 +177,26 @@ $A$ is \emph{well behaved}.
 
 \section{Diffing}
 
-  Intuitively, a \textit{Patch} is some description of a transformation, that can
-be \textit{applied}, performing the described transformation and can be \textit{computed}, by
-detecting how to transform one value into another.
+\subsection{Trivial Diff}
 
-  The easiest way to do so is using the diagonal functor:
+  Intuitively, a \textit{Patch} is some description of a transformation. The simplest possible
+description is to provide the source and target of the transformation as a whole. Hence,
+the Diagonal functor works as a first approximation to a patch.
 
-\Agda{RegDiff/Diff/Trivial/Base}{delta-def}  
-  
+\Agda{RegDiff/Diff/Trivial/Base}{delta-def} 
 
 \section{Conclusion}
   
 \end{document}
+
+
+That is, the general template we are looking for is:
+
+%format (Interp x) = "\llbracket{" x "}\rrbracket"
+\begin{code}
+Patch   : U -> Set
+
+diff    : {ty : U}(x y : (Interp ty)) -> Patch ty
+
+apply   : {ty : U} -> Patch ty -> (Interp ty) -> Maybe (Interp ty)
+\end{code}

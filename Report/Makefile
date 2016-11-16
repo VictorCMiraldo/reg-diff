@@ -23,7 +23,7 @@ $(MAINPDF): code/reg-diff-compiled \
 	latexmk $(LATEXMKOPTS) $(MAINTEX)
 
 $(TEXT_PARTS_SRC_GENTEX)/%.tex: $(TEXT_PARTS_SRC_GENTEX)/%.lhs
-	lhs2TeX -o $@ $<
+	lhs2TeX --agda -o $@ $<
 
 code/reg-diff-compiled:
 	code/compileAgdaTex .. code/excerpts
