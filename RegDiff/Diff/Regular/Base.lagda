@@ -134,15 +134,20 @@ module RegDiff.Diff.Regular.Base
   An inhabitant of C tells us which coproducts to insert or pattern-match
   in order to bet the best candidate for alignment.
 
+%<*C-def>
 \begin{code}
   data C (P : UUSet) : U → U → Set where
     CX   : {ty tv : U}   → P ty tv → C P ty tv
     Ci1  : {ty tv k : U} → C P ty tv → C P ty (tv ⊕ k)
     Ci2  : {ty tv k : U} → C P ty tv → C P ty (k ⊕ tv)
-
+\end{code}
+%</C-def>
+%<*Sym-def>
+\begin{code}
   Sym : UUSet → UUSet
   Sym P ty tv = P tv ty
 \end{code}
+%</Sym-def>
 
   Just like S, we can map over these guys.
 
