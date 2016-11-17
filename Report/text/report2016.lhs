@@ -13,8 +13,10 @@
 
 %% Margin specs
 
-\geometry{margin=0.8in%
-         ,top=1in%
+\geometry{lmargin=2in%
+         ,rmargin=1.2in%
+         ,tmargin=1in%
+         ,bmargin=1in%
          }
 
 %% My commands
@@ -175,15 +177,65 @@ $A$ is \emph{well behaved}.
 
 \Agda{RegDiff/Diff/Trivial/Base}{Trivial-defs}
 
-\section{Diffing}
+\section{Computing and Representing Patches}
+
+  Intuitively, a \textit{Patch} is some description of a transformation. Setting the stage,
+let $A$ and $B$ be a types, $x : A$ and $y : B$ elements of such types. 
+A \emph{patch} between $x$ and $y$ can be seen as it's ``application'' (partial) function. That is,
+a relation $e \subseteq A \times B$ such that $img\;e\subseteq id$ ($e$ is functional).
+
+   Now, let us discuss some code and build some intuition for what is what in the above
+schema.
 
 \subsection{Trivial Diff}
 
-  Intuitively, a \textit{Patch} is some description of a transformation. The simplest possible
-description is to provide the source and target of the transformation as a whole. Hence,
-the Diagonal functor works as a first approximation to a patch.
+   The simplest possible way to describe a transformation is to say what is the source
+and what is the destination of such transformation. This can be acomplished by the Diagonal
+functor just fine. 
 
-\Agda{RegDiff/Diff/Trivial/Base}{delta-def} 
+\Agda{RegDiff/Diff/Trivial/Base}{delta-def}
+
+  Now, take an element $(x , y) : \F{$\Delta$}\;ty\;tv$. The ``apply'' relation
+it defines is trivial: $ \{ (x , y) \} $, or, in PF style:
+
+\begin{displaymath}
+\xymatrix{
+  \Interp{ty}{A} \ar@@/^2.0pc/[rr]^{\underline{y} \cdot \underline{x}^\circ} 
+  & K \ar[l]^{\underline{x}} \ar[r]_{\underline{y}} & \Interp{tv}{A} 
+}
+\end{displaymath}
+
+  Where, for any $A , B \in Set$ and $x : A$, $\underline{x} \subseteq A \times B$ 
+represents the \emph{everywhere} $x$ relation, defined by
+\[
+ \underline{x} = \{ (x , b) \mid b \in B \}
+\]
+
+  This is a horrible patch however: We can't calculate with it because
+we don't know \emph{anything} about \emph{how} $x$ changed indo $y$.
+
+\subsection{Spines}
+
+  We can try to make it better by identifying the longest prefix of
+constructors where $x$ and $y$ agree, before giving up and using \F{$\Delta$}. 
+We call that a spine:
+
+\Agda{RegDiff/Diff/Regular/Base}{S-def}
+
+Note that \F{S} makes a free monad on $P$. Computing a spine is easy, first we check
+whether or not $x$ and $y$ are equal. If they are, we are done. If not, we inspect the
+first constructor and traverse it. Then we repeat.
+
+\Agda{RegDiff/Diff/Regular/Base}{spine-def}
+
+The ``apply'' relations specified by a spine $s$, denoted $s^\flat$ are:
+
+\begin{align*}
+  \IC{Scp}^\flat                    &= \xymatrix{ A & A \ar[l]_{id}} \\
+  (\IC{S$\otimes$}\;s_1\;s_2)^\flat &= \xymatrix{ A \times B & A \times B \ar[l]_(.45){s_1^\flat \times s_2^\flat}} \\
+  (\IC{Si1}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_1 \cdot s^\flat \cdot i_1^\circ}} \\                                                   
+  (\IC{Si2}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_2 \cdot s^\flat \cdot i_2^\circ}} \\                                                   
+\end{align*}
 
 \section{Conclusion}
   
