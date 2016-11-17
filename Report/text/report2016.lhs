@@ -13,8 +13,8 @@
 
 %% Margin specs
 
-\geometry{lmargin=2in%
-         ,rmargin=1.2in%
+\geometry{rmargin=2.4in%
+         ,lmargin=0.6in%
          ,tmargin=1in%
          ,bmargin=1in%
          }
@@ -146,32 +146,42 @@ advanced features built into them.
 
 \subsection{Agda Details}
 
-  As we mentioned above, our codes represent functors on $n$ variables. Obviously, to 
-program with them, we need to apply these to something. The denotation receives a
-function $\F{Fin}\;n \rightarrow \F{Set}$, denoted $\F{Parms}\;n$, which can be seen as a valuation for
+  Here we clarify some Agda specific details that are agnostic to
+the big picture. This can be safely skipped on a first iteration.
+
+  As we mentioned above, our codes represent functors on $n$
+variables. Obviously, to program with them, we need to apply these to
+something. The denotation receives a function $\F{Fin}\;n \rightarrow
+\F{Set}$, denoted $\F{Parms}\;n$, which can be seen as a valuation for
 each type variable.
 
 \newcommand{\Interp}[2]{\F{$\llbracket$} #1 \F{$\rrbracket$}_{#2}}
-  In the following sections, we will be dealing with values of $\Interp{ty}{A}$ for some class of valuations $A$, though.
-We need to have decidable equality for $A\;k$ and some mapping from $A\;k$ to $\mathbb{N}$ for all $k$.
-We call such valuations a \emph{well-behaved parameter}:
+  In the following sections, we will be dealing with values of
+$\Interp{ty}{A}$ for some class of valuations $A$, though.  We need to
+have decidable equality for $A\;k$ and some mapping from $A\;k$ to
+$\mathbb{N}$ for all $k$.  We call such valuations a
+\emph{well-behaved parameter}:
 
 \Agda{RegDiff/Generic/Parms}{WBParms-def}
 
-  I still have no good justification for the \textit{parm-size} field. Later on I sketch what I believe
-is the real meaning of the cost function.
+  I still have no good justification for the \textit{parm-size}
+field. Later on I sketch what I believe is the real meaning of the
+cost function.
 
-  The following sections discuss functionality that does not depent on \emph{parameters to codes}. 
-We will be passing them as Agda module parameters. The first diffing technique we discuss
-is the trivial diff. It's module is declared as follows:
+  The following sections discuss functionality that does not depent on
+\emph{parameters to codes}.  We will be passing them as Agda module
+parameters. The first diffing technique we discuss is the trivial
+diff. It's module is declared as follows:
 
 \Agda{RegDiff/Diff/Trivial/Base}{Trivial-module-decl}
 
-  We stick to this nomenclature throughtout the code. The first line handles constant types: 
-\textit{ks\#} is how many constant types we have, $ks$ is the vector of such types and $keqs$ is an indexed 
-vector with a proof of decidable equality over such types. The second line handles parameters: \textit{parms\#} is
-how many type-variables our codes will have, $A$ is the valuation we are using and $WBA$ is a proof that
-$A$ is \emph{well behaved}.
+  We stick to this nomenclature throughtout the code. The first line
+handles constant types: \textit{ks\#} is how many constant types we
+have, $ks$ is the vector of such types and $keqs$ is an indexed vector
+with a proof of decidable equality over such types. The second line
+handles parameters: \textit{parms\#} is how many type-variables our
+codes will have, $A$ is the valuation we are using and $WBA$ is a
+proof that $A$ is \emph{well behaved}.
 
   We then declare the following synonyms:
 
@@ -179,24 +189,27 @@ $A$ is \emph{well behaved}.
 
 \section{Computing and Representing Patches}
 
-  Intuitively, a \textit{Patch} is some description of a transformation. Setting the stage,
-let $A$ and $B$ be a types, $x : A$ and $y : B$ elements of such types. 
-A \emph{patch} between $x$ and $y$ can be seen as it's ``application'' (partial) function. That is,
-a relation $e \subseteq A \times B$ such that $img\;e\subseteq id$ ($e$ is functional).
+  Intuitively, a \textit{Patch} is some description of a
+transformation. Setting the stage, let $A$ and $B$ be a types, $x : A$
+and $y : B$ elements of such types.  A \emph{patch} between $x$ and
+$y$ can be seen as it's ``application'' (partial) function. That is, a
+relation $e \subseteq A \times B$ such that $img\;e\subseteq id$ ($e$
+is functional).
 
-   Now, let us discuss some code and build some intuition for what is what in the above
-schema.
+   Now, let us discuss some code and build some intuition for what is
+what in the above schema.
 
 \subsection{Trivial Diff}
 
-   The simplest possible way to describe a transformation is to say what is the source
-and what is the destination of such transformation. This can be acomplished by the Diagonal
-functor just fine. 
+   The simplest possible way to describe a transformation is to say
+what is the source and what is the destination of such
+transformation. This can be acomplished by the Diagonal functor just
+fine.
 
 \Agda{RegDiff/Diff/Trivial/Base}{delta-def}
 
-  Now, take an element $(x , y) : \F{$\Delta$}\;ty\;tv$. The ``apply'' relation
-it defines is trivial: $ \{ (x , y) \} $, or, in PF style:
+  Now, take an element $(x , y) : \F{$\Delta$}\;ty\;tv$. The ``apply''
+relation it defines is trivial: $ \{ (x , y) \} $, or, in PF style:
 
 \begin{displaymath}
 \xymatrix{
@@ -218,7 +231,12 @@ we don't know \emph{anything} about \emph{how} $x$ changed indo $y$.
 
   We can try to make it better by identifying the longest prefix of
 constructors where $x$ and $y$ agree, before giving up and using \F{$\Delta$}. 
-We call that a spine:
+Moreover, this becomes much easier if $x$ and $y$ actually have the same type.
+In practice, we are only interested in diffing elements of the same language.
+It does not make sense to diff a C source file against a Haskell source file.
+
+Nevertheless, we define an \F{S} structure to capture the longest common prefix
+of $x$ and $y$:
 
 \Agda{RegDiff/Diff/Regular/Base}{S-def}
 
@@ -231,11 +249,38 @@ first constructor and traverse it. Then we repeat.
 The ``apply'' relations specified by a spine $s$, denoted $s^\flat$ are:
 
 \begin{align*}
-  \IC{Scp}^\flat                    &= \xymatrix{ A & A \ar[l]_{id}} \\
+  \IC{Scp}^\flat                    &= \hspace{2.3em} \xymatrix{ A & A \ar[l]_{id}} \\
   (\IC{S$\otimes$}\;s_1\;s_2)^\flat &= \xymatrix{ A \times B & A \times B \ar[l]_(.45){s_1^\flat \times s_2^\flat}} \\
   (\IC{Si1}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_1 \cdot s^\flat \cdot i_1^\circ}} \\                                                   
-  (\IC{Si2}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_2 \cdot s^\flat \cdot i_2^\circ}} \\                                                   
+  (\IC{Si2}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_2 \cdot s^\flat \cdot i_2^\circ}} \\    
+  (\IC{SX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix{ A & A \ar[l]_{\underline{y} \cdot \underline{x}^\circ} }
 \end{align*}
+
+This has some problems that I do not like. Namelly:
+\begin{itemize}
+  \item Non-cannonicity: $\IC{Scp}^\flat \equiv (\IC{S$\otimes$}\;\IC{Scp}\;\IC{Scp})^\flat$
+        Even though the \F{spine-cp} function will never find the right-hand above, 
+        it feels sub-optimal to allow this.
+
+        One possible solution could be to remove \IC{Scp} and handle them through
+        the maybe monad. Instead of (\F{S}\;\F{$\Delta$}) we would have (\F{S}\;(\F{Maybe}\;\F{$\Delta$})),
+        where the \IC{nothing}s represent copy. This ensures that we can only copy on the leaves.
+        Branch \texttt{explicit-cpy} of the repo has this experiment going. It is easier said
+        than done.
+\end{itemize}
+
+Ignoring the problems and moving forward; note that for any $x$ and
+$y$, a spine $s = \F{spine-cp}\;x\;y$ will NEVER contain a product nor
+a unit on a leaf (we force going through products and copying units).
+Hence, whenever we are traversing $s$ and find a $\IC{SX}$, we know
+that: (1) the values of the pair are different and (2) we must be at a
+coproduct, a constant type or a type variable. The constant type or
+the type variable are out of our control. But we can refine our
+\emph{description} in case we arrive at a coproduct.
+
+\subsection{Changes}
+
+
 
 \section{Conclusion}
   
