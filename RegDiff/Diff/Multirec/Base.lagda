@@ -124,7 +124,7 @@ module RegDiff.Diff.Multirec.Base
       refine-S {ty}   (x , y) = i2          <$> changeμ x y
 
       spineμ : {ty : U}(x y : ⟦ ty ⟧ (Fix fam)) → List (Patchμ ty)
-      spineμ x y = spine-cp x y >>= S-mapM refine-S
+      spineμ x y = S-mapM refine-S (spine-cp x y)
 
       changeμ : {ty tv : U} 
               → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
@@ -135,8 +135,8 @@ module RegDiff.Diff.Multirec.Base
       diffμ* : {k : Famᵢ} → Fix fam k → Fix fam k → List (Patchμ (T k))
       diffμ* {k} ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ {T k} x y
-        ++ ((SX ∘ i2 ∘ Cdel {k = k}) <$> (change ⟨ y ⟩ x >>= C-mapM refine-CSym))
-        ++ ((SX ∘ i2 ∘ Cins {k = k}) <$> (change ⟨ x ⟩ y >>= C-mapM refine-C))
+        ++ ((SX ∘ i2 ∘ Cdel {k = k}) <$> (C-mapM refine-CSym (change ⟨ y ⟩ x)))
+        ++ ((SX ∘ i2 ∘ Cins {k = k}) <$> (C-mapM refine-C    (change ⟨ x ⟩ y)))
 \end{code}
 
 \begin{code}
