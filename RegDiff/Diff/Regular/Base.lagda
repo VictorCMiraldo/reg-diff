@@ -162,18 +162,22 @@ module RegDiff.Diff.Regular.Base
 
 %<*change-def>
 \begin{code}
-  change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C Δ ty tv)
-  change {ty} {tv ⊕ tw} x (i1 y) = Ci1 <$> (change x y) 
-  change {ty} {tv ⊕ tw} x (i2 y) = Ci2 <$> (change x y)
-  change {ty} {tv}      x      y = return (CX (delta {ty} {tv} x y))
+  change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → C Δ ty tv
+  change {ty} {tv ⊕ tw} x (i1 y) = Ci1 (change x y) 
+  change {ty} {tv ⊕ tw} x (i2 y) = Ci2 (change x y)
+  change {ty} {tv}      x      y = CX (delta {ty} {tv} x y)
+\end{code}
+\begin{code}
+  change-list : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C Δ ty tv)
+  change-list x = return ∘ change x
 \end{code}
 %</change-def>
 \begin{code}
   change-sym-Δ-aux : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym Δ) ty tv)
-  change-sym-Δ-aux x y = change x y >>= C-mapM (λ { (k , v) → return (v , k) }) 
+  change-sym-Δ-aux x y = change-list x y >>= C-mapM (λ { (k , v) → return (v , k) }) 
 
   change-sym : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym (C (Sym Δ))) ty tv)
-  change-sym x y = change x y 
+  change-sym x y = change-list x y 
                >>= C-mapM (uncurry (flip change-sym-Δ-aux))
 \end{code}
 
@@ -226,13 +230,13 @@ module RegDiff.Diff.Regular.Base
 %<*Al-def>
 \begin{code}
   data Al (P : UUSet) : U → U → Set where
-    AX    : {ty tv : U} → P ty tv → Al P ty tv
+    AX    : {ty tv : U}     → P ty tv → Al P ty tv
+    Ap1   : {ty tv tw : U}  → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tv ⊗ tw)
+    Ap1ᵒ  : {ty tv tw : U}  → ⟦ tw ⟧ A → Al P ty tv → Al P (ty ⊗ tw) tv
+    Ap2   : {ty tv tw : U}  → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tw ⊗ tv)
+    Ap2ᵒ  : {ty tv tw : U}  → ⟦ tw ⟧ A → Al P ty tv → Al P (tw ⊗ ty) tv
     A⊗    : {ty tv tw tz : U}
           → Al P ty tw → Al P tv tz → Al P (ty ⊗ tv) (tw ⊗ tz)
-    Ap1   : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tv ⊗ tw)
-    Ap1ᵒ  : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P (ty ⊗ tw) tv
-    Ap2   : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tw ⊗ tv)
-    Ap2ᵒ  : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P (tw ⊗ ty) tv
 \end{code}
 %</Al-def>
 
