@@ -212,9 +212,10 @@ fine.
   Now, take an element $(x , y) : \F{$\Delta$}\;ty\;tv$. The ``apply''
 relation it defines is trivial: $ \{ (x , y) \} $, or, in PF style:
 
+\newcommand{\SingletonRel}[2]{\underline{#2} \cdot \underline{#1}^\circ}
 \begin{displaymath}
 \xymatrix{
-  \Interp{ty}{A} \ar@@/^2.0pc/[rr]^{\underline{y} \cdot \underline{x}^\circ} 
+  \Interp{ty}{A} \ar@@/^2.0pc/[rr]^{\SingletonRel{x}{y}} 
   & K \ar[l]^{\underline{x}} \ar[r]_{\underline{y}} & \Interp{tv}{A} 
 }
 \end{displaymath}
@@ -229,6 +230,7 @@ represents the \emph{everywhere} $x$ relation, defined by
 we don't know \emph{anything} about \emph{how} $x$ changed indo $y$.
 
 \subsection{Spines}
+\label{subsec:spines}
 
   We can try to make it better by identifying the longest prefix of
 constructors where $x$ and $y$ agree, before giving up and using \F{$\Delta$}. 
@@ -255,7 +257,7 @@ The ``apply'' relations specified by a spine $s$, denoted $s^\flat$ are:
   (\IC{S$\otimes$}\;s_1\;s_2)^\flat &= \xymatrix{ A \times B & A \times B \ar[l]_(.45){s_1^\flat \times s_2^\flat}} \\
   (\IC{Si1}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_1 \cdot s^\flat \cdot i_1^\circ}} \\                                                   
   (\IC{Si2}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_2 \cdot s^\flat \cdot i_2^\circ}} \\    
-  (\IC{SX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix{ A & A \ar[l]_{\underline{y} \cdot \underline{x}^\circ} }
+  (\IC{SX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix{ A & A \ar[l]_{\SingletonRel{x}{y}} }
 \end{align*}
 
 This has some problems that I do not like. Namelly:
@@ -281,6 +283,7 @@ the type variable are out of our control. But we can refine our
 \emph{description} in case we arrive at a coproduct.
 
 \subsection{Coproduct Changes}
+\label{subsec:changes}
 
 %format i1 = "\IC{i1}"
 %format i2 = "\IC{i2}"
@@ -322,36 +325,163 @@ Well, this is easy if we could only flip the arguments to \F{C}:
 And now, we can \F{C-map} \F{change} with its arguments flipped over the previous $s'$:
 \begin{align*}
   \F{C-map}\; (\F{flip change}) \; s'
-    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(\IC{Ci1} \; (10, (4 , 10))))\; \IC{Scp})
+    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(\IC{Ci1} \; ((4 , 10) , 10)))\; \IC{Scp})
 \end{align*}
 
 And bingo! We now have the largest common prefix and information about the differing coproducts on the leaves
 of this prefix. The whole thing also becomes of a much more expressive type:
 
 \begin{align*}
-  \F{C-map}\; (\F{flip change}) \; (\F{S-map}\; \F{change} \; s) &: \F{S}\;(\F{C}\;(\F{Sym}\;(\F{C}\;\F{$\Delta$})))
+  \F{C-map}\; (\F{flip change}) \; (\F{S-map}\; \F{change} \; s) &: \F{S}\;(\F{C}\;(\F{Sym}\;(\F{C}\;(\F{Sym}\;\F{$\Delta$}))))
 \end{align*}
 
 We can read the type as: a common prefix from both terms followed by injections into the target term followed
-by pattern matching on the source term followed by pointwise changes. 
+by pattern matching on the source term followed by pointwise changes from source to dest. Note the innermost
+\F{Sym} is used to return the type indexes to the correct order. This will make life easier once
+we start handling fixpoints.
 
 Just like the values of \F{S}, we can also define the ``apply'' relation induced by the values of \F{C} and \F{Sym}.
 They are trivial, however. \F{C} induces composition with injections, \F{Sym} induces converses (which is the relational
-way of flipping things around).
+way of flipping things around). Note that functors are closed with respect to composition, hence,
+$\F{S}\;(\F{C}\;(\F{Sym}\;(\F{C}\;(\F{Sym}\;X))))$ makes a functor. Let's call this functor $\F{PrePatch}\;X$.
 
 Note that up until now, everything was deterministic! This is something we are about to lose.
 
 \subsection{Aligning Everything}
+\label{subsec:align}
 
 Following a similar reasoning as from \F{S} to \F{C}; the leaves of a \F{C} produced through
-\F{change} will NEVER contain a coproduct injection. Hence, we know that they will contain
+\F{change} will NEVER contain a coproduct as the topmost type. Hence, we know that they will contain
 either a product, or a constant type, or a type variable. In the case of a constant type
 or a type variable, there is not much we can do at the moment, but for a product we can 
-refine this a little bit more before using \F{$\Delta$}.
-
-In fact, splitting different stages of the algorithm into different types reinforced
+refine this a little bit more before using \F{$\Delta$}\footnote{%
+In fact, splitting the different stages of the algorithm into different types reinforced
 our intuition that the alignment is the source of difficulties. As we shall see, we now need
-to introduce non-determinism. 
+to introduce non-determinism.}.
+
+Here is where our design space starts to be huge. Our definition of alignment is:
+
+\Agda{RegDiff/Diff/Regular/Base}{Al-def}
+
+Which states that we can force components of the left or right product to be
+equal to a given value or we can join two alignments together. This is
+a big source of inneficiency!
+
+Computing alignments is very expensive! In the case we actually have products everywhere,
+we have a lot of options (hence the list monad!):
+
+\Agda{RegDiff/Diff/Regular/Base}{align-all-paths-def}
+
+If we only have products on the left or on the right (or none), 
+we have less options:
+
+\Agda{RegDiff/Diff/Regular/Base}{align-rest-def}
+
+Following our previous example, we could \F{PrePatch-map} our alignment function
+on $s'$, in order to find all alignments of $(4 , 10)$ and $10$. In this case,
+this is very easy\footnote{%
+It might be hard to build intuition for why we need the \IC{$A\otimes$} constructor.
+On the Lab module of Fixpoint there is an example using 2-3-Trees that motivates the
+importance of that constructor}.
+
+\begin{align*}
+  \F{PrePatch-map}\;\F{align}\;s' = & [ \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(\IC{Ci1} \; (\IC{Ap1$^\circ$}\; 10\; (\IC{AX} \; (4 , 10)))))\; \IC{Scp}) \tag{P1} \\
+                                    & , \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(\IC{Ci1} \; (\IC{Ap2$^\circ$}\; 4\; (\IC{AX} \; (10 , 10)))))\; \IC{Scp}) \; ] \tag{P2}
+\end{align*}
+
+  But now we end up having to choose between one of those to be \emph{the} patch. This is where we start to need a cost function.
+Before talking about cost, I'd like to make a parenthesis here.
+
+\section{Patches as Relations}
+
+On Section \ref{subsec:spines} we mentioned that the copy constructor was problematic. Another motivation for removing
+it and handling everything externally is that we would like to say that the second patch above copies the 10, instead
+of saying that 10 changes into 10. We can postpone this by changing the relation semantics of \F{$\Delta$}. We can say
+that: $(x , x)^\flat = id$ and $(x , y)^\flat = \SingletonRel{x}{y}$.
+
+Nevertheless, if we look at the two patches above as relations, we have:
+
+\begin{align*}
+  P1^\flat & = i_2 \cdot (i_2 \cdot < \SingletonRel{10}{4} , \underline{10} >^\circ \cdot i_1^\circ \times id) \cdot i_2^\circ \\
+  P2^\flat & = i_2 \cdot (i_2 \cdot < \underline{4} , id >^\circ \cdot i_1^\circ \times id) \cdot i_2^\circ
+\end{align*}
+
+Writing them in a diagram:
+
+\newcommand{\NAT}{\mathbbm{N}}
+\newcommand{\UNIT}{\mathbbm{1}}
+\begin{displaymath}
+\xymatrix{%
+ & \NAT \ar[d]_{id} \\ 
+ & \NAT \ar[rrd]^(0.3){\pi_1^\circ} & & (\NAT^2 + \NAT) \times \NAT \ar[llu]_{\pi_1} \ar[lld]^(0.2){\pi_2} 
+ & \UNIT + (\NAT^2 + \NAT) \times \NAT \ar[l]_{i_2^\circ} \ar@@{-->}@@<-.6ex>[d]_{P2^\flat} \ar@@{-->}@@<.6ex>[d]^{P1^\flat}\\
+ \NAT^2 \ar@@<-.6ex>[d]_{<\underline{4} , id>^\circ} \ar@@<.6ex>[d]^{< \SingletonRel{10}{4} , \underline{10} >^\circ} 
+ & \NAT^2 + \NAT \ar[l]_{i_1^\circ} & & (\NAT^2 + \NAT) \times \NAT \ar[r]_{i_2} & \UNIT + (\NAT^2 + \NAT) \times \NAT  \\
+ \NAT \ar[r]_{i_2} & \NAT^2 + \NAT \ar[rru]_{\pi_2^\circ}
+}
+\end{displaymath}
+
+Here, we have something curious going on... We have that $P1^\flat \subseteq P2^\flat$.
+To see this is not very hard. First, composition and converses are monotonous with respect
+to $\subseteq$. We are left to check that:
+
+\newcommand{\subrel}{\;\subseteq\;}
+\newcommand{\JustBy}[2]{& \hspace{-2em} #1 \{ \text{ #2 } \} \\}
+\newcommand{\Just}[1]{\JustBy{\equiv}{#1}}
+\newcommand{\Nojust}{& \hspace{-2em} \equiv \\}
+\newcommand{\StartProof}[1]{ & \hspace{2em} #1 \\ }
+\begin{align*}
+          & < \SingletonRel{10}{4} , \underline{10} > \subrel < \underline{4} , id > \\
+  \Just{ split universsal }
+          & \pi_1 \cdot < \SingletonRel{10}{4} , \underline{10} > \subrel \underline{4} 
+            \; \wedge \; \pi_2 \cdot < \SingletonRel{10}{4} , \underline{10} > \subrel id
+\end{align*}
+
+The first proof obligation is easy to calculate with:
+
+\begin{align*}
+   & \pi_1 \cdot < \SingletonRel{10}{4} , \underline{10} > \subrel \underline{4} \\
+ \JustBy{\Leftarrow}{ $\pi_1$-cancel ; $\subrel$-trans }
+   & \SingletonRel{10}{4} \subrel \underline{4} \\
+ \JustBy{\Leftarrow}{ Leibniz }
+   & \SingletonRel{10}{4} \cdot \underline{10} \subrel \underline{4} \cdot \underline{10} \\
+ \Just{ $\underline{a}^\circ \cdot \underline{a} \equiv \top$ }
+   & \underline{4} \cdot \top \subrel \underline{4} \cdot \underline{10} \\
+ \Just { $\underline{a} \cdot \underline{b} \equiv \underline{a}$ }
+   & \underline{4} \cdot \top \subrel \underline{4} \\
+ \Just { $\underline{a} \cdot \top \equiv \underline{a}$ } 
+   & \underline{4} \subrel \underline{4} \\
+ \Just { $\subrel$-refl }
+   & True
+\end{align*}
+
+The second is easier to prove once we add variables!
+
+\begin{align*}
+   & \forall x, y \; . \; x \; (\pi_2 \cdot < \SingletonRel{10}{4} , \underline{10}>) \; y \\
+  \Just{ PF expand composition }
+   & \forall x, y \; . \exists z \; . \; x \; (\pi_2) \; z \wedge z \; < \SingletonRel{10}{4} , \underline{10}> \; y \\
+  \Just{ Types force $z = (z_1 , z_2)$ }
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x \; (\pi_2) \; (z_1 , z_2) \wedge (z_1 , z_2) \; < \SingletonRel{10}{4} , \underline{10}> \; y \\
+  \Just{ $\pi_2$ def }
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge (z_1 , z_2) \; < \SingletonRel{10}{4} , \underline{10}> \; y \\
+  \Just{ split def }
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 \; (\SingletonRel{10}{4}) \; y \wedge z_2 \; (\underline{10}) \; y \\
+  \Just{ points def }
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 = 4 \wedge y = 10 \wedge z_2 = 10 \\
+  \JustBy{\Rightarrow}{ symmetry ; transitivity }
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 = 4 \wedge z_2 = y \\
+  \JustBy{\Rightarrow}{ symmetry ; transitivity }
+   & \forall x, y \; . \; x = y
+\end{align*}
+
+Nevertheless, it is clear which patch we should choose! We should always choose the patch that
+gives rise to the biggest relation, as this is appliable to much more elements.
+
+This suggests an interesing justification for the cost function. For some reason, looks like we won the lotery with our cost functions.
+We are always choosing the patch that gives rise to the maximal relation. I still don't clearly understand why or how,
+but it works.
+
 
 \section{Conclusion}
   
