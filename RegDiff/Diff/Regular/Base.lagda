@@ -66,20 +66,25 @@ module RegDiff.Diff.Regular.Base
 %<*spine-def>
 \begin{code}
   mutual
-    spine-cp : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (S Δ ty)
+    spine-cp : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → S Δ ty
     spine-cp {ty} x y
       with dec-eq _≟-A_ ty x y 
     ...| no  _ = spine x y
-    ...| yes _ = return Scp
+    ...| yes _ = Scp
     
-    spine : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (S Δ ty)
-    spine {ty ⊗ tv} (x1 , x2) (y1 , y2) 
-      = S⊗ <$> (spine-cp x1 y1) <*> (spine-cp x2 y2)
-    spine {tv ⊕ tw} (i1 x) (i1 y) = Si1 <$> (spine-cp x y) 
-    spine {tv ⊕ tw} (i2 x) (i2 y) = Si2 <$> (spine-cp x y)
-    spine {ty}      x      y      = return (SX (delta {ty} {ty} x y))
+    spine : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → S Δ ty
+    spine {ty ⊗ tv}  (x1 , x2)  (y1 , y2) 
+      = S⊗ (spine-cp x1 y1) (spine-cp x2 y2)
+    spine {tv ⊕ tw}  (i1 x)     (i1 y)  = Si1 (spine-cp x y) 
+    spine {tv ⊕ tw}  (i2 x)     (i2 y)  = Si2 (spine-cp x y)
+    spine {ty}       x          y       = SX (delta {ty} {ty} x y)
 \end{code}
 %</spine-def>
+
+\begin{code}
+  spine-list : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (S Δ ty)
+  spine-list x = return ∘ spine-cp x
+\end{code}
 
   But we eventually need to choose one of them! In fact, the patch between
   (x : ⟦ ty ⟧ A) and (y : ⟦ tv ⟧ A) is the one with the lowest cost!
@@ -328,7 +333,7 @@ module RegDiff.Diff.Regular.Base
 %<*diff1-nondet-def>
 \begin{code}
   diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (Patch ty)
-  diff1* x y = spine-cp x y 
+  diff1* x y = spine-list x y 
            >>= S-mapM (uncurry change-Al)
 \end{code}
 %</diff1-nondet-def>
