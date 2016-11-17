@@ -8,6 +8,7 @@
 \usepackage{enumerate}
 \usepackage{mathtools}
 \usepackage{stmaryrd}
+\usepackage{bbm}
 \usepackage{catchfilebetweentags}
 \usepackage{code/excerpts/agda}
 
@@ -240,9 +241,10 @@ of $x$ and $y$:
 
 \Agda{RegDiff/Diff/Regular/Base}{S-def}
 
-Note that \F{S} makes a free monad on $P$. Computing a spine is easy, first we check
-whether or not $x$ and $y$ are equal. If they are, we are done. If not, we inspect the
-first constructor and traverse it. Then we repeat.
+Note that \F{S} makes a functor (actually, a free monad!) on
+$P$. Computing a spine is easy, first we check whether or not $x$ and
+$y$ are equal. If they are, we are done. If not, we inspect the first
+constructor and traverse it. Then we repeat.
 
 \Agda{RegDiff/Diff/Regular/Base}{spine-def}
 
@@ -278,9 +280,78 @@ coproduct, a constant type or a type variable. The constant type or
 the type variable are out of our control. But we can refine our
 \emph{description} in case we arrive at a coproduct.
 
-\subsection{Changes}
+\subsection{Coproduct Changes}
 
+%format i1 = "\IC{i1}"
+%format i2 = "\IC{i2}"
+  Let's imagine we are diffing the following values of a type $\mathbbm{1} + (\mathbbm{N}^2 + \mathbbm{N})\times \mathbbm{N}$:
+\begin{align*}
+  s & = \F{spine-cp}\;(|i2 (i1 (4 , 10) , 5)|)\;(|i2 (i2 10 , 5)|) \\
+    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (|i1 (4 , 10)| , |i2 10|))\; \IC{Scp})
+\end{align*}
 
+  And now, we want to \F{S-map} over $s$ and refine the \F{$\Delta$} inside to another type, that contains information
+about which injections we need to pattern match on and which we need to introduce.
+One step at a time, though. Let's first look how could we represent this information:
+
+We begin with a type (that's also a free monad) that encodes the injections we need to insert on the \emph{destination}:
+
+\Agda{RegDiff/Diff/Regular/Base}{C-def}
+
+And we make an eager function that will consume ALL injections from the right:
+
+\Agda{RegDiff/Diff/Regular/Base}{change-def}
+
+Now, we could \F{S-map} \F{change} over $s$:
+
+\begin{align*}
+  \F{S-map}\; \F{change} \; s 
+    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(|i1 (4 , 10)| , 10))))\; \IC{Scp}) \\
+    &= s'
+\end{align*}
+
+But we are still left with that \IC{i1} on the left\footnote{%
+Previously, we had a \emph{flip} constructor inside our datatype that
+would let we flip arguments anytime, at will. This is far from ideal,
+however. In fact, it was this internal \emph{flip} that was causing
+the first algorithm to not terminate for fixpoints.}.
+Well, this is easy if we could only flip the arguments to \F{C}:
+
+\Agda{RegDiff/Diff/Regular/Base}{Sym-def}
+
+And now, we can \F{C-map} \F{change} with its arguments flipped over the previous $s'$:
+\begin{align*}
+  \F{C-map}\; (\F{flip change}) \; s'
+    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(\IC{Ci1} \; (10, (4 , 10))))\; \IC{Scp})
+\end{align*}
+
+And bingo! We now have the largest common prefix and information about the differing coproducts on the leaves
+of this prefix. The whole thing also becomes of a much more expressive type:
+
+\begin{align*}
+  \F{C-map}\; (\F{flip change}) \; (\F{S-map}\; \F{change} \; s) &: \F{S}\;(\F{C}\;(\F{Sym}\;(\F{C}\;\F{$\Delta$})))
+\end{align*}
+
+We can read the type as: a common prefix from both terms followed by injections into the target term followed
+by pattern matching on the source term followed by pointwise changes. 
+
+Just like the values of \F{S}, we can also define the ``apply'' relation induced by the values of \F{C} and \F{Sym}.
+They are trivial, however. \F{C} induces composition with injections, \F{Sym} induces converses (which is the relational
+way of flipping things around).
+
+Note that up until now, everything was deterministic! This is something we are about to lose.
+
+\subsection{Aligning Everything}
+
+Following a similar reasoning as from \F{S} to \F{C}; the leaves of a \F{C} produced through
+\F{change} will NEVER contain a coproduct injection. Hence, we know that they will contain
+either a product, or a constant type, or a type variable. In the case of a constant type
+or a type variable, there is not much we can do at the moment, but for a product we can 
+refine this a little bit more before using \F{$\Delta$}.
+
+In fact, splitting different stages of the algorithm into different types reinforced
+our intuition that the alignment is the source of difficulties. As we shall see, we now need
+to introduce non-determinism. 
 
 \section{Conclusion}
   
