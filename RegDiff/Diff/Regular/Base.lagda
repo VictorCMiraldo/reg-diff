@@ -51,18 +51,19 @@ module RegDiff.Diff.Regular.Base
   It will be especially usefull to monadically map over it later on.
 
 \begin{code}
-  S-mapM : {ty : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
-         → (f : ∀{k} → P k k → M (Q k k))
-         → S P ty → M (S Q ty)
-  S-mapM f (SX x) = f x >>= return ∘ SX
-  S-mapM f Scp = return Scp
-  S-mapM f (S⊗ s o) = S-mapM f s >>= λ s' → S-mapM f o >>= return ∘ (S⊗ s')
-  S-mapM f (Si1 s) = S-mapM f s >>= return ∘ Si1
-  S-mapM f (Si2 s) = S-mapM f s >>= return ∘ Si2
+  S-mapM  : {ty : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
+          → (f : ∀{k} → P k k → M (Q k k))
+          → S P ty → M (S Q ty)
+  S-mapM f (SX x)    = f x >>= return ∘ SX
+  S-mapM f Scp       = return Scp
+  S-mapM f (S⊗ s o)  = S-mapM f s >>= λ s' → S-mapM f o >>= return ∘ (S⊗ s')
+  S-mapM f (Si1 s)   = S-mapM f s >>= return ∘ Si1
+  S-mapM f (Si2 s)   = S-mapM f s >>= return ∘ Si2
 \end{code}
 
   Computing the inhabitants of S is fairly simple:
 
+%<*spine-def>
 \begin{code}
   mutual
     spine-cp : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (S Δ ty)
@@ -78,10 +79,12 @@ module RegDiff.Diff.Regular.Base
     spine {tv ⊕ tw} (i2 x) (i2 y) = Si2 <$> (spine-cp x y)
     spine {ty}      x      y      = return (SX (delta {ty} {ty} x y))
 \end{code}
+%</spine-def>
 
   But we eventually need to choose one of them! In fact, the patch between
   (x : ⟦ ty ⟧ A) and (y : ⟦ tv ⟧ A) is the one with the lowest cost!
 
+%<*S-cost-def>
 \begin{code}
   S-cost : {ty : U}{P : UUSet}
          → (costP : ∀{ty} → P ty ty → ℕ)
@@ -91,7 +94,10 @@ module RegDiff.Diff.Regular.Base
   S-cost c (S⊗ s o) = S-cost c s + S-cost c o
   S-cost c (Si1 s)  = S-cost c s
   S-cost c (Si2 s)  = S-cost c s
+\end{code}
+%</S-cost-def>
 
+\begin{code}
   SΔ-cost : {ty : U} → S Δ ty → ℕ
   SΔ-cost = S-cost (λ {ty} xy → cost-Δ {ty} {ty} xy)
 \end{code}
@@ -144,12 +150,15 @@ module RegDiff.Diff.Regular.Base
   C-mapM f (Ci2 s) = C-mapM f s >>= return ∘ Ci2
 \end{code}
 
+%<*change-def>
 \begin{code}
   change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C Δ ty tv)
   change {ty} {tv ⊕ tw} x (i1 y) = Ci1 <$> (change x y) 
   change {ty} {tv ⊕ tw} x (i2 y) = Ci2 <$> (change x y)
   change {ty} {tv}      x      y = return (CX (delta {ty} {tv} x y))
-
+\end{code}
+%</change-def>
+\begin{code}
   change-sym-Δ-aux : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym Δ) ty tv)
   change-sym-Δ-aux x y = change x y >>= C-mapM (λ { (k , v) → return (v , k) }) 
 
@@ -161,6 +170,7 @@ module RegDiff.Diff.Regular.Base
   We can also assign costs to them, in order to choose the
   best one.
 
+%<*C-cost-def>
 \begin{code}
   C-cost : {ty tv : U}{P : UUSet}
          → (costP : ∀{ty tv} → P ty tv → ℕ)
@@ -168,7 +178,10 @@ module RegDiff.Diff.Regular.Base
   C-cost c (CX x) = c x
   C-cost c (Ci1 s) = 1 + C-cost c s
   C-cost c (Ci2 s) = 1 + C-cost c s
+\end{code}
+%</C-cost-def>
 
+\begin{code}
   CΔ-cost : {ty tv : U} → C (Sym Δ) ty tv → ℕ
   CΔ-cost = C-cost (λ {ty} {tv} xy → cost-Δ {tv} {ty} xy)
 
@@ -200,6 +213,7 @@ module RegDiff.Diff.Regular.Base
   an indexed functor; we can compute it's cost, and
   we can compute it's inhabitants.
 
+%<*Al-def>
 \begin{code}
   data Al (P : UUSet) : U → U → Set where
     AX    : {ty tv : U} → P ty tv → Al P ty tv
@@ -210,6 +224,7 @@ module RegDiff.Diff.Regular.Base
     Ap2   : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tw ⊗ tv)
     Ap2ᵒ  : {ty tv tw : U} → ⟦ tw ⟧ A → Al P ty tv → Al P (tw ⊗ ty) tv
 \end{code}
+%</Al-def>
 
 \begin{code}
   Al-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
@@ -231,6 +246,7 @@ module RegDiff.Diff.Regular.Base
   Obviusly, the more expressive the alignment, the more
   expensive it's computation.
 
+%<*align-all-paths-def>
 \begin{code}
   align : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (Al Δ ty tv)
   align {ty ⊗ ty'} {tv ⊗ tv'} (x1 , x2) (y1 , y2) 
@@ -240,6 +256,8 @@ module RegDiff.Diff.Regular.Base
     ++ Ap1ᵒ x2 <$> align x1 (y1 , y2)
     ++ Ap2ᵒ x1 <$> align x2 (y1 , y2)
 \end{code}
+%</align-all-paths-def>
+%<*align-rest-def>
 \begin{code}
   align {ty ⊗ ty'} {tv} (x1 , x2) y 
     =  Ap1ᵒ x2 <$> align x1 y
@@ -248,7 +266,10 @@ module RegDiff.Diff.Regular.Base
     =  Ap1  y2 <$> align x y1
     ++ Ap2  y1 <$> align x y2
   align {ty} {tv} x y = return (AX (x , y))
-
+\end{code}
+%</align-rest-def>
+%<*Al-cost-def>
+\begin{code}
   Al-cost : {ty tv : U}{P : UUSet}
           → (costP : ∀{ty tv} → P ty tv → ℕ)
           → Al P ty tv → ℕ
@@ -258,7 +279,10 @@ module RegDiff.Diff.Regular.Base
   Al-cost c (Ap2  {tw = k} x s) = size1 sized k x + Al-cost c s
   Al-cost c (Ap1ᵒ {tw = k} x s) = size1 sized k x + Al-cost c s
   Al-cost c (Ap2ᵒ {tw = k} x s) = size1 sized k x + Al-cost c s
+\end{code}
+%</Al-cost-def>
 
+\begin{code}
   AlΔ-cost : {ty tv : U} → Al Δ ty tv → ℕ
   AlΔ-cost = Al-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy)
 
@@ -282,10 +306,12 @@ module RegDiff.Diff.Regular.Base
   to it's definition. We are still not sure
   which one to use.
 
+%<*Patch-def>
 \begin{code}
   Patch : U → Set
   Patch ty = S (C (Sym (C (Sym (Al Δ))))) ty
 \end{code}
+%</Patch-def>
 
 \begin{code}
   infixl 20 _<>_ _<>'_
@@ -299,13 +325,18 @@ module RegDiff.Diff.Regular.Base
 
   Here is the final algorithm.
   
+%<*diff1-nondet-def>
 \begin{code}
   diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (Patch ty)
   diff1* x y = spine-cp x y 
            >>= S-mapM (uncurry change-Al)
-
+\end{code}
+%</diff1-nondet-def>
+%<*diff1-def>
+\begin{code}
   diff1 : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch ty
   diff1 x y with diff1* x y
   ...| []     = SX (CX (CX (AX (x , y))))
   ...| s ∷ ss = s <>' ss
 \end{code}
+%</diff1-def>
