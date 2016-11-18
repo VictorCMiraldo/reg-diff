@@ -77,3 +77,42 @@ module RegDiff.Diff.Multirec.Lab where
                       (SX
                        (i1 (Svar (S⊗ (SX (i2 (Cmod (CX (CX (AX (set (5 , 8)))))))) Scp))))
                       Scp))))))))))
+
+  r1-normalized : Patchμ (T rtreeᵢ)
+  r1-normalized
+    = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
+         (SX
+          (i1
+           (Svar
+            (Si2
+             (S⊗ Scp
+              (SX
+               (i1
+                (Svar
+                 (Si2
+                  (S⊗
+                   (SX
+                    (i1
+                     (Svar
+                      (S⊗ (SX (i2 (Cmod (CX (CX (AX (set (5 , 8))))))))
+                       (SX
+                        (i1
+                         (Svar
+                          (SX
+                           (i2
+                            (Cins {k = fz} (Ci2 (CX (Ap2 ⟨ 5 , ⟨ i1 unit ⟩ ⟩ (AX (fix Scp)))))))))))))))
+                   Scp))))))))))
+
+  r1-expected : Patchμ (T rtreeᵢ)
+  r1-expected 
+    = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
+         (SX
+          (i1
+           (Svar
+            (Si2
+             (S⊗ Scp
+              (SX (i2 (Cmod (CX (CX (AX (fix (SX (i2 (Cins {k = fz} 
+                (Ci2 (CX (Ap1 {!!} (AX {!!})))))))))))))))))))
+
+  res : Maybe rtree
+  res = Patchμ-applyₗ r1-expected t1
