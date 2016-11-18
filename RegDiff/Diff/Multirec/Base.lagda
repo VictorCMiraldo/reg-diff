@@ -17,13 +17,16 @@ module RegDiff.Diff.Multirec.Base
 
   open import RegDiff.Generic.Multirec ks
   open import RegDiff.Generic.Eq ks keqs
-
+\end{code}
+%<*UUSet-coprod>
+\begin{code}
   _+ᵤ_ : {n : ℕ} → (Uₙ n → Uₙ n → Set) → (Uₙ n → Uₙ n → Set) → (Uₙ n → Uₙ n → Set)
   (P +ᵤ Q) ty tv = (P ty tv) ⊎ (Q ty tv)
-
+\end{code}
+%</UUSet-coprod>
+\begin{code}
   WB-FAM : {n : ℕ}{fam : Fam n} → WBParms (Fix fam)
   WB-FAM = wb-parms Fam-size _≟_
-  
 \end{code}
 
   The idea is almost the same as for fixpoints,
@@ -43,18 +46,24 @@ module RegDiff.Diff.Multirec.Base
 
   But now, instead oh matching only I's, we match (I k)'s.
 
-%<*SI-def>
+%<*Fami-def>
 \begin{code}
     Famᵢ : Set
     Famᵢ = Fin fam#
 
     T : Famᵢ → Uₙ fam#
     T k = lookup k fam
-
+\end{code}
+%</Fami-def>
+%<*Patchmu-def>
+\begin{code}
     mutual
       Patchμ : U → Set
       Patchμ ty = S (SVar +ᵤ Cμ (Al Rec)) ty
-
+\end{code}
+%</Patchmu-def>
+%<*Patchmu-aux-def>
+\begin{code}
       data Rec : U → U → Set where
         fix : {k : Famᵢ} → Patchμ (T k) → Rec (I k) (I k)
         set : ∀{ty tv} → Δ ty tv → Rec ty tv
@@ -68,7 +77,7 @@ module RegDiff.Diff.Multirec.Base
         Cmod  : {ty tv : U}
               → C (Sym (C (Sym P))) ty tv → Cμ P ty tv
 \end{code}
-%</SI-def>
+%</Patchmu-aux-def>
 
   The rest of the code is exactly the same as for single fixpoints.
 
@@ -97,6 +106,7 @@ module RegDiff.Diff.Multirec.Base
 \end{code}
 
 
+%<*refinements>
 \begin{code}
     mutual
       refine-Al : {ty tv : U} → Δ ty tv → List (Rec ty tv)
@@ -122,22 +132,32 @@ module RegDiff.Diff.Multirec.Base
       refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ (Al Rec)) ty ty)
       refine-S {I k}  (x , y) = (i1 ∘ Svar) <$> diffμ* x y
       refine-S {ty}   (x , y) = i2          <$> changeμ x y
-
+\end{code}
+%</refinements>
+%<*spinemu-def>
+\begin{code}
       spineμ : {ty : U}(x y : ⟦ ty ⟧ (Fix fam)) → List (Patchμ ty)
       spineμ x y = S-mapM refine-S (spine-cp x y)
-
+\end{code}
+%</spinemu-def>
+%<*changemu-def>
+\begin{code}
       changeμ : {ty tv : U} 
               → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
               → List (Cμ (Al Rec) ty tv)
       changeμ x y = change-sym x y >>= CSym²-mapM refine-C 
                 >>= return ∘ Cmod
-
+\end{code}
+%</changemu-def>
+%<*diffmu-nondet-def>
+\begin{code}
       diffμ* : {k : Famᵢ} → Fix fam k → Fix fam k → List (Patchμ (T k))
       diffμ* {k} ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ {T k} x y
         ++ ((SX ∘ i2 ∘ Cdel {k = k}) <$> (C-mapM refine-CSym (change ⟨ y ⟩ x)))
         ++ ((SX ∘ i2 ∘ Cins {k = k}) <$> (C-mapM refine-C    (change ⟨ x ⟩ y)))
 \end{code}
+%</diffmu-nondet-def>
 
 \begin{code}
     _<μ>_ : {ty : U} → Patchμ ty → List (Patchμ ty) → Patchμ ty
