@@ -99,6 +99,7 @@
 \DeclareUnicodeCharacter {119924}{$\mathcal{M}$}
 \DeclareUnicodeCharacter {8346}{$_p$}
 \DeclareUnicodeCharacter {8345}{$_n$}
+\DeclareUnicodeCharacter {7524}{$_u$}
 \DeclareUnicodeCharacter {120028}{$\mathcal{M}$}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -458,21 +459,23 @@ The first proof obligation is easy to calculate with:
 The second is easier to prove once we add variables!
 
 \begin{align*}
-   & \forall x, y \; . \; x \; (\pi_2 \cdot < \SingletonRel{10}{4} , \underline{10}>) \; y \\
+   & \pi_2 \cdot < \SingletonRel{10}{4} , \underline{10}> \subrel \; id \\
+  \Just{ Add variables }
+   & \forall x, y \; . \; x \; (\pi_2 \cdot < \SingletonRel{10}{4} , \underline{10}>) \; y \Rightarrow x = y \\
   \Just{ PF expand composition }
-   & \forall x, y \; . \exists z \; . \; x \; (\pi_2) \; z \wedge z \; < \SingletonRel{10}{4} , \underline{10}> \; y \\
+   & \forall x, y \; . \exists z \; . \; x \; (\pi_2) \; z \wedge z \; < \SingletonRel{10}{4} , \underline{10}> \; y \Rightarrow x = y \\
   \Just{ Types force $z = (z_1 , z_2)$ }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x \; (\pi_2) \; (z_1 , z_2) \wedge (z_1 , z_2) \; < \SingletonRel{10}{4} , \underline{10}> \; y \\
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x \; (\pi_2) \; (z_1 , z_2) \wedge (z_1 , z_2) \; < \SingletonRel{10}{4} , \underline{10}> \; y \Rightarrow x = y \\
   \Just{ $\pi_2$ def }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge (z_1 , z_2) \; < \SingletonRel{10}{4} , \underline{10}> \; y \\
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge (z_1 , z_2) \; < \SingletonRel{10}{4} , \underline{10}> \; y \Rightarrow x = y \\
   \Just{ split def }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 \; (\SingletonRel{10}{4}) \; y \wedge z_2 \; (\underline{10}) \; y \\
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 \; (\SingletonRel{10}{4}) \; y \wedge z_2 \; (\underline{10}) \; y \Rightarrow x = y \\
   \Just{ points def }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 = 4 \wedge y = 10 \wedge z_2 = 10 \\
-  \JustBy{\Rightarrow}{ symmetry ; transitivity }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 = 4 \wedge z_2 = y \\
-  \JustBy{\Rightarrow}{ symmetry ; transitivity }
-   & \forall x, y \; . \; x = y
+   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 = 4 \wedge y = 10 \wedge z_2 = 10 \Rightarrow x = y \\
+  \Just{ substitutions ; weakenings }
+   & \forall x, y \; . \exists z_2 \;. \; x = 10  \wedge y = 10 \Rightarrow x = y \\
+  \Just{ trivial }
+   & True 
 \end{align*}
 
 Nevertheless, it is clear which patch we should choose! We should always choose the patch that
@@ -482,19 +485,98 @@ This suggests an interesing justification for the cost function. For some reason
 We are always choosing the patch that gives rise to the maximal relation. I still don't clearly understand why or how,
 but it works.
 
+Below are our cost functions:
 
-\section{Conclusion}
+\Agda{RegDiff/Diff/Trivial/Base}{Trivial-cost-def}
+
+\Agda{RegDiff/Diff/Regular/Base}{S-cost-def}
+
+\Agda{RegDiff/Diff/Regular/Base}{C-cost-def}
+
+\Agda{RegDiff/Diff/Regular/Base}{Al-cost-def}
+
+\section{Mutually Recursive Types}
+
+Now that we have a clear picture of the different parts used to diffing
+non-recursive types, extending this to recursive types is not
+very difficult.
+
+First, recall that a mutually recursive family is defined as $n$ codes that
+each reference $n$ type variables:
+
+\Agda{RegDiff/Generic/Multirec}{Fam-def}
+
+\Agda{RegDiff/Generic/Multirec}{Fix-def}
+
+Another auxiliar definition we use here is the indexed coproduct, which let's us \emph{extend}
+some indexed type.
+
+\Agda{RegDiff/Diff/Multirec/Base}{UUSet-coprod}
+
+Now, we already have the ingredients for common prefixes, coprocucts and
+products. We now need to handle type variables. Before we proceed with the nasty
+definitions, we still need two last synonyms:
+
+\Agda{RegDiff/Diff/Multirec/Base}{Fami-def}
+
+Here $\F{T}\;k$ represents the $k$-th type of the family, and \F{Fam$_i$} represents
+the indexes of our family. First, we want to extend our \F{S} to \emph{permeate}
+through type variables. For this we use the \F{SVar} type,
+which says upon finding a variable that references \emph{the same} type on both source and target, we can diff
+that type instead.
+
+Then, we need to understand that \F{C} over fixpoints is slightly different. Insertion in a fixpoint is
+seen as adding some information (injecting things). Deletion is seen as pattern matching and modification
+is seen as doing both! Hence we create a type \F{C$\mu$}.
+
+Last but not least, we define a \F{Rec} type to tie the knot after we align the result of changes (which
+could be defined as $\F{SVar} +_u \F{$\Delta$}$). The full picture looks like:
+
+\Agda{RegDiff/Diff/Multirec/Base}{Patchmu-def}
+
+\AgdaI{RegDiff/Diff/Multirec/Base}{Patchmu-aux-def}{-.7em}
+
+Computing a \F{Patch$\mu$} is done by piggybacking on the functions for computing \F{S}, \F{C} and \F{Al}
+separately, then mapping over them with some refinement functions:
+
+\Agda{RegDiff/Diff/Multirec/Base}{spinemu-def}
+
+\Agda{RegDiff/Diff/Multirec/Base}{changemu-def}
+
+\Agda{RegDiff/Diff/Multirec/Base}{diffmu-nondet-def}
+
+The refinement functions are given by:
+
+\Agda{RegDiff/Diff/Multirec/Base}{refinements}
+
+Handling simple fixpoints is easy after being able to handle mutually recursive families.
+
+\subsection{Examples}
+
+Here we add some examples of patches over fixpoints. These can be seen
+in the respective \texttt{Lab.agda} modules. Here are a few examples of list patches:
+
+\Agda{Examples}{Example-list-1}
+
+Previously we also mentioned that \emph{2-3-Trees} were a good motivation for the \IC{A$\otimes$} 
+constructor. Here is the actual example (the full code follows to illustrate how modules are imported
+and used):
+
+\Agda{Examples}{Example-2-3-tree-full}
+
+The patches we calculate are:
+
+\Agda{Examples}{Example-2-3-patches}
+
+Which are normalized to the following patches. Note that it is the 
+\IC{A$\otimes$} in \F{r1} that lets us copy \F{k1} and \F{k2} from the \F{2-node} to
+the \F{3-node}.
+
+\Agda{Examples}{Example-2-3-tree-norm1}
+
+\Agda{Examples}{Example-2-3-tree-norm2}
   
+In fact, the code is working nicely for fixpoints, but it needs some adjustment
+for mutually recursive families. So, chances are, somethings will change.
+
 \end{document}
-
-
-That is, the general template we are looking for is:
-
-%format (Interp x) = "\llbracket{" x "}\rrbracket"
-\begin{code}
-Patch   : U -> Set
-
-diff    : {ty : U}(x y : (Interp ty)) -> Patch ty
-
-apply   : {ty : U} -> Patch ty -> (Interp ty) -> Maybe (Interp ty)
-\end{code}
