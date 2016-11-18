@@ -11,10 +11,10 @@ module RegDiff.Diff.Multirec.Lab where
 
   import RegDiff.Diff.Multirec.Base konstants keqs 
     as DIFF
-  import RegDiff.Diff.Multirec.Apply konstants keqs
-    as APPLY
-  import RegDiff.Diff.Multirec.Domain konstants keqs
-    as DOMAIN
+  -- import RegDiff.Diff.Multirec.Apply konstants keqs
+  --  as APPLY
+  -- import RegDiff.Diff.Multirec.Domain konstants keqs
+  --  as DOMAIN
 
   RTREE-NAT : Fam 2
   RTREE-NAT
@@ -24,6 +24,9 @@ module RegDiff.Diff.Multirec.Lab where
 
   list : Set
   list = Fix RTREE-NAT fz
+
+  rtreeᵢ : Fin 2
+  rtreeᵢ = fs fz
 
   rtree : Set
   rtree = Fix RTREE-NAT (fs fz)
@@ -41,9 +44,9 @@ module RegDiff.Diff.Multirec.Lab where
 
   open DIFF.Internal RTREE-NAT public
   -- open APPLY.Internal RTREE-NAT public
-  open import RegDiff.Diff.Regular.Domain konstants keqs (Fix RTREE-NAT) DIFF.WB-FAM
-    public
-  open DOMAIN.Internal RTREE-NAT public
+  --open import RegDiff.Diff.Regular.Domain konstants keqs (Fix RTREE-NAT) DIFF.WB-FAM
+  --  public
+  -- open DOMAIN.Internal RTREE-NAT public
 
   t1 t2 t3 : rtree
   t1 = fork 3 
@@ -58,10 +61,10 @@ module RegDiff.Diff.Multirec.Lab where
 
   t3 = fork 3 
          ( fork 4 #
-         % fork 6 #
-         % fork 5 (fork 1 # % #)
+         % fork 1 (fork 5 # % #)
          % # )
 
+{-
   t1t2 : Patchμ (T (fs fz))
   t1t2 = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
             (SX
@@ -78,7 +81,7 @@ module RegDiff.Diff.Multirec.Lab where
                        (i1 (Svar (S⊗ (SX (i2 (Cmod (CX (CX (AX (set (5 , 8)))))))) Scp))))
                       Scp))))))))))
 
-  r1-normalized : Patchμ (T rtreeᵢ)
+  r1-normalized : Patchμ (T (fs fz))
   r1-normalized
     = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
          (SX
@@ -103,7 +106,7 @@ module RegDiff.Diff.Multirec.Lab where
                             (Cins {k = fz} (Ci2 (CX (Ap2 ⟨ 5 , ⟨ i1 unit ⟩ ⟩ (AX (fix Scp)))))))))))))))
                    Scp))))))))))
 
-  r1-expected : Patchμ (T rtreeᵢ)
+  r1-expected : Patchμ (T (fs fz))
   r1-expected 
     = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
          (SX
@@ -112,7 +115,7 @@ module RegDiff.Diff.Multirec.Lab where
             (Si2
              (S⊗ Scp
               (SX (i2 (Cmod (CX (CX (AX (fix (SX (i2 (Cins {k = fz} 
-                (Ci2 (CX (Ap1 {!!} (AX {!!})))))))))))))))))))
-
-  res : Maybe rtree
-  res = Patchμ-applyₗ r1-expected t1
+                (Ci2 (CX (Ap1 # (AX (set {!!}))))))))))))))))))))
+-}
+  -- res : Maybe rtree
+  -- res = Patchμ-applyₗ r1-expected t1

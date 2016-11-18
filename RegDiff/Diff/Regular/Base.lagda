@@ -59,6 +59,15 @@ module RegDiff.Diff.Regular.Base
   S-mapM f (S⊗ s o)  = S-mapM f s >>= λ s' → S-mapM f o >>= return ∘ (S⊗ s')
   S-mapM f (Si1 s)   = S-mapM f s >>= return ∘ Si1
   S-mapM f (Si2 s)   = S-mapM f s >>= return ∘ Si2
+
+  S-map  : {ty : U}{P Q : UUSet}
+          → (f : ∀{k} → P k k → Q k k)
+          → S P ty → S Q ty
+  S-map f (SX x)    = SX (f x)
+  S-map f Scp       = Scp
+  S-map f (S⊗ s o)  = S⊗ (S-map f s) (S-map f o)
+  S-map f (Si1 s)   = Si1 (S-map f s)
+  S-map f (Si2 s)   = Si2 (S-map f s)
 \end{code}
 
   Computing the inhabitants of S is fairly simple:
@@ -152,12 +161,22 @@ module RegDiff.Diff.Regular.Base
   Just like S, we can map over these guys.
 
 \begin{code}
+  swap : {ty tv : U} → Δ ty tv → Δ tv ty
+  swap (x , y) = (y , x)
+
   C-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
          → (f : ∀{k v} → P k v → M (Q k v))
          → C P ty tv → M (C Q ty tv)
   C-mapM f (CX x) = f x >>= return ∘ CX
   C-mapM f (Ci1 s) = C-mapM f s >>= return ∘ Ci1
   C-mapM f (Ci2 s) = C-mapM f s >>= return ∘ Ci2
+
+  C-map : {ty tv : U}{P Q : UUSet}
+         → (f : ∀{k v} → P k v → Q k v)
+         → C P ty tv → C Q ty tv
+  C-map f (CX x)  = CX (f x)
+  C-map f (Ci1 s) = Ci1 (C-map f s)
+  C-map f (Ci2 s) = Ci2 (C-map f s)
 \end{code}
 
 %<*change-def>
@@ -179,6 +198,11 @@ module RegDiff.Diff.Regular.Base
   change-sym : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym (C (Sym Δ))) ty tv)
   change-sym x y = change-list x y 
                >>= C-mapM (uncurry (flip change-sym-Δ-aux))
+
+  change-sym-det : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → C (Sym (C (Sym Δ))) ty tv
+  change-sym-det x y = C-map (λ {ty} {tv} 
+                     → (C-map (λ {ty} {tv} → swap {ty} {tv}) ∘ uncurry change) ∘ swap {ty} {tv}) 
+                             (change x y)
 \end{code}
 
   We can also assign costs to them, in order to choose the

@@ -58,22 +58,18 @@ module RegDiff.Diff.Multirec.Base
 %<*Patchmu-def>
 \begin{code}
     mutual
-      Patchμ : U → Set
-      Patchμ ty = S (SVar +ᵤ Cμ (Al Rec)) ty
+      data Patchμ : U → U → Set where
+        skel : {ty     : U}     → S       Patchμ ty      → Patchμ ty ty
+        chng : {ty tv  : U}     → Cμ (Al  Patchμ) ty tv  → Patchμ ty tv
+        fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')    → Patchμ (I k) (I k')
+        set  : {ty tv  : U}     → Δ ty tv                → Patchμ ty tv
 \end{code}
 %</Patchmu-def>
 %<*Patchmu-aux-def>
 \begin{code}
-      data Rec : U → U → Set where
-        fix : {k : Famᵢ} → Patchμ (T k) → Rec (I k) (I k)
-        set : ∀{ty tv} → Δ ty tv → Rec ty tv
-
-      data SVar : U → U → Set where
-        Svar : {k : Famᵢ} → Patchμ (T k) → SVar (I k) (I k)
-
       data Cμ (P : UUSet) : U → U → Set where
-        Cins  : {k : Famᵢ} → C      P  (I k) (T k) → Cμ P (T k) (T k)
-        Cdel  : {k : Famᵢ} → C (Sym P) (I k) (T k) → Cμ P (T k) (T k)
+        Cins  : {k k' : Famᵢ} → C       P  (I k) (T k')  → Cμ P (T k) (T k')
+        Cdel  : {k k' : Famᵢ} → C (Sym  P) (I k) (T k')  → Cμ P (T k') (T k)
         Cmod  : {ty tv : U}
               → C (Sym (C (Sym P))) ty tv → Cμ P ty tv
 \end{code}
@@ -84,18 +80,11 @@ module RegDiff.Diff.Multirec.Base
 \begin{code}
     mutual
       {-# TERMINATING #-}
-      Patchμ-cost : {ty : U} → Patchμ ty → ℕ
-      Patchμ-cost = S-cost (SVar+Cμ-cost (Al-cost Rec-cost))
-
-      Rec-cost : {ty tv : U} → Rec ty tv → ℕ
-      Rec-cost (fix x) = Patchμ-cost x
-      Rec-cost {ty} {tv} (set x) = cost-Δ {ty} {tv} x
-    
-      SVar+Cμ-cost : {ty tv : U}{P : UUSet} 
-                   → (costP : ∀{k v} → P k v → ℕ)
-                   → (SVar +ᵤ Cμ P) ty tv → ℕ
-      SVar+Cμ-cost c (i1 (Svar x)) = Patchμ-cost x
-      SVar+Cμ-cost c (i2 y)        = Cμ-cost c y
+      Patchμ-cost : {ty tv : U} → Patchμ ty tv → ℕ
+      Patchμ-cost (skel x) = S-cost Patchμ-cost x
+      Patchμ-cost (chng x) = Cμ-cost (Al-cost Patchμ-cost) x
+      Patchμ-cost (fix s)  = Patchμ-cost s
+      Patchμ-cost (set {ty} {tv} x)  = cost-Δ {ty} {tv} x
 
       Cμ-cost : {ty tv : U}{P : UUSet} 
               → (costP : ∀{k v} → P k v → ℕ)
@@ -105,9 +94,43 @@ module RegDiff.Diff.Multirec.Base
       Cμ-cost c (Cmod y) = C-cost (C-cost c) y
 \end{code}
 
-
-%<*refinements>
 \begin{code}
+    mutual
+      refine-S : {ty : U} → Δ ty ty → List (Patchμ ty ty)
+      refine-S {I k}  (x , y) = fix  <$> diffμ* x y
+      refine-S        (x , y) = chng <$> changeμ x y
+
+      spineμ : {ty tv : U} → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) → List (Patchμ ty tv)
+      spineμ {ty} {tv} x y with U-eq ty tv 
+      ...| no _     = chng <$> changeμ x y
+      spineμ {ty} {.ty} x y 
+         | yes refl = skel <$> S-mapM refine-S (spine-cp x y)
+
+      changeμ : {ty tv : U} 
+              → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
+              → List (Cμ (Al Patchμ) ty tv)
+      changeμ x y = Cmod <$> CSym²-mapM refine-C (change-sym-det x y)
+
+      refine-C : {k v : U} → Δ k v → List (Al Patchμ k v)
+      refine-C {I k} {I k'} (x , y) = (AX ∘ fix) <$> diffμ* x y
+      refine-C              (x , y) = align x y >>= Al-mapM refine-Al
+
+      refine-Al : {k v : U} → Δ k v → List (Patchμ k v)
+      refine-Al {I k} {I k'} (x , y) = fix <$> diffμ* x y
+      refine-Al              (x , y) = return (set (x , y))
+
+      refine-CSym : {k v : U} → Δ k v → List (Sym (Al Patchμ) k v)
+      refine-CSym (x , y) = refine-C (y , x)
+  
+      {-# TERMINATING #-}
+      diffμ* : {k k' : Famᵢ} → Fix fam k → Fix fam k' → List (Patchμ (T k) (T k'))
+      diffμ* {k} {k'} ⟨ x ⟩ ⟨ y ⟩ 
+        =  spineμ {T k} {T k'} x y
+        ++ ((chng ∘ Cdel {k = k'} {k}) <$> (C-mapM refine-CSym (change ⟨ y ⟩ x)))
+        ++ ((chng ∘ Cins {k = k} {k'}) <$> (C-mapM refine-C    (change ⟨ x ⟩ y)))
+\end{code}
+%<*refinements>
+begin{code}
     mutual
       refine-Al : {ty tv : U} → Δ ty tv → List (Rec ty tv)
       refine-Al {I k} {I k'} (x , y) 
@@ -135,13 +158,13 @@ module RegDiff.Diff.Multirec.Base
 \end{code}
 %</refinements>
 %<*spinemu-def>
-\begin{code}
+begin{code}
       spineμ : {ty : U}(x y : ⟦ ty ⟧ (Fix fam)) → List (Patchμ ty)
       spineμ x y = S-mapM refine-S (spine-cp x y)
 \end{code}
 %</spinemu-def>
 %<*changemu-def>
-\begin{code}
+begin{code}
       changeμ : {ty tv : U} 
               → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
               → List (Cμ (Al Rec) ty tv)
@@ -150,7 +173,7 @@ module RegDiff.Diff.Multirec.Base
 \end{code}
 %</changemu-def>
 %<*diffmu-nondet-def>
-\begin{code}
+begin{code}
       diffμ* : {k : Famᵢ} → Fix fam k → Fix fam k → List (Patchμ (T k))
       diffμ* {k} ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ {T k} x y
@@ -160,16 +183,15 @@ module RegDiff.Diff.Multirec.Base
 %</diffmu-nondet-def>
 
 \begin{code}
-    _<μ>_ : {ty : U} → Patchμ ty → List (Patchμ ty) → Patchμ ty
+    _<μ>_ : {ty tv : U} → Patchμ ty tv → List (Patchμ ty tv) → Patchμ ty tv
     s <μ> []       = s
     s <μ> (o ∷ os) with Patchμ-cost s ≤?-ℕ Patchμ-cost o
     ...| yes _ = s <μ> os
     ...| no  _ = o <μ> os
 
-    diffμ : {k : Famᵢ} → Fix fam k → Fix fam k → Patchμ (T k)
+    diffμ : {k : Famᵢ} → Fix fam k → Fix fam k → Patchμ (T k) (T k)
     diffμ {k} x y with diffμ* x y
-    ...| []     = SX (i2 (Cmod (CX (CX (AX (set 
-                     (delta {T k} {T k} (unmu x) (unmu y))))))))
+    ...| []     = set (unmu x , unmu y)
     ...| s ∷ ss = s <μ> ss
 \end{code}
 
