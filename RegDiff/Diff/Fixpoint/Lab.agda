@@ -50,15 +50,16 @@ module RegDiff.Diff.Fixpoint.Lab where
   module T1 where
     open DIFF.Internal (LIST-F ∷ []) public
 
-    l0 l1 l2 l3 : list
+    l0 l1 l2 l3 l4 : list
     l0 = (1 > #)
     l1 = (1 > 4 > #)
     l2 = (3 > 50 > 4 > #)
     l3 = (1 > 50 > 4 > 20 > #)
+    l4 = (5 > 1 > #)
 
     s1 : Patchμ (T fz) (T fz)
-    s1 = diffμ l0 l1 -- 6
-    
+    s1 = diffμ l0 l4 -- 6
+{-    
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public
 
@@ -102,5 +103,5 @@ module RegDiff.Diff.Fixpoint.Lab where
               (⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩ ,
                ⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩)
               (AX (fix (skel Scp)))))))))
-
-  open T2 public
+-}
+  open T1 public

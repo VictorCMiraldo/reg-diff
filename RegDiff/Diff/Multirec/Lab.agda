@@ -49,14 +49,18 @@ module RegDiff.Diff.Multirec.Lab where
   -- open DOMAIN.Internal RTREE-NAT public
 
   t1 t2 t3 : rtree
+
+  t2 = fork 1 
+       ( fork 4 #
+       % fork 8 #
+       % # )
+
+
+
+
   t1 = fork 3 
          ( fork 4 #
          % fork 5 #
-         % # )
-
-  t2 = fork 1 
-         ( fork 4 #
-         % fork 8 #
          % # )
 
   t3 = fork 3 
@@ -64,58 +68,31 @@ module RegDiff.Diff.Multirec.Lab where
          % fork 1 (fork 5 # % #)
          % # )
 
-{-
-  t1t2 : Patchμ (T (fs fz))
-  t1t2 = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
-            (SX
-             (i1
-              (Svar
-               (Si2
-                (S⊗ Scp
-                 (SX
-                  (i1
-                   (Svar
-                    (Si2
-                     (S⊗
-                      (SX
-                       (i1 (Svar (S⊗ (SX (i2 (Cmod (CX (CX (AX (set (5 , 8)))))))) Scp))))
-                      Scp))))))))))
 
-  r1-normalized : Patchμ (T (fs fz))
-  r1-normalized
-    = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
-         (SX
-          (i1
-           (Svar
-            (Si2
-             (S⊗ Scp
-              (SX
-               (i1
-                (Svar
-                 (Si2
-                  (S⊗
-                   (SX
-                    (i1
-                     (Svar
-                      (S⊗ (SX (i2 (Cmod (CX (CX (AX (set (5 , 8))))))))
-                       (SX
-                        (i1
-                         (Svar
+  t1t3 t1t3-norm : Patchμ (T (fs fz)) (T (fs fz))
+  t1t3 = diffμ t1 t3
+
+  t1t3-norm = skel
+               (S⊗ Scp
+                (SX
+                 (fix {k = fz} {k' = fz}
+                  (skel
+                   (Si2
+                    (S⊗ Scp
+                     (SX
+                      (fix {k = fz} {k' = fz}
+                       (skel
+                        (Si2
+                         (S⊗
                           (SX
-                           (i2
-                            (Cins {k = fz} (Ci2 (CX (Ap2 ⟨ 5 , ⟨ i1 unit ⟩ ⟩ (AX (fix Scp)))))))))))))))
-                   Scp))))))))))
-
-  r1-expected : Patchμ (T (fs fz))
-  r1-expected 
-    = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
-         (SX
-          (i1
-           (Svar
-            (Si2
-             (S⊗ Scp
-              (SX (i2 (Cmod (CX (CX (AX (fix (SX (i2 (Cins {k = fz} 
-                (Ci2 (CX (Ap1 # (AX (set {!!}))))))))))))))))))))
--}
-  -- res : Maybe rtree
-  -- res = Patchμ-applyₗ r1-expected t1
+                           (fix {k = fs fz} {k' = fs fz}
+                            (chng
+                             (Cins {k = fs fz} {k' = fs fz}
+                              (CX
+                               (Ap2 1
+                                (AX
+                                 (fix {k = fs fz} {k' = fz}
+                                  (chng
+                                   (Cins {k = fs fz} {k' = fz}
+                                     (Ci2 (CX (Ap1 ⟨ i1 unit ⟩ (AX (fix (skel Scp))))))))))))))))
+                          Scp)))))))))))
