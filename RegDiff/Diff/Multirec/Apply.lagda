@@ -33,9 +33,9 @@ module RegDiff.Diff.Multirec.Apply
     Cμ-applyₗ doP (Cins x) el 
       = C-applyₗ doP x ⟨ el ⟩
     Cμ-applyₗ doP (Cdel x) el 
-      = unmu <$> C-applyᵣ (Sym-Appliable doP) x el
+      = unmu <$> C-applyₗ doP x el
     Cμ-applyₗ doP (Cmod x) el 
-      = C-applyₗ (SymCSym-Appliable doP) x el
+      = C-applyₗ doP x el
 
     Cμ-applyᵣ : {ty tv : U}{P : UUSet}
               → (doP : Appliable P)
@@ -43,9 +43,9 @@ module RegDiff.Diff.Multirec.Apply
     Cμ-applyᵣ doP (Cins x) el 
       = unmu <$> C-applyᵣ doP x el 
     Cμ-applyᵣ doP (Cdel x) el 
-      = C-applyₗ (Sym-Appliable doP) x ⟨ el ⟩
+      = C-applyᵣ doP x ⟨ el ⟩
     Cμ-applyᵣ doP (Cmod x) el 
-      = C-applyᵣ (SymCSym-Appliable doP) x el
+      = C-applyᵣ doP x el
 
     Cμ-Appliable : {P : UUSet} → Appliable P → Appliable (Cμ P)
     Cμ-Appliable doP = apply (Cμ-applyₗ doP) (Cμ-applyᵣ doP)

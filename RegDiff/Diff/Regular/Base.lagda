@@ -146,30 +146,25 @@ module RegDiff.Diff.Regular.Base
 %<*C-def>
 \begin{code}
   data C (P : UUSet) : U → U → Set where
-    CX   : {ty tv : U}   → P ty tv → C P ty tv
-    Ci1  : {ty tv k : U} → C P ty tv → C P ty (tv ⊕ k)
-    Ci2  : {ty tv k : U} → C P ty tv → C P ty (k ⊕ tv)
+    CX    : {ty tv : U}   → P ty tv → C P ty tv
+    Ci1   : {ty tv k : U} → C P ty tv → C P ty (tv ⊕ k)
+    Ci2   : {ty tv k : U} → C P ty tv → C P ty (k ⊕ tv)
+    Ci1ᵒ  : {ty tv k : U} → C P ty tv → C P (ty ⊕ k) tv
+    Ci2ᵒ  : {ty tv k : U} → C P ty tv → C P (k ⊕ ty) tv
 \end{code}
 %</C-def>
-%<*Sym-def>
-\begin{code}
-  Sym : UUSet → UUSet
-  Sym P ty tv = P tv ty
-\end{code}
-%</Sym-def>
 
   Just like S, we can map over these guys.
 
 \begin{code}
-  swap : {ty tv : U} → Δ ty tv → Δ tv ty
-  swap (x , y) = (y , x)
-
   C-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
          → (f : ∀{k v} → P k v → M (Q k v))
          → C P ty tv → M (C Q ty tv)
   C-mapM f (CX x) = f x >>= return ∘ CX
   C-mapM f (Ci1 s) = C-mapM f s >>= return ∘ Ci1
   C-mapM f (Ci2 s) = C-mapM f s >>= return ∘ Ci2
+  C-mapM f (Ci1ᵒ s) = C-mapM f s >>= return ∘ Ci1ᵒ 
+  C-mapM f (Ci2ᵒ s) = C-mapM f s >>= return ∘ Ci2ᵒ
 
   C-map : {ty tv : U}{P Q : UUSet}
          → (f : ∀{k v} → P k v → Q k v)
@@ -177,13 +172,17 @@ module RegDiff.Diff.Regular.Base
   C-map f (CX x)  = CX (f x)
   C-map f (Ci1 s) = Ci1 (C-map f s)
   C-map f (Ci2 s) = Ci2 (C-map f s)
+  C-map f (Ci1ᵒ s) = Ci1ᵒ (C-map f s)
+  C-map f (Ci2ᵒ s) = Ci2ᵒ (C-map f s)
 \end{code}
 
 %<*change-def>
 \begin{code}
   change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → C Δ ty tv
-  change {ty} {tv ⊕ tw} x (i1 y) = Ci1 (change x y) 
-  change {ty} {tv ⊕ tw} x (i2 y) = Ci2 (change x y)
+  change {ty} {tv ⊕ tw} x (i1 y) = Ci1  (change x y) 
+  change {ty} {tv ⊕ tw} x (i2 y) = Ci2  (change x y)
+  change {ty ⊕ tw} {tv} (i1 x) y = Ci1ᵒ (change x y) 
+  change {ty ⊕ tw} {tv} (i2 x) y = Ci2ᵒ (change x y)
   change {ty} {tv}      x      y = CX (delta {ty} {tv} x y)
 \end{code}
 \begin{code}
@@ -191,19 +190,6 @@ module RegDiff.Diff.Regular.Base
   change-list x = return ∘ change x
 \end{code}
 %</change-def>
-\begin{code}
-  change-sym-Δ-aux : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym Δ) ty tv)
-  change-sym-Δ-aux x y = change-list x y >>= C-mapM (λ { (k , v) → return (v , k) }) 
-
-  change-sym : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C (Sym (C (Sym Δ))) ty tv)
-  change-sym x y = change-list x y 
-               >>= C-mapM (uncurry (flip change-sym-Δ-aux))
-
-  change-sym-det : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → C (Sym (C (Sym Δ))) ty tv
-  change-sym-det x y = C-map (λ {ty} {tv} 
-                     → (C-map (λ {ty} {tv} → swap {ty} {tv}) ∘ uncurry change) ∘ swap {ty} {tv}) 
-                             (change x y)
-\end{code}
 
   We can also assign costs to them, in order to choose the
   best one.
@@ -213,21 +199,13 @@ module RegDiff.Diff.Regular.Base
   C-cost : {ty tv : U}{P : UUSet}
          → (costP : ∀{ty tv} → P ty tv → ℕ)
          → C P ty tv → ℕ
-  C-cost c (CX x) = c x
-  C-cost c (Ci1 s) = 1 + C-cost c s
-  C-cost c (Ci2 s) = 1 + C-cost c s
+  C-cost c (CX x)    = c x
+  C-cost c (Ci1 s)   = 1 + C-cost c s
+  C-cost c (Ci2 s)   = 1 + C-cost c s
+  C-cost c (Ci1ᵒ s)  = 1 + C-cost c s
+  C-cost c (Ci2ᵒ s)  = 1 + C-cost c s
 \end{code}
 %</C-cost-def>
-
-\begin{code}
-  CΔ-cost : {ty tv : U} → C (Sym Δ) ty tv → ℕ
-  CΔ-cost = C-cost (λ {ty} {tv} xy → cost-Δ {tv} {ty} xy)
-
-  CSymCSym-cost : {ty tv : U}{P : UUSet}
-                → (costP : ∀{ty tv} → P ty tv → ℕ) 
-                → C (Sym (C (Sym P))) ty tv → ℕ
-  CSymCSym-cost c = C-cost (C-cost c)
-\end{code}
 
 \begin{code} 
   private
@@ -323,16 +301,6 @@ module RegDiff.Diff.Regular.Base
 \begin{code}
   AlΔ-cost : {ty tv : U} → Al Δ ty tv → ℕ
   AlΔ-cost = Al-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy)
-
-  change-Al : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A 
-            → List (C (Sym (C (Sym (Al Δ)))) ty tv)
-  change-Al x y = change-sym x y 
-              >>= C-mapM (C-mapM (λ { (v , k) → align v k }))
-
-  CSym²-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
-          → (f : ∀{k v} → P k v → M (Q k v))
-          → C (Sym (C (Sym P))) ty tv → M (C (Sym (C (Sym Q))) ty tv)
-  CSym²-mapM f = C-mapM (C-mapM f)
 \end{code}
 
   Finally, we can diff values of regular types!
@@ -347,14 +315,14 @@ module RegDiff.Diff.Regular.Base
 %<*Patch-def>
 \begin{code}
   Patch : U → Set
-  Patch ty = S (C (Sym (C (Sym (Al Δ))))) ty
+  Patch ty = S (C (Al Δ)) ty
 \end{code}
 %</Patch-def>
 
 \begin{code}
   infixl 20 _<>_ _<>'_
   _<>_ : {ty : U} → Patch ty → Patch ty → Patch ty
-  s <> o = chooseS (CSymCSym-cost AlΔ-cost) s o
+  s <> o = chooseS (C-cost AlΔ-cost) s o
 
   _<>'_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
   s <>' []       = s
@@ -366,15 +334,14 @@ module RegDiff.Diff.Regular.Base
 %<*diff1-nondet-def>
 \begin{code}
   diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (Patch ty)
-  diff1* x y = spine-list x y 
-           >>= S-mapM (uncurry change-Al)
+  diff1* x y = S-mapM (C-mapM (uncurry align) ∘ uncurry change) (spine-cp x y)
 \end{code}
 %</diff1-nondet-def>
 %<*diff1-def>
 \begin{code}
   diff1 : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch ty
   diff1 x y with diff1* x y
-  ...| []     = SX (CX (CX (AX (x , y))))
+  ...| []     = SX (CX (AX (x , y)))
   ...| s ∷ ss = s <>' ss
 \end{code}
 %</diff1-def>

@@ -28,8 +28,8 @@ module RegDiff.Diff.Multirec.Domain
 
     Cμ-rel : {P : UUSet} → HasRel P → HasRel (Cμ P)
     Cμ-rel doP (Cins x) = C-rel doP x ∙ ⟨⟩
-    Cμ-rel doP (Cdel x) = ⟨⟩ ᵒ ∙ (C-rel (λ d → doP d ᵒ) x) ᵒ
-    Cμ-rel doP (Cmod x) = CSymCSym-rel doP x
+    Cμ-rel doP (Cdel x) = ⟨⟩ ᵒ ∙ C-rel doP x
+    Cμ-rel doP (Cmod x) = C-rel doP x
 
     {-# TERMINATING #-}
     Patchμ-rel : HasRel Patchμ
