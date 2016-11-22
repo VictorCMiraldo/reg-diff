@@ -36,6 +36,6 @@ module RegDiff.Diff.Multirec.Domain
     Patchμ-rel (fix p) = ⟨⟩ ∙ Patchμ-rel p ∙ ⟨⟩ ᵒ
     Patchμ-rel (skel s) = S-rel Patchμ-rel s
     Patchμ-rel (chng s) = Cμ-rel (Al-rel Patchμ-rel) s
-    Patchμ-rel (set {ty} {tv} s) = Δ-rel {ty} {tv} s
+    Patchμ-rel (set {ty} s) = Δ-rel {ty} {ty} s
     
 \end{code}

@@ -83,7 +83,10 @@ module RegDiff.Diff.Regular.Base
     
     spine : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → S Δ ty
     spine {ty ⊗ tv}  (x1 , x2)  (y1 , y2) 
-      = S⊗ (spine-cp x1 y1) (spine-cp x2 y2)
+      with spine-cp x1 y1 | spine-cp x2 y2
+    ...| SX (k1 , k2) | SX (l1 , l2) = SX ((k1 , l1) , (k2 , l2))
+    ...| k            | l            = S⊗ k l
+    --  = S⊗ (spine-cp x1 y1) (spine-cp x2 y2)
     spine {tv ⊕ tw}  (i1 x)     (i1 y)  = Si1 (spine-cp x y) 
     spine {tv ⊕ tw}  (i2 x)     (i2 y)  = Si2 (spine-cp x y)
     spine {ty}       x          y       = SX (delta {ty} {ty} x y)
@@ -200,10 +203,10 @@ module RegDiff.Diff.Regular.Base
          → (costP : ∀{ty tv} → P ty tv → ℕ)
          → C P ty tv → ℕ
   C-cost c (CX x)    = c x
-  C-cost c (Ci1 s)   = 1 + C-cost c s
-  C-cost c (Ci2 s)   = 1 + C-cost c s
-  C-cost c (Ci1ᵒ s)  = 1 + C-cost c s
-  C-cost c (Ci2ᵒ s)  = 1 + C-cost c s
+  C-cost c (Ci1 s)   = C-cost c s
+  C-cost c (Ci2 s)   = C-cost c s
+  C-cost c (Ci1ᵒ s)  = C-cost c s
+  C-cost c (Ci2ᵒ s)  = C-cost c s
 \end{code}
 %</C-cost-def>
 
@@ -284,6 +287,13 @@ module RegDiff.Diff.Regular.Base
   align {ty} {tv} x y = return (AX (x , y))
 \end{code}
 %</align-rest-def>
+\begin{code}
+  Al-cost-raw : {k : U} → ⟦ k ⟧ A → ℕ → ℕ
+  Al-cost-raw {k} x n
+    -- = n
+    = suc n
+    -- = size1 sized k x + n
+\end{code}
 %<*Al-cost-def>
 \begin{code}
   Al-cost : {ty tv : U}{P : UUSet}
@@ -291,10 +301,10 @@ module RegDiff.Diff.Regular.Base
           → Al P ty tv → ℕ
   Al-cost c (AX xy) = c xy
   Al-cost c (A⊗ s o) = Al-cost c s + Al-cost c o
-  Al-cost c (Ap1  {tw = k} x s) = size1 sized k x + Al-cost c s
-  Al-cost c (Ap2  {tw = k} x s) = size1 sized k x + Al-cost c s
-  Al-cost c (Ap1ᵒ {tw = k} x s) = size1 sized k x + Al-cost c s
-  Al-cost c (Ap2ᵒ {tw = k} x s) = size1 sized k x + Al-cost c s
+  Al-cost c (Ap1  {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
+  Al-cost c (Ap2  {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
+  Al-cost c (Ap1ᵒ {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
+  Al-cost c (Ap2ᵒ {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
 \end{code}
 %</Al-cost-def>
 
@@ -327,13 +337,22 @@ module RegDiff.Diff.Regular.Base
   _<>'_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
   s <>' []       = s
   s <>' (o ∷ os) = (s <> o) <>' os
+
+  Patch* : U → Set
+  Patch* = List ∘ Patch
+
+  Patch& : U → Set
+  Patch& ty = List (ℕ × Patch ty)
+
+  addCosts : {ty : U} → Patch* ty → Patch& ty
+  addCosts = map (λ x → S-cost (C-cost AlΔ-cost) x , x)
 \end{code}
 
   Here is the final algorithm.
   
 %<*diff1-nondet-def>
 \begin{code}
-  diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (Patch ty)
+  diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch* ty
   diff1* x y = S-mapM (C-mapM (uncurry align) ∘ uncurry change) (spine-cp x y)
 \end{code}
 %</diff1-nondet-def>

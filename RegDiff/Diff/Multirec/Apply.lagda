@@ -58,7 +58,7 @@ module RegDiff.Diff.Multirec.Apply
       Patchμ-applyₗ (skel s)  x    = S-apply Patchμ-applyₗ s x
       Patchμ-applyₗ (chng c)  x    = Cμ-applyₗ (Al-Appliable Patchμ-Appliable) c x
       Patchμ-applyₗ (fix p) ⟨ x ⟩  = ⟨_⟩ <$> Patchμ-applyₗ p x
-      Patchμ-applyₗ {ty} {tv} (set p) x = goₗ Δ-apply {ty = ty} {tv} p x
+      Patchμ-applyₗ {ty} {.ty} (set p) x = goₗ Δ-apply {ty = ty} {ty} p x
 
       {-# TERMINATING #-}
       Patchμ-applyᵣ  : {ty tv : U} 
@@ -66,7 +66,7 @@ module RegDiff.Diff.Multirec.Apply
       Patchμ-applyᵣ (skel s)  x    = S-apply Patchμ-applyᵣ s x
       Patchμ-applyᵣ (chng c)  x    = Cμ-applyᵣ (Al-Appliable Patchμ-Appliable) c x
       Patchμ-applyᵣ (fix p) ⟨ x ⟩  = ⟨_⟩ <$> Patchμ-applyᵣ p x
-      Patchμ-applyᵣ {ty} {tv} (set p) x = goᵣ Δ-apply {ty = ty} {tv} p x
+      Patchμ-applyᵣ {ty} {.ty} (set p) x = goᵣ Δ-apply {ty = ty} {ty} p x
 
       Patchμ-Appliable : Appliable Patchμ
       Patchμ-Appliable = apply Patchμ-applyₗ Patchμ-applyᵣ

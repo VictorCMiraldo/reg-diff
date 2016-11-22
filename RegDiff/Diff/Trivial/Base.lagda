@@ -53,6 +53,13 @@ module RegDiff.Diff.Trivial.Base
 
   It has a cost function:
 
+\begin{code}
+  cost-Δ-raw : {ty tv : U} → Δ ty tv → ℕ
+  cost-Δ-raw {ty} {tv} (x , y) 
+    -- = size1 sized ty x + size1 sized tv y
+    = 1
+\end{code}
+
 %<*Trivial-cost-def>
 \begin{code}
   cost-Δ : {ty tv : U} → Δ ty tv → ℕ
@@ -60,9 +67,9 @@ module RegDiff.Diff.Trivial.Base
   cost-Δ {ty} {.ty} (x , y) | yes refl
     with dec-eq _≟-A_ ty x y
   ...| yes _ = 0
-  ...| no  _ = size1 sized ty x + size1 sized ty y
+  ...| no  _ = cost-Δ-raw {ty} {ty} (x , y)
   cost-Δ {ty} {tv}  (x , y) | no _
-    = size1 sized ty x + size1 sized tv y
+    = cost-Δ-raw {ty} {tv} (x ,  y)
 \end{code}
 %</Trivial-cost-def>
 

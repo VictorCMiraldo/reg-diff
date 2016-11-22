@@ -30,8 +30,8 @@ module RegDiff.Diff.Regular.Lab where
   Type3 : U
   Type3 = u1 ⊕ I x₃ ⊕ I x₃ ⊗ I x₃
 
-  d1 : Patch Type1
-  d1 = diff1 (i2 (i1 6)) (i2 (i2 (1 , 6)))
+  d1 : Patch* Type1
+  d1 = diff1* (i2 (i1 6)) (i2 (i2 (1 , 6)))
 
   d2 : Patch Type1
   d2 = diff1 (i2 (i1 6)) (i1 unit)

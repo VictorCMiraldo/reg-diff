@@ -62,7 +62,7 @@ module RegDiff.Diff.Multirec.Base
         skel : {ty     : U}     → S       Patchμ ty      → Patchμ ty ty
         chng : {ty tv  : U}     → Cμ (Al  Patchμ) ty tv  → Patchμ ty tv
         fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')    → Patchμ (I k) (I k')
-        set  : {ty tv  : U}     → Δ ty tv                → Patchμ ty tv
+        set  : {ty     : U}     → Δ ty ty                → Patchμ ty ty
 \end{code}
 %</Patchmu-def>
 %<*Patchmu-aux-def>
@@ -84,13 +84,15 @@ module RegDiff.Diff.Multirec.Base
       Patchμ-cost (skel x) = S-cost Patchμ-cost x
       Patchμ-cost (chng x) = Cμ-cost (Al-cost Patchμ-cost) x
       Patchμ-cost (fix s)  = Patchμ-cost s
-      Patchμ-cost (set {ty} {tv} x)  = cost-Δ {ty} {tv} x
+      Patchμ-cost (set {ty} x)  = cost-Δ {ty} {ty} x
 
       Cμ-cost : {ty tv : U}{P : UUSet} 
               → (costP : ∀{k v} → P k v → ℕ)
               → Cμ P ty tv → ℕ
-      Cμ-cost c (Cins x) = 1 + C-cost c x
-      Cμ-cost c (Cdel x) = 1 + C-cost c x
+      Cμ-cost c (Cins x) -- = 1 + C-cost c x
+        = C-cost c x
+      Cμ-cost c (Cdel x) -- = 1 + C-cost c x
+        = C-cost c x
       Cμ-cost c (Cmod y) = C-cost c y
 \end{code}
 %</diffmu-costs>
@@ -108,7 +110,9 @@ module RegDiff.Diff.Multirec.Base
 
       refine-Al : {k v : U} → Δ k v → List (Patchμ k v)
       refine-Al {I k} {I k'} (x , y) = fix <$> diffμ* x y
-      refine-Al              (x , y) = return (set (x , y))
+      refine-Al {k}   {v}    (x , y) with U-eq k v
+      refine-Al {k}   {v}    (x , y) | no _     = []
+      refine-Al {k}   {.k}   (x , y) | yes refl = return (set (x , y))
 \end{code}
 %</diffmu-refinements>
 %<*diffmu-non-det>
@@ -140,6 +144,15 @@ module RegDiff.Diff.Multirec.Base
     s <μ> (o ∷ os) with Patchμ-cost s ≤?-ℕ Patchμ-cost o
     ...| yes _ = s <μ> os
     ...| no  _ = o <μ> os
+
+    Patchμ* : U → U → Set
+    Patchμ* ty tv = List (Patchμ ty tv)
+
+    Patchμ& : U → U → Set
+    Patchμ& ty tv = List (ℕ × Patchμ ty tv)
+
+    addCostsμ : {ty tv : U} → Patchμ* ty tv → Patchμ& ty tv
+    addCostsμ = map (λ x → Patchμ-cost x , x)
 \end{code}
 %<*diffmu-det>
 \begin{code}

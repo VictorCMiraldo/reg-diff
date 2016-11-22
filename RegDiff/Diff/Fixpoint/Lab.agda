@@ -52,21 +52,23 @@ module RegDiff.Diff.Fixpoint.Lab where
     open DIFF.Internal (LIST-F ∷ []) public
     open DOMAIN.Internal (LIST-F ∷ []) public
 
-    l0 l1 l2 l3 l4 : list
+    l0 l0' l1 l2 l3 l4 : list
     l0 = (1 > #)
+    l0' = (3 > #)
     l1 = (5 > 3 > #)
     l2 = (3 > 50 > 4 > #)
     l3 = (1 > 50 > 4 > 20 > #)
     l4 = (5 > 1 > #)
 
     s1 : Patchμ (T fz) (T fz)
-    s1 = diffμ l4 l0 -- 6
+    s1 = diffμ l3 l2 -- 6
 
     s2 : Patchμ (T fz) (T fz)
     s2 = diffμ l4 l1 -- 6
-{-    
+
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public
+    open DOMAIN.Internal (2-3-TREE-F ∷ []) public
 
     k0 k1 k2 : 2-3-Tree
     k0 = Leaf
@@ -83,23 +85,22 @@ module RegDiff.Diff.Fixpoint.Lab where
 
     r1-computed 
      = skel
-        (Si2
-         (SX
-          (chng
-           (Cmod
-            (Ci2
+       (Si2
+        (SX
+         (chng
+          (Cmod
+           (Ci2
+            (Ci1ᵒ
              (CX
-              (Ci1
-               (CX
-                (A⊗ (AX (set (4 , 5)))
-                 (A⊗ (AX (fix (skel Scp)))
-                  (Ap2 ⟨ i1 unit ⟩ (AX (fix (skel Scp))))))))))))))
+              (A⊗ (AX (set (4 , 5)))
+               (A⊗ (AX (fix (skel Scp)))
+                (Ap2 ⟨ i1 unit ⟩ (AX (fix (skel Scp)))))))))))))
 
     r2 = diffμ k1 k3
 
     r2-computed 
       = chng
-        (Cins {k = fz} {k' = fz}
+        (Cins {k = fz} {fz}
          (Ci2
           (Ci2
            (CX
@@ -108,5 +109,12 @@ module RegDiff.Diff.Fixpoint.Lab where
               (⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩ ,
                ⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩)
               (AX (fix (skel Scp)))))))))
--}
-  open T1 public
+
+    still-ok-1 : r1 ≡ r1-computed
+    still-ok-1 = refl
+
+    still-ok-2 : r2 ≡ r2-computed
+    still-ok-2 = refl
+    
+
+  open T2 public
