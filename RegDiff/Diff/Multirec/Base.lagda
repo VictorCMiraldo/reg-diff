@@ -77,6 +77,7 @@ module RegDiff.Diff.Multirec.Base
 
   The rest of the code is exactly the same as for single fixpoints.
 
+%<*diffmu-costs>
 \begin{code}
     mutual
       {-# TERMINATING #-}
@@ -93,23 +94,14 @@ module RegDiff.Diff.Multirec.Base
       Cμ-cost c (Cdel x) = 1 + C-cost c x
       Cμ-cost c (Cmod y) = C-cost (C-cost c) y
 \end{code}
+%</diffmu-costs>
 
+%<*diffmu-refinements>
 \begin{code}
     mutual
       refine-S : {ty : U} → Δ ty ty → List (Patchμ ty ty)
       refine-S {I k}  (x , y) = fix  <$> diffμ* x y
       refine-S        (x , y) = chng <$> changeμ x y
-
-      spineμ : {ty tv : U} → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) → List (Patchμ ty tv)
-      spineμ {ty} {tv} x y with U-eq ty tv 
-      ...| no _     = chng <$> changeμ x y
-      spineμ {ty} {.ty} x y 
-         | yes refl = skel <$> S-mapM refine-S (spine-cp x y)
-
-      changeμ : {ty tv : U} 
-              → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
-              → List (Cμ (Al Patchμ) ty tv)
-      changeμ x y = Cmod <$> CSym²-mapM refine-C (change-sym-det x y)
 
       refine-C : {k v : U} → Δ k v → List (Al Patchμ k v)
       refine-C {I k} {I k'} (x , y) = (AX ∘ fix) <$> diffμ* x y
@@ -121,6 +113,20 @@ module RegDiff.Diff.Multirec.Base
 
       refine-CSym : {k v : U} → Δ k v → List (Sym (Al Patchμ) k v)
       refine-CSym (x , y) = refine-C (y , x)
+\end{code}
+%</diffmu-refinements>
+%<*diffmu-non-det>
+\begin{code}
+      changeμ : {ty tv : U} 
+              → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
+              → List (Cμ (Al Patchμ) ty tv)
+      changeμ x y = Cmod <$> CSym²-mapM refine-C (change-sym-det x y)
+
+      spineμ : {ty tv : U} → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) → List (Patchμ ty tv)
+      spineμ {ty} {tv} x y with U-eq ty tv 
+      ...| no _     = chng <$> changeμ x y
+      spineμ {ty} {.ty} x y 
+         | yes refl = skel <$> S-mapM refine-S (spine-cp x y)
   
       {-# TERMINATING #-}
       diffμ* : {k k' : Famᵢ} → Fix fam k → Fix fam k' → List (Patchμ (T k) (T k'))
@@ -129,58 +135,8 @@ module RegDiff.Diff.Multirec.Base
         ++ ((chng ∘ Cdel {k = k'} {k}) <$> (C-mapM refine-CSym (change ⟨ y ⟩ x)))
         ++ ((chng ∘ Cins {k = k} {k'}) <$> (C-mapM refine-C    (change ⟨ x ⟩ y)))
 \end{code}
-%<*refinements>
-begin{code}
-    mutual
-      refine-Al : {ty tv : U} → Δ ty tv → List (Rec ty tv)
-      refine-Al {I k} {I k'} (x , y) 
-        with k ≟-Fin k'
-      ...| no _ = return (set (delta {I k} {I k'} x y))
-      refine-Al {I k} {I .k} (x , y) 
-         | yes refl = fix <$> diffμ* x y
-      refine-Al {ty} {tv} (x , y) = return (set (delta {ty} {tv} x y))
-      
-      refine-CSym : {ty tv : U} → Δ ty tv → List (Sym (Al Rec) ty tv)
-      refine-CSym (x , y) = refine-C (y , x)
+%</diffmu-non-det>
 
-      refine-C : {ty tv : U} → Δ ty tv → List (Al Rec ty tv)
-      refine-C {I k} {I k'} (x , y) 
-        with k ≟-Fin k'
-      ...| no _ = align x y >>= Al-mapM refine-Al
-      refine-C {I k} {I .k} (x , y) 
-         | yes refl = (AX ∘ fix) <$> diffμ* x y
-      refine-C              (x , y) = align x y >>= Al-mapM refine-Al
-
-      {-# TERMINATING #-}
-      refine-S : {ty : U} → Δ ty ty → List ((SVar +ᵤ Cμ (Al Rec)) ty ty)
-      refine-S {I k}  (x , y) = (i1 ∘ Svar) <$> diffμ* x y
-      refine-S {ty}   (x , y) = i2          <$> changeμ x y
-\end{code}
-%</refinements>
-%<*spinemu-def>
-begin{code}
-      spineμ : {ty : U}(x y : ⟦ ty ⟧ (Fix fam)) → List (Patchμ ty)
-      spineμ x y = S-mapM refine-S (spine-cp x y)
-\end{code}
-%</spinemu-def>
-%<*changemu-def>
-begin{code}
-      changeμ : {ty tv : U} 
-              → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
-              → List (Cμ (Al Rec) ty tv)
-      changeμ x y = change-sym x y >>= CSym²-mapM refine-C 
-                >>= return ∘ Cmod
-\end{code}
-%</changemu-def>
-%<*diffmu-nondet-def>
-begin{code}
-      diffμ* : {k : Famᵢ} → Fix fam k → Fix fam k → List (Patchμ (T k))
-      diffμ* {k} ⟨ x ⟩ ⟨ y ⟩ 
-        =  spineμ {T k} x y
-        ++ ((SX ∘ i2 ∘ Cdel {k = k}) <$> (C-mapM refine-CSym (change ⟨ y ⟩ x)))
-        ++ ((SX ∘ i2 ∘ Cins {k = k}) <$> (C-mapM refine-C    (change ⟨ x ⟩ y)))
-\end{code}
-%</diffmu-nondet-def>
 
 \begin{code}
     _<μ>_ : {ty tv : U} → Patchμ ty tv → List (Patchμ ty tv) → Patchμ ty tv
@@ -188,12 +144,15 @@ begin{code}
     s <μ> (o ∷ os) with Patchμ-cost s ≤?-ℕ Patchμ-cost o
     ...| yes _ = s <μ> os
     ...| no  _ = o <μ> os
-
+\end{code}
+%<*diffmu-det>
+\begin{code}
     diffμ : {k : Famᵢ} → Fix fam k → Fix fam k → Patchμ (T k) (T k)
     diffμ {k} x y with diffμ* x y
     ...| []     = set (unmu x , unmu y)
     ...| s ∷ ss = s <μ> ss
 \end{code}
+%</diffmu-det>
 
 
 

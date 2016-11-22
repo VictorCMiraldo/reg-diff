@@ -50,33 +50,34 @@ module RegDiff.Diff.Multirec.Apply
     Cμ-Appliable : {P : UUSet} → Appliable P → Appliable (Cμ P)
     Cμ-Appliable doP = apply (Cμ-applyₗ doP) (Cμ-applyᵣ doP)
 
+
     mutual
-      Rec-applyₗ : {ty tv : U} → Rec ty tv → ⟦ ty ⟧ (Fix fam) → Maybe (⟦ tv ⟧ (Fix fam))
-      Rec-applyₗ           (fix x) el = Patchμ-applyₗ x el
-      Rec-applyₗ {ty} {tv} (set x) el = goₗ Δ-apply {ty} {tv} x el
-
-      Rec-applyᵣ : {ty tv : U} → Rec ty tv → ⟦ tv ⟧ (Fix fam) → Maybe (⟦ ty ⟧ (Fix fam))
-      Rec-applyᵣ           (fix x) el = Patchμ-applyᵣ x el
-      Rec-applyᵣ {ty} {tv} (set x) el = goᵣ Δ-apply {ty} {tv} x el
-
-      AlRec-Appliable : Appliable (Al Rec)
-      AlRec-Appliable = Al-Appliable (apply Rec-applyₗ Rec-applyᵣ)
-
-      SVar+Cμ-applyₗ : {k : U} → (SVar +ᵤ Cμ (Al Rec)) k k
-                     → ⟦ k ⟧ (Fix fam) → Maybe (⟦ k ⟧ (Fix fam))
-      SVar+Cμ-applyₗ (i1 (Svar x)) v = Patchμ-applyₗ x v
-      SVar+Cμ-applyₗ (i2 y) v        = Cμ-applyₗ AlRec-Appliable y v
-
-      SVar+Cμ-applyᵣ : {k : U} → (SVar +ᵤ Cμ (Al Rec)) k k
-                     → ⟦ k ⟧ (Fix fam) → Maybe (⟦ k ⟧ (Fix fam))
-      SVar+Cμ-applyᵣ (i1 (Svar x)) v = Patchμ-applyᵣ x v
-      SVar+Cμ-applyᵣ (i2 y) v        = Cμ-applyᵣ AlRec-Appliable y v
+      {-# TERMINATING #-}
+      Patchμ-applyₗ  : {ty tv : U} 
+                     → Patchμ ty tv → ⟦ ty ⟧ (Fix fam) → Maybe (⟦ tv ⟧ (Fix fam))
+      Patchμ-applyₗ (skel s)  x    = S-apply Patchμ-applyₗ s x
+      Patchμ-applyₗ (chng c)  x    = Cμ-applyₗ (Al-Appliable Patchμ-Appliable) c x
+      Patchμ-applyₗ (fix p) ⟨ x ⟩  = ⟨_⟩ <$> Patchμ-applyₗ p x
+      Patchμ-applyₗ {ty} {tv} (set p) x = goₗ Δ-apply {ty = ty} {tv} p x
 
       {-# TERMINATING #-}
-      Patchμ-applyₗ : {k : Famᵢ} → Patchμ (T k) → Fix fam k → Maybe (Fix fam k)
-      Patchμ-applyₗ p ⟨ x ⟩ = ⟨_⟩ <$> S-apply SVar+Cμ-applyₗ p x
+      Patchμ-applyᵣ  : {ty tv : U} 
+                     → Patchμ ty tv → ⟦ tv ⟧ (Fix fam) → Maybe (⟦ ty ⟧ (Fix fam))
+      Patchμ-applyᵣ (skel s)  x    = S-apply Patchμ-applyᵣ s x
+      Patchμ-applyᵣ (chng c)  x    = Cμ-applyᵣ (Al-Appliable Patchμ-Appliable) c x
+      Patchμ-applyᵣ (fix p) ⟨ x ⟩  = ⟨_⟩ <$> Patchμ-applyᵣ p x
+      Patchμ-applyᵣ {ty} {tv} (set p) x = goᵣ Δ-apply {ty = ty} {tv} p x
 
-      {-# TERMINATING #-}
-      Patchμ-applyᵣ : {k : Famᵢ} → Patchμ (T k) → Fix fam k → Maybe (Fix fam k)
-      Patchμ-applyᵣ p ⟨ x ⟩ = ⟨_⟩ <$> S-apply SVar+Cμ-applyᵣ p x
+      Patchμ-Appliable : Appliable Patchμ
+      Patchμ-Appliable = apply Patchμ-applyₗ Patchμ-applyᵣ
+
+    Patchμ-apply-famₗ
+      : {k k' : Famᵢ} 
+      → Patchμ (T k) (T k') → Fix fam k → Maybe (Fix fam k')
+    Patchμ-apply-famₗ p ⟨ x ⟩ = ⟨_⟩ <$> Patchμ-applyₗ p x
+
+    Patchμ-apply-famᵣ
+      : {k k' : Famᵢ} 
+      → Patchμ (T k) (T k') → Fix fam k' → Maybe (Fix fam k)
+    Patchμ-apply-famᵣ p ⟨ x ⟩ = ⟨_⟩ <$> Patchμ-applyᵣ p x
 \end{code}

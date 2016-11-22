@@ -1,4 +1,4 @@
-open import Prelude
+open import Prelude hiding (⊥)
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.RelCalc.Base
@@ -11,10 +11,10 @@ module RegDiff.Diff.Multirec.Lab where
 
   import RegDiff.Diff.Multirec.Base konstants keqs 
     as DIFF
-  -- import RegDiff.Diff.Multirec.Apply konstants keqs
-  --  as APPLY
-  -- import RegDiff.Diff.Multirec.Domain konstants keqs
-  --  as DOMAIN
+  import RegDiff.Diff.Multirec.Apply konstants keqs
+    as APPLY
+  import RegDiff.Diff.Multirec.Domain konstants keqs
+    as DOMAIN
 
   RTREE-NAT : Fam 2
   RTREE-NAT
@@ -43,10 +43,10 @@ module RegDiff.Diff.Multirec.Lab where
   fork n xs = ⟨ n , xs ⟩
 
   open DIFF.Internal RTREE-NAT public
-  -- open APPLY.Internal RTREE-NAT public
-  --open import RegDiff.Diff.Regular.Domain konstants keqs (Fix RTREE-NAT) DIFF.WB-FAM
-  --  public
-  -- open DOMAIN.Internal RTREE-NAT public
+  open APPLY.Internal RTREE-NAT public
+  open import RegDiff.Diff.Regular.Domain konstants keqs (Fix RTREE-NAT) DIFF.WB-FAM
+    public
+  open DOMAIN.Internal RTREE-NAT public
 
   t1 t2 t3 : rtree
 
@@ -96,3 +96,9 @@ module RegDiff.Diff.Multirec.Lab where
                                    (Cins {k = fs fz} {k' = fz}
                                      (Ci2 (CX (Ap1 ⟨ i1 unit ⟩ (AX (fix (skel Scp))))))))))))))))
                           Scp)))))))))))
+
+  lemma : Patchμ-apply-famₗ t1t3-norm t1 ≡ just t3
+  lemma = refl
+
+  lemma' : Patchμ-apply-famᵣ t1t3-norm t3 ≡ just t1
+  lemma' = refl

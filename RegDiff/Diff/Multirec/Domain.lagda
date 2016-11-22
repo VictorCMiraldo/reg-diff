@@ -31,16 +31,11 @@ module RegDiff.Diff.Multirec.Domain
     Cμ-rel doP (Cdel x) = ⟨⟩ ᵒ ∙ (C-rel (λ d → doP d ᵒ) x) ᵒ
     Cμ-rel doP (Cmod x) = CSymCSym-rel doP x
 
-    mutual
-      Rec-rel : HasRel Rec
-      Rec-rel (fix r) = Patchμ-rel r
-      Rec-rel (set {ty} {tv} t) = Δ-rel {ty} {tv} t
-
-      SVar+Cμ-rel : HasRel (SVar +ᵤ Cμ (Al Rec))
-      SVar+Cμ-rel (i1 (Svar x)) = Patchμ-rel x
-      SVar+Cμ-rel (i2 y)        = Cμ-rel (Al-rel Rec-rel) y
-
-      {-# TERMINATING #-}
-      Patchμ-rel : {k : Famᵢ} → Patchμ (T k) → EndoRel (Fix fam k)
-      Patchμ-rel p = ⟨⟩ ∙ S-rel SVar+Cμ-rel p ∙ ⟨⟩ ᵒ
+    {-# TERMINATING #-}
+    Patchμ-rel : HasRel Patchμ
+    Patchμ-rel (fix p) = ⟨⟩ ∙ Patchμ-rel p ∙ ⟨⟩ ᵒ
+    Patchμ-rel (skel s) = S-rel Patchμ-rel s
+    Patchμ-rel (chng s) = Cμ-rel (Al-rel Patchμ-rel) s
+    Patchμ-rel (set {ty} {tv} s) = Δ-rel {ty} {tv} s
+    
 \end{code}
