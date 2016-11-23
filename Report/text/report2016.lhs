@@ -153,7 +153,7 @@ each!
 \Agda{RegDiff/Generic/Multirec}{Fix-def}
 
   This universe is enough to model Context-Free grammars, and hence, provides
-the basic barebones for diffing elements of an arbitrary programming language.
+the basic bare bones for diffing elements of an arbitrary programming language.
 In the future, it could be interesting to see what kind of diffing functionality
 indexed functors could provide, as these could have scoping rules and other
 advanced features built into them. 
@@ -188,7 +188,7 @@ diff. It's module is declared as follows:
 
 \Agda{RegDiff/Diff/Trivial/Base}{Trivial-module-decl}
 
-  We stick to this nomenclature throughtout the code. The first line
+  We stick to this nomenclature throughout the code. The first line
 handles constant types: \textit{ks\#} is how many constant types we
 have, $ks$ is the vector of such types and $keqs$ is an indexed vector
 with a proof of decidable equality over such types. The second line
@@ -234,10 +234,10 @@ also be invertible in the sense that:
          & & B + 1}
 \end{displaymath}
   \item This is hard to play ball with. We want to say, in a way, that
-        if $x\;(p^\flat)\;y$, then $y\;((\text{inv}\;p)^\flat)\;x$ and vice-versa.
+        $x\;(p^\flat)\;y$ iff $y\;((\text{inv}\;p)^\flat)\;x$.
         That is, $(\text{inv}\;p)$ is the actual inverse of $p$.
-        Using relations, once could then say that $(\text{inv}\;p)^\flat$ is the
-        converse of $(p^\flat)^\circ$. That is: $(\text{inv}\;p)^\flat \equiv (p^\flat)^\circ$.
+        Using relations, one could then say that $(\text{inv}\;p)^\flat$ is the
+        converse of $(p^\flat)$. That is: $(\text{inv}\;p)^\flat \equiv (p^\flat)^\circ$.
         But, if $(\text{inv}\;p)^\flat$ is functional, so is $(p^\flat)^\circ$.
         This is the same as saying that $p^\flat$ is entire!
         If $p^\flat$ is functional and entire, it is a function (and hence, total!). 
@@ -253,7 +253,7 @@ how do they relate to this relational view and give examples here and there!
 
    The simplest possible way to describe a transformation is to say
 what is the source and what is the destination of such
-transformation. This can be acomplished by the Diagonal functor just
+transformation. This can be accomplished by the Diagonal functor just
 fine.
 
 \Agda{RegDiff/Diff/Trivial/Base}{delta-def}
@@ -276,7 +276,7 @@ represents the \emph{everywhere} $x$ relation, defined by
 \]
 
   This is a horrible patch however: We can't calculate with it because
-we don't know \emph{anything} about \emph{how} $x$ changed indo $y$. Note, however,
+we don't know \emph{anything} about \emph{how} $x$ changed into $y$. Note, however,
 that $(x , y)^\flat \equiv \SingletonRel{x}{y}$ is trivially functional.
 
 \subsection{Spines}
@@ -382,7 +382,7 @@ The whole thing also becomes of a much more expressive type:
 \end{align*}
 
 We can read the type as: a common prefix from both terms followed by injections into the target term and
-pattern matching on the source term followed by pointwise changes from source to destination. 
+pattern matching on the source term followed by point-wise changes from source to destination. 
 
   Note that we can also say, for sure, that we will never have a $\IC{SX}\;(\IC{Ci1}\;(\IC{Ci1$^\circ$}\;c))$
 at the S-leaves of $s'$; this would mean that we need to inject the target with $\iota_1$ and
@@ -430,7 +430,7 @@ Here is where our design space starts to be huge. Our definition of alignment is
 \Agda{RegDiff/Diff/Regular/Base}{Al-def}
 
 Which states that we can force components of the source or destination product to be
-equal to a given value or we can join two alignments together (This is a big source of inneficiency!).
+equal to a given value or we can join two alignments together (This is a big source of inefficiency!).
 
 Computing alignments is very expensive! In the case we actually have products on both the
 source and the destination we have a lot of options (hence the list monad!):
@@ -513,7 +513,7 @@ to $\subseteq$. We are left to check that:
 \newcommand{\StartProof}[1]{ & \hspace{2em} #1 \\ }
 \begin{align*}
           & < \SingletonRel{10}{4} , \underline{10} > \subrel < \underline{4} , id > \\
-  \Just{ split universsal }
+  \Just{ split universal }
           & \pi_1 \cdot < \SingletonRel{10}{4} , \underline{10} > \subrel \underline{4} 
             \; \wedge \; \pi_2 \cdot < \SingletonRel{10}{4} , \underline{10} > \subrel id
 \end{align*}
@@ -552,16 +552,16 @@ The second is easier to prove once we add variables!
    & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 \; (\SingletonRel{10}{4}) \; y \wedge z_2 \; (\underline{10}) \; y \Rightarrow x = y \\
   \Just{ points def }
    & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 = 4 \wedge y = 10 \wedge z_2 = 10 \Rightarrow x = y \\
-  \Just{ substitutions ; weakenings }
+  \Just{ substitutions ; weakening }
    & \forall x, y \; . \exists z_2 \;. \; x = 10  \wedge y = 10 \Rightarrow x = y \\
   \Just{ trivial }
    & True 
 \end{align*}
 
 Nevertheless, it is clear which patch we should choose! We should always choose the patch that
-gives rise to the biggest relation, as this is appliable to much more elements.
+gives rise to the biggest relation, as this is applicable to much more elements.
 
-This suggests an interesing justification for the cost function. For some reason, looks like we won the lotery with our cost functions.
+This suggests an interesting justification for the cost function. For some reason, looks like we won the lottery with our cost functions.
 We are always choosing the patch that gives rise to the maximal relation. I still don't clearly understand why or how,
 but it works.
 
@@ -599,12 +599,12 @@ each reference $n$ type variables:
 
 \Agda{RegDiff/Generic/Multirec}{Fix-def}
 
-Another auxiliar definition we use here is the indexed coproduct, which let's us \emph{extend}
+Another auxiliary definition we use here is the indexed coproduct, which let's us \emph{extend}
 some indexed type.
 
 \Agda{RegDiff/Diff/Multirec/Base}{UUSet-coprod}
 
-Now, we already have the ingredients for common prefixes, coprocucts and
+Now, we already have the ingredients for common prefixes, coproducts and
 products. We now need to handle type variables. Before we proceed with the nasty
 definitions, we still need two last synonyms:
 
@@ -621,7 +621,7 @@ we still can't, and we have to stick to \F{$\Delta$}, but now we need to handle
 the type-variables.
 
 A patch for a fixed point might not follow the precise order of operations (\F{S}, then \F{C}, then \F{Al})
-that regular types enjoyed. For instance, imagine we are transforing the following
+that regular types enjoyed. For instance, imagine we are transforming the following
 lists:
 
 \[
@@ -635,7 +635,7 @@ whereas the target is an inhabitant of $L_{\mathbbm{N}} (L_{\mathbbm{N}} (L_{\ma
 
 Here, we are already beginning with different types, so a spine (which is homogeneous) might not
 be the best start! In fact, the best start is to say that the first $5$ is deleted, then the spine
-can kick in and say that everything else is coppied!
+can kick in and say that everything else is copied!
 
 Here is the definition:
 
@@ -649,7 +649,7 @@ The \F{C$\mu$} type extends the previous \F{C} with options for inserting and de
 \Agda{RegDiff/Diff/Multirec/Base}{Patchmu-aux-def}
 
 Note that \IC{fix}, \IC{Cins} and \IC{Cdel} are heterogeneous on the \F{Fam$_i$} indexes! This is
-very important for mutually recursie families.
+very important for mutually recursive families.
 
 \begin{withsalt}
   I have been experimenting with different cost models and slight variations on
