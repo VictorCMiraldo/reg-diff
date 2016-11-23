@@ -3,7 +3,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 
-module Examples where
+module Report.code.Examples where
 \end{code}
 
 
@@ -30,33 +30,43 @@ module Examples where
       as DIFF
     open DIFF.Internal LIST-F public
 \end{code}
+%<*Example-list-2>
+\begin{code}
+    s0 : Patchμ LIST-F LIST-F
+    s0 = diffμ (5 > 8 > 13 > 21 > #) (8 > 13 > 21 > #)
+
+    s0-norm : Patchμ LIST-F LIST-F
+    s0-norm = chng (Cdel (Ci2ᵒ (CX (Ap2ᵒ 5 (AX (fix (skel Scp)))))))
+\end{code}
+%</Example-list-2>
 %<*Example-list-1>
 \begin{code}
     l0 l1 : list
     l0 = (3 > 50 > 4 > #)
     l1 = (1 > 50 > 4 > 20 > #)
 
-    s1 : Patchμ LIST-F
+    s1 : Patchμ LIST-F LIST-F
     s1 = diffμ l0 l1
 
-    s1-normalized : Patchμ LIST-F
+    s1-normalized : Patchμ LIST-F LIST-F
     s1-normalized 
-      = Si2
-         (S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
+      = skel
+        (Si2
+         (S⊗ (SX (chng (Cmod (CX (AX (set (3 , 1)))))))
           (SX
-           (i1
-            (Svar
+           (fix
+            (skel
              (Si2
               (S⊗ Scp
                (SX
-                (i1
-                 (Svar
+                (fix
+                 (skel
                   (Si2
                    (S⊗ Scp
                     (SX
-                     (i1
-                      (Svar
-                       (SX (i2 (Cins (Ci2 (CX (Ap2 20 (AX (fix Scp))))))))))))))))))))))
+                     (fix
+                      (chng
+                       (Cins (Ci2 (CX (Ap2 20 (AX (fix (skel Scp))))))))))))))))))))))
 
 \end{code}
 %</Example-list-1>
@@ -100,42 +110,42 @@ module Examples where
 %</Example-2-3-tree-full>
 %<*Example-2-3-patches>
 \begin{code}
-    r1 r2 : Patchμ 2-3-TREE-F
+    r1 r2 : Patchμ 2-3-TREE-F 2-3-TREE-F
     r1 = diffμ t1 t2
     r2 = diffμ k1 k3
 \end{code}
 %</Example-2-3-patches>
 %<*Example-2-3-tree-norm1>
 \begin{code}
-    r1-normalized : Patchμ 2-3-TREE-F
+    r1-normalized : Patchμ 2-3-TREE-F  2-3-TREE-F
     r1-normalized
-      = Si2
-        (SX
-         (i2
-          (Cmod
-           (Ci2
-            (CX
-             (Ci1
+      = skel
+        (Si2
+         (SX
+          (chng
+           (Cmod
+            (Ci2
+             (Ci1ᵒ
               (CX
                (A⊗ (AX (set (4 , 5)))
-                (A⊗ (AX (fix Scp)) (Ap2 ⟨ i1 unit ⟩ (AX (fix Scp))))))))))))
+                (A⊗ (AX (fix (skel Scp)))
+                 (Ap2 ⟨ i1 unit ⟩ (AX (fix (skel Scp)))))))))))))
 \end{code}
 %</Example-2-3-tree-norm1>
 %<*Example-2-3-tree-norm2>
 \begin{code}
-    r2-normalized : Patchμ 2-3-TREE-F
+    r2-normalized : Patchμ 2-3-TREE-F 2-3-TREE-F
     r2-normalized
-      = SX
-        (i2
-         (Cins
+      = chng
+        (Cins
+         (Ci2
           (Ci2
-           (Ci2
-            (CX
-             (Ap2 3
-              (Ap1
-               (⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩ ,
-                ⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩)
-               (AX (fix Scp)))))))))
+           (CX
+            (Ap2 3
+             (Ap1
+              (⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩ ,
+               ⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩)
+              (AX (fix (skel Scp)))))))))
 \end{code}
 %</Example-2-3-tree-norm2>
 
@@ -191,48 +201,20 @@ module Examples where
            > fork 8 (fork 5 # > #)
            > # )
 
-    r1 : Patchμ (T rtreeᵢ)
+    r1 : Patchμ (T rtreeᵢ) (T rtreeᵢ)
     r1 = diffμ t1 t2
 
-    r1-normalized : Patchμ (T rtreeᵢ)
+    r1-normalized : Patchμ (T rtreeᵢ) (T rtreeᵢ)
     r1-normalized
-      = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
-           (SX
-            (i1
-             (Svar
-              (Si2
-               (S⊗ Scp
-                (SX
-                 (i1
-                  (Svar
-                   (Si2
-                    (S⊗
-                     (SX
-                      (i1
-                       (Svar
-                        (S⊗ (SX (i2 (Cmod (CX (CX (AX (set (5 , 8))))))))
-                         (SX
-                          (i1
-                           (Svar
-                            (SX
-                             (i2
-                              (Cins {k = fz} (Ci2 (CX (Ap2 ⟨ 5 , ⟨ i1 unit ⟩ ⟩ (AX (fix Scp)))))))))))))))
-                     Scp))))))))))
+      = {!!}
 
-    r1-expected : Patchμ (T rtreeᵢ)
+    r1-expected : Patchμ (T rtreeᵢ) (T rtreeᵢ)
     r1-expected 
-      = S⊗ (SX (i2 (Cmod (CX (CX (AX (set (3 , 1))))))))
-           (SX
-            (i1
-             (Svar
-              (Si2
-               (S⊗ Scp
-                (SX (i2 (Cmod (CX (CX (AX (fix (SX (i2 (Cins {k = fz} 
-                  (Ci2 (CX (Ap1 {!!} (AX {!!})))))))))))))))))))
+      = {!!}
 
     res : Maybe rtree
-    res = Patchμ-applyₗ r1-expected t1
+    res = Patchμ-apply-famₗ r1-expected t1
 
-    good : Patchμ-applyₗ r1-expected t1 ≡ Patchμ-applyₗ r1-normalized t1
+    good : Patchμ-apply-famₗ r1-expected t1 ≡ Patchμ-apply-famₗ r1-normalized t1
     good = {!res!}
 \end{code}

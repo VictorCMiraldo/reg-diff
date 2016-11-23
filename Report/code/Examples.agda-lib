@@ -1,3 +1,0 @@
-name: Examples
-include: .
-depend: standard-library , reg-diff

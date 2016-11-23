@@ -9,6 +9,7 @@
 \usepackage{mathtools}
 \usepackage{stmaryrd}
 \usepackage{bbm}
+\usepackage{tcolorbox}
 \usepackage{catchfilebetweentags}
 \usepackage{code/excerpts/agda}
 
@@ -27,6 +28,12 @@
 
 \newcommand{\warnme}[1]{%
 {\color{red} \textbf{$[$} #1 \textbf{$]$}}}
+
+\newtcolorbox{withsalt}%
+             {colback=blue!5!white%
+             ,colframe=blue!75!black%
+             ,fonttitle=\bfseries%
+             ,title={Needs discussion:}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Agda related stuff
@@ -130,9 +137,14 @@ The denotation is defined as:
 
 \Agda{RegDiff/Generic/Parms}{Parms-def}
 
+\newcommand{\Interp}[2]{\F{$\llbracket$} #1 \F{$\rrbracket$}_{#2}}
 \Agda{RegDiff/Generic/Regular}{U-denotation}
 
-  A mutually recursive family can be easily encoded
+  Note that here, $\F{Parms}\;n$ really is isomorphic to $n$ types that serve
+as the parameters to the functor $\F{$\llbracket$} F \F{$\rrbracket$}$. When we
+introduce a fixpoint combinator, these parameters are used to to tie the recursion
+knot, just like a simple fixpoint: $\mu\;F \equiv F\;(\mu F)$. 
+In fact, a mutually recursive family can be easily encoded
 in this setting. All we need is $n$ types that refer to $n$ type-variables
 each!
 
@@ -157,7 +169,6 @@ something. The denotation receives a function $\F{Fin}\;n \rightarrow
 \F{Set}$, denoted $\F{Parms}\;n$, which can be seen as a valuation for
 each type variable.
 
-\newcommand{\Interp}[2]{\F{$\llbracket$} #1 \F{$\rrbracket$}_{#2}}
   In the following sections, we will be dealing with values of
 $\Interp{ty}{A}$ for some class of valuations $A$, though.  We need to
 have decidable equality for $A\;k$ and some mapping from $A\;k$ to
@@ -170,7 +181,7 @@ $\mathbb{N}$ for all $k$.  We call such valuations a
 field. Later on I sketch what I believe is the real meaning of the
 cost function.
 
-  The following sections discuss functionality that does not depent on
+  The following sections discuss functionality that does not depend on
 \emph{parameters to codes}.  We will be passing them as Agda module
 parameters. The first diffing technique we discuss is the trivial
 diff. It's module is declared as follows:
@@ -181,7 +192,7 @@ diff. It's module is declared as follows:
 handles constant types: \textit{ks\#} is how many constant types we
 have, $ks$ is the vector of such types and $keqs$ is an indexed vector
 with a proof of decidable equality over such types. The second line
-handles parameters: \textit{parms\#} is how many type-variables our
+handles type parameters: \textit{parms\#} is how many type-variables our
 codes will have, $A$ is the valuation we are using and $WBA$ is a
 proof that $A$ is \emph{well behaved}.
 
@@ -194,12 +205,49 @@ proof that $A$ is \emph{well behaved}.
   Intuitively, a \textit{Patch} is some description of a
 transformation. Setting the stage, let $A$ and $B$ be a types, $x : A$
 and $y : B$ elements of such types.  A \emph{patch} between $x$ and
-$y$ can be seen as it's ``application'' (partial) function. That is, a
-relation $e \subseteq A \times B$ such that $img\;e\subseteq id$ ($e$
-is functional).
+$y$ must specify a few parts:
+
+\begin{enumerate}[i)]
+  \item An $apply_p : A \rightarrow Maybe\;B$ function, 
+  \item such that $apply_p\;x \equiv \IC{just}\;y$.
+\end{enumerate}
+
+Well, $apply_p$ can be seen as a functional relation ($R$ is functional iff $img\;R\subseteq id$)
+from $A$ to $B$. We call this the ``application'' relation of the patch, and we will denote it
+by $p^\flat \subseteq A \times B$.
+
+\begin{withsalt}
+  There is still a lot that could be said about this. I feel like $p^\flat$ should
+also be invertible in the sense that:
+\begin{enumerate}[i)]
+  \item Let $(\text{inv}\;p)$ denote the inverse patch of $p$, which is a patch from $B$ to
+        $A$.
+  \item Then, $p^\flat \cdot (\text{inv}\;p)^\flat \subseteq id$ 
+          and $(\text{inv}\;p)^\flat \cdot p^\flat \subseteq id$,
+        Assuming $(\text{inv}\;p)^\flat$ is also functional, we can use
+        the maybe monad to represent these relations in $\mathbf{Set}$.
+        Writing the first equation on a diagram in $\mathbf{Set}$,
+        using the $apply$ functions:
+\begin{displaymath}
+\xymatrix@@C=5em{ B \ar[r]^{apply_{(\text{inv}\;p)}} \ar[drr]_{\iota_1}
+         & A + 1 \ar[r]^{apply_p + id} & (B + 1) + 1 \ar[d]_{\mu} \\
+         & & B + 1}
+\end{displaymath}
+  \item This is hard to play ball with. We want to say, in a way, that
+        if $x\;(p^\flat)\;y$, then $y\;((\text{inv}\;p)^\flat)\;x$ and vice-versa.
+        That is, $(\text{inv}\;p)$ is the actual inverse of $p$.
+        Using relations, once could then say that $(\text{inv}\;p)^\flat$ is the
+        converse of $(p^\flat)^\circ$. That is: $(\text{inv}\;p)^\flat \equiv (p^\flat)^\circ$.
+        But, if $(\text{inv}\;p)^\flat$ is functional, so is $(p^\flat)^\circ$.
+        This is the same as saying that $p^\flat$ is entire!
+        If $p^\flat$ is functional and entire, it is a function (and hence, total!). 
+        And that is not true.
+\end{enumerate}
+\end{withsalt} 
 
    Now, let us discuss some code and build some intuition for what is
-what in the above schema.
+what in the above schema. We will present different parts of the code,
+how do they relate to this relational view and give examples here and there!
 
 \subsection{Trivial Diff}
 
@@ -210,7 +258,7 @@ fine.
 
 \Agda{RegDiff/Diff/Trivial/Base}{delta-def}
 
-  Now, take an element $(x , y) : \F{$\Delta$}\;ty\;tv$. The ``apply''
+  Now, take an element $(x , y) : \F{$\Delta$}\;ty\;tv$. The ``application''
 relation it defines is trivial: $ \{ (x , y) \} $, or, in PF style:
 
 \newcommand{\SingletonRel}[2]{\underline{#2} \cdot \underline{#1}^\circ}
@@ -228,7 +276,8 @@ represents the \emph{everywhere} $x$ relation, defined by
 \]
 
   This is a horrible patch however: We can't calculate with it because
-we don't know \emph{anything} about \emph{how} $x$ changed indo $y$.
+we don't know \emph{anything} about \emph{how} $x$ changed indo $y$. Note, however,
+that $(x , y)^\flat \equiv \SingletonRel{x}{y}$ is trivially functional.
 
 \subsection{Spines}
 \label{subsec:spines}
@@ -245,13 +294,17 @@ of $x$ and $y$:
 \Agda{RegDiff/Diff/Regular/Base}{S-def}
 
 Note that \F{S} makes a functor (actually, a free monad!) on
-$P$. Computing a spine is easy, first we check whether or not $x$ and
+$P$, and hence, we can map over it:
+
+\Agda{RegDiff/Diff/Regular/Base}{S-map-def}
+
+Computing a spine is easy, first we check whether or not $x$ and
 $y$ are equal. If they are, we are done. If not, we inspect the first
 constructor and traverse it. Then we repeat.
 
 \Agda{RegDiff/Diff/Regular/Base}{spine-def}
 
-The ``apply'' relations specified by a spine $s$, denoted $s^\flat$ are:
+The ``application'' relations specified by a spine $s = \F{spine-cp}\;x\;y$, denoted $s^\flat$ are:
 
 \begin{align*}
   \IC{Scp}^\flat                    &= \hspace{2.3em} \xymatrix{ A & A \ar[l]_{id}} \\
@@ -261,18 +314,21 @@ The ``apply'' relations specified by a spine $s$, denoted $s^\flat$ are:
   (\IC{SX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix{ A & A \ar[l]_{\SingletonRel{x}{y}} }
 \end{align*}
 
-This has some problems that I do not like. Namelly:
-\begin{itemize}
-  \item Non-cannonicity: $\IC{Scp}^\flat \equiv (\IC{S$\otimes$}\;\IC{Scp}\;\IC{Scp})^\flat$
-        Even though the \F{spine-cp} function will never find the right-hand above, 
-        it feels sub-optimal to allow this.
+  Note that, in the $(\IC{SX}\;(x , y))$ case, we already assume there is a \F{$\Delta$} there
+because $s$ was the output of \F{spine-cp}. In the general case this is slightly different.
+The \texttt{Domain} modules are the ones responsible for handling the ``application'' relations.
 
-        One possible solution could be to remove \IC{Scp} and handle them through
-        the maybe monad. Instead of (\F{S}\;\F{$\Delta$}) we would have (\F{S}\;(\F{Maybe}\;\F{$\Delta$})),
-        where the \IC{nothing}s represent copy. This ensures that we can only copy on the leaves.
-        Branch \texttt{explicit-cpy} of the repo has this experiment going. It is easier said
-        than done.
-\end{itemize}
+\begin{withsalt}
+  Non-cannonicity can be a problem: $\IC{Scp}^\flat \equiv (\IC{S$\otimes$}\;\IC{Scp}\;\IC{Scp})^\flat$
+  Even though the \F{spine-cp} function will never find the right-hand above, 
+  it feels sub-optimal to allow this.
+
+  One possible solution could be to remove \IC{Scp} and handle them through
+  the maybe monad. Instead of (\F{S}\;\F{$\Delta$}) we would have (\F{S}\;(\F{Maybe}\;\F{$\Delta$})),
+  where the \IC{nothing}s represent copy. This ensures that we can only copy on the leaves.
+  Branch \texttt{explicit-cpy} of the repo has this experiment going. It is easier said
+  than done.
+\end{withsalt}
 
 Ignoring the problems and moving forward; note that for any $x$ and
 $y$, a spine $s = \F{spine-cp}\;x\;y$ will NEVER contain a product nor
@@ -294,15 +350,19 @@ the type variable are out of our control. But we can refine our
     & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (|i1 (4 , 10)| , |i2 10|))\; \IC{Scp})
 \end{align*}
 
-  And now, we want to \F{S-map} over $s$ and refine the \F{$\Delta$} inside to another type, that contains information
-about which injections we need to pattern match on and which we need to introduce.
-One step at a time, though. Let's first look how could we represent this information:
-
-We begin with a type (that's also a free monad) that encodes the injections we need to insert on the \emph{destination}:
+  And now, we want to \F{S-map} over $s$ and refine the \F{$\Delta$} inside. We want to have information
+about which injections we need to pattern match on and which we need to introduce. 
+We begin with a type (that's also a free monad) that encodes the injections we need to insert
+or pattern-match on:
 
 \Agda{RegDiff/Diff/Regular/Base}{C-def}
 
-And we make an eager function that will consume ALL injections from the right:
+Note that \F{C} is also a functor on $P$:
+
+\Agda{RegDiff/Diff/Regular/Base}{C-map-def}
+
+And we make an eager function that will consume ALL coproduct injections from both source
+and destination:
 
 \Agda{RegDiff/Diff/Regular/Base}{change-def}
 
@@ -310,41 +370,41 @@ Now, we could \F{S-map} \F{change} over $s$:
 
 \begin{align*}
   \F{S-map}\; \F{change} \; s 
-    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(|i1 (4 , 10)| , 10))))\; \IC{Scp}) \\
+    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$} \; (\IC{CX} \; ((4 , 10) , 10)))\; \IC{Scp}) \\
     &= s'
 \end{align*}
 
-But we are still left with that \IC{i1} on the left\footnote{%
-Previously, we had a \emph{flip} constructor inside our datatype that
-would let we flip arguments anytime, at will. This is far from ideal,
-however. In fact, it was this internal \emph{flip} that was causing
-the first algorithm to not terminate for fixpoints.}.
-Well, this is easy if we could only flip the arguments to \F{C}:
 
-\Agda{RegDiff/Diff/Regular/Base}{Sym-def}
-
-And now, we can \F{C-map} \F{change} with its arguments flipped over the previous $s'$:
-\begin{align*}
-  \F{C-map}\; (\F{flip change}) \; s'
-    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(\IC{Ci1} \; ((4 , 10) , 10)))\; \IC{Scp})
-\end{align*}
-
-And bingo! We now have the largest common prefix and information about the differing coproducts on the leaves
-of this prefix. The whole thing also becomes of a much more expressive type:
+The whole thing also becomes of a much more expressive type:
 
 \begin{align*}
-  \F{C-map}\; (\F{flip change}) \; (\F{S-map}\; \F{change} \; s) &: \F{S}\;(\F{C}\;(\F{Sym}\;(\F{C}\;(\F{Sym}\;\F{$\Delta$}))))
+ s'= \F{S-map}\; \F{change} \; s &: \F{S}\;(\F{C}\;\F{$\Delta$})
 \end{align*}
 
-We can read the type as: a common prefix from both terms followed by injections into the target term followed
-by pattern matching on the source term followed by pointwise changes from source to dest. Note the innermost
-\F{Sym} is used to return the type indexes to the correct order. This will make life easier once
-we start handling fixpoints.
+We can read the type as: a common prefix from both terms followed by injections into the target term and
+pattern matching on the source term followed by pointwise changes from source to destination. 
 
-Just like the values of \F{S}, we can also define the ``apply'' relation induced by the values of \F{C} and \F{Sym}.
-They are trivial, however. \F{C} induces composition with injections, \F{Sym} induces converses (which is the relational
-way of flipping things around). Note that functors are closed with respect to composition, hence,
-$\F{S}\;(\F{C}\;(\F{Sym}\;(\F{C}\;(\F{Sym}\;X))))$ makes a functor. Let's call this functor $\F{PrePatch}\;X$.
+  Note that we can also say, for sure, that we will never have a $\IC{SX}\;(\IC{Ci1}\;(\IC{Ci1$^\circ$}\;c))$
+at the S-leaves of $s'$; this would mean that we need to inject the target with $\iota_1$ and
+pattern match the source on $\iota_1$, but this is a common-prefix! Hence it would be recognized
+by \F{spine-cp} and instead we would have: $\IC{Si1}\;(\IC{SX}\;c)$.
+
+\begin{withsalt}
+  Even though the algorithm does not produce $\IC{SX}\;(\IC{Ci1}\;(\IC{Ci1$^\circ$}\;c))$, as mentioned
+  above, this is still a valid inhabitant of $\F{S}\;(\F{C}\;\F{$\Delta$})$!
+\end{withsalt}
+
+Just like the values of \F{S}, we can also define the ``application'' relation induced by the 
+values of \F{C}:
+
+\begin{align*}
+  (\IC{Ci1}\;c)^\flat &= \xymatrix{ B + X & A \ar[l]_(.3){\iota_1 \cdot c^\flat}} \\
+  (\IC{Ci2}\;c)^\flat &= \xymatrix{ X + B & A \ar[l]_(.3){\iota_2 \cdot c^\flat}} \\                                                   
+  (\IC{Ci1$^\circ$}\;c)^\flat &= \hspace{2.3em} \xymatrix{ B & A + X \ar[l]_(.5){c^\flat \cdot \iota_1^\circ}} \\
+  (\IC{Ci2$^\circ$}\;c)^\flat &= \hspace{2.3em} \xymatrix{ B & X + A \ar[l]_(.5){c^\flat \cdot \iota_2^\circ}} \\   
+  (\IC{CX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix{ B & A \ar[l]_{\SingletonRel{x}{y}} }
+\end{align*}
+
 
 Note that up until now, everything was deterministic! This is something we are about to lose.
 
@@ -360,16 +420,20 @@ In fact, splitting the different stages of the algorithm into different types re
 our intuition that the alignment is the source of difficulties. As we shall see, we now need
 to introduce non-determinism.}.
 
+Looking at our running example, we have a leaf $(\IC{CX} \; ((4 , 10) , 10))$ to take care of.
+Here the source type is $\mathbbm{N}^2$ and the destination is $\mathbbm{N}$. Note that
+the $\mathbbm{N}$ is treated as a constant type here. As we mentioned above, we have a product
+on the source, so we could extract some more information before giving up and using \F{$\Delta$}!
+
 Here is where our design space starts to be huge. Our definition of alignment is:
 
 \Agda{RegDiff/Diff/Regular/Base}{Al-def}
 
-Which states that we can force components of the left or right product to be
-equal to a given value or we can join two alignments together. This is
-a big source of inneficiency!
+Which states that we can force components of the source or destination product to be
+equal to a given value or we can join two alignments together (This is a big source of inneficiency!).
 
-Computing alignments is very expensive! In the case we actually have products everywhere,
-we have a lot of options (hence the list monad!):
+Computing alignments is very expensive! In the case we actually have products on both the
+source and the destination we have a lot of options (hence the list monad!):
 
 \Agda{RegDiff/Diff/Regular/Base}{align-all-paths-def}
 
@@ -378,25 +442,41 @@ we have less options:
 
 \Agda{RegDiff/Diff/Regular/Base}{align-rest-def}
 
-Following our previous example, we could \F{PrePatch-map} our alignment function
-on $s'$, in order to find all alignments of $(4 , 10)$ and $10$. In this case,
+Following our previous example, we could \F{C-mapM} our alignment function (the \F{C-mapM} is the monadic
+variant of \F{C-map}) on $s'$, in order to find all alignments of $(4 , 10)$ and $10$. In this case,
 this is very easy\footnote{%
 It might be hard to build intuition for why we need the \IC{$A\otimes$} constructor.
-On the Lab module of Fixpoint there is an example using 2-3-Trees that motivates the
+On the \texttt{Lab} module of Fixpoint there is an example using 2-3-Trees that motivates the
 importance of that constructor}.
 
 \begin{align*}
-  \F{PrePatch-map}\;\F{align}\;s' = & [ \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(\IC{Ci1} \; (\IC{Ap1$^\circ$}\; 10\; (\IC{AX} \; (4 , 10)))))\; \IC{Scp}) \tag{P1} \\
-                                    & , \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{CX}\;(\IC{Ci1} \; (\IC{Ap2$^\circ$}\; 4\; (\IC{AX} \; (10 , 10)))))\; \IC{Scp}) \; ] \tag{P2}
+  \F{C-map}\;\F{align}\;s' = & [ \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$}\;(\IC{CX} \; (\IC{Ap1$^\circ$}\; 10\; (\IC{AX} \; (4 , 10)))))\; \IC{Scp}) \\
+                                    & , \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$}\;(\IC{CX} \; (\IC{Ap2$^\circ$}\; 4\; (\IC{AX} \; (10 , 10)))))\; \IC{Scp}) \; ]
+\end{align*}
+
+If we ommit the \IC{SX} and \IC{CX} constructors this becomes slightly more readable:
+
+\begin{align*}
+  \F{C-map}\;\F{align}\;s' = & [ \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$}\;(\IC{Ap1$^\circ$}\; 10\; (\IC{AX} \; (4 , 10)))))\; \IC{Scp}) \tag{P1} \\
+                                    & , \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$}\;(\IC{Ap2$^\circ$}\; 4\; (\IC{AX} \; (10 , 10)))))\; \IC{Scp}) \; ] \tag{P2}
 \end{align*}
 
   But now we end up having to choose between one of those to be \emph{the} patch. This is where we start to need a cost function.
-Before talking about cost, I'd like to make a parenthesis here.
+Before talking about cost, let's look at the ``application'' relations of \F{Al}:
+
+\begin{align*}
+  (\IC{A$\otimes$}\;a_1\;a_2)^\flat &= \xymatrix@@C=5em{ B \times D & A \times C \ar[l]_{a_1^\flat \times a_1^\flat}} \\
+  (\IC{Ap1}\;x\;c)^\flat &= \xymatrix@@C=5em{ B \times X & A \ar[l]_{< c^\flat , \underline{x} >}} \\
+  (\IC{Ap2}\;x\;c)^\flat &= \xymatrix@@C=5em{ X \times B & A \ar[l]_{< \underline{x} , c^\flat  >}} \\ 
+  (\IC{Ap1$^\circ$}\;x\;c)^\flat &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \times X \ar[l]_{\pi_1 \cdot (c^\flat \times \underline{x}^\circ) }} \\
+  (\IC{Ap2$^\circ$}\;x\;c)^\flat &= \hspace{2.3em} \xymatrix@@C=5em{ B & X \times A \ar[l]_{\pi_2 \cdot (\underline{x}^\circ \times c^\flat)}} \\   
+  (\IC{AX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \ar[l]_{\SingletonRel{x}{y}} }
+\end{align*}
 
 \section{Patches as Relations}
 
 On Section \ref{subsec:spines} we mentioned that the copy constructor was problematic. Another motivation for removing
-it and handling everything externally is that we would like to say that the second patch above copies the 10, instead
+it and handling everything externally is that we would like to say that the patch (P2) above copies the 10, instead
 of saying that 10 changes into 10. We can postpone this by changing the relation semantics of \F{$\Delta$}. We can say
 that: $(x , x)^\flat = id$ and $(x , y)^\flat = \SingletonRel{x}{y}$.
 
@@ -495,10 +575,21 @@ Below are our cost functions:
 
 \Agda{RegDiff/Diff/Regular/Base}{Al-cost-def}
 
+\subsection{Patches for Regular Types}
+
+Now that we have \emph{spines}, \emph{changes} and \emph{alignments}
+figured out, we can define a patch as:
+
+\Agda{RegDiff/Diff/Regular/Base}{Patch-def}
+
+Computing inhabitants of such type is done with:
+
+\Agda{RegDiff/Diff/Regular/Base}{diff1-nondet-def}
+
 \section{Mutually Recursive Types}
 
-Now that we have a clear picture of the different parts used to diffing
-non-recursive types, extending this to recursive types is not
+Now that we have a clear picture of regular types, 
+extending this to recursive types is not
 very difficult.
 
 First, recall that a mutually recursive family is defined as $n$ codes that
@@ -520,63 +611,107 @@ definitions, we still need two last synonyms:
 \Agda{RegDiff/Diff/Multirec/Base}{Fami-def}
 
 Here $\F{T}\;k$ represents the $k$-th type of the family, and \F{Fam$_i$} represents
-the indexes of our family. First, we want to extend our \F{S} to \emph{permeate}
-through type variables. For this we use the \F{SVar} type,
-which says upon finding a variable that references \emph{the same} type on both source and target, we can diff
-that type instead.
+the indexes of our family. 
 
-Then, we need to understand that \F{C} over fixpoints is slightly different. Insertion in a fixpoint is
-seen as adding some information (injecting things). Deletion is seen as pattern matching and modification
-is seen as doing both! Hence we create a type \F{C$\mu$}.
+Remember that we have \F{S}pines, to handle the common prefixes; \F{C}hanges to
+handle different coproduct injections on source and destination and \F{Al}ignments to
+make sure we exploit products. We kept mentioning that we could not do anything
+on the leaves that were type variables or constant types. Well, constant types
+we still can't, and we have to stick to \F{$\Delta$}, but now we need to handle
+the type-variables.
 
-Last but not least, we define a \F{Rec} type to tie the knot after we align the result of changes (which
-could be defined as $\F{SVar} +_u \F{$\Delta$}$). The full picture looks like:
+A patch for a fixed point might not follow the precise order of operations (\F{S}, then \F{C}, then \F{Al})
+that regular types enjoyed. For instance, imagine we are transforing the following
+lists:
+
+\[
+  [5 , 8 , 13 , 21] \rightsquigarrow [8 , 13 , 21]
+\]
+
+Let lists be seen (as usual) as the initial algebras of $L_A\;X = 1 + A\times X$;
+then, both lists are inhabitants of $\mu L_{\mathbbm{N}}$, but, more precisely,
+the source is an inhabitant of $L_{\mathbbm{N}} (L_{\mathbbm{N}} (L_{\mathbbm{N}} (L_{\mathbbm{N}}\; \mathbbm{1})))$
+whereas the target is an inhabitant of $L_{\mathbbm{N}} (L_{\mathbbm{N}} (L_{\mathbbm{N}}\; \mathbbm{1}))$.
+
+Here, we are already beginning with different types, so a spine (which is homogeneous) might not
+be the best start! In fact, the best start is to say that the first $5$ is deleted, then the spine
+can kick in and say that everything else is coppied!
+
+Here is the definition:
 
 \Agda{RegDiff/Diff/Multirec/Base}{Patchmu-def}
 
-\AgdaI{RegDiff/Diff/Multirec/Base}{Patchmu-aux-def}{-.7em}
+The \IC{skel} constructor lets a spine kick in, which has \F{Patch$\mu$} on it's leaves again.
+The \IC{fix} constructor ties the know between type-variables and their lookup in the family, which
+is isomorphic. The \IC{set} constructor specifies that we are setting something.
+The \F{C$\mu$} type extends the previous \F{C} with options for inserting and deleting:
+
+\Agda{RegDiff/Diff/Multirec/Base}{Patchmu-aux-def}
+
+Note that \IC{fix}, \IC{Cins} and \IC{Cdel} are heterogeneous on the \F{Fam$_i$} indexes! This is
+very important for mutually recursie families.
+
+\begin{withsalt}
+  I have been experimenting with different cost models and slight variations on
+  the definitions of \F{Patch$\mu$}. I found that requiring \IC{set} to set the \emph{same}
+  type is a great idea! Not only it removes a lot of absurd patches, but it also 
+  speeds up the process quite a bit:
+
+%format Delta = "\Delta"
+%format Patchmu = "Patch\mu"
+  | set : {ty : U} -> Delta ty ty -> Patchmu ty ty |
+\end{withsalt}
 
 Computing a \F{Patch$\mu$} is done by piggybacking on the functions for computing \F{S}, \F{C} and \F{Al}
 separately, then mapping over them with some refinement functions:
 
-\Agda{RegDiff/Diff/Multirec/Base}{spinemu-def}
-
-\Agda{RegDiff/Diff/Multirec/Base}{changemu-def}
-
-\Agda{RegDiff/Diff/Multirec/Base}{diffmu-nondet-def}
+\Agda{RegDiff/Diff/Multirec/Base}{diffmu-non-det}
 
 The refinement functions are given by:
 
-\Agda{RegDiff/Diff/Multirec/Base}{refinements}
+\Agda{RegDiff/Diff/Multirec/Base}{diffmu-refinements}
 
-Handling simple fixpoints is easy after being able to handle mutually recursive families.
+Obviously, we can also define the ``application'' relation for fixed points, and that
+is done in \texttt{RegDiff/Diff/Multirec/Domain}. I believe it is more worthwhile to
+look at some example patches and their ``application'' relation instead of the general
+case, though. Let's begin with the lists we just discussed:
+
+\Agda{Report/code/Examples}{Example-list-2}
+
+Here, \F{LIST-F} is defined as $\IC{u1} \IC{$\oplus$} \mathbbm{N} \IC{$\otimes$} \IC{I}$, the usual
+list functor. The ``application'' relation for the above patch is:
+
+\begin{displaymath}
+\xymatrix{
+  1 + \mathbbm{N} \times [ \mathbbm{N} ] \ar[rr]^{\F{s0}} \ar[d]_{\iota_2^\circ} & & 1 + \mathbbm{N} \times [ \mathbbm{N} ] \\
+  \mathbbm{N} \times [ \mathbbm{N} ] \ar[r]_{\underline{5}^\circ \times id} 
+  & \mathbbm{N} \times [ \mathbbm{N} ] \ar[r]_{\pi_2}
+  & [ \mathbbm{N} ] \ar[u]^{\text{in}^\circ} }
+\end{displaymath}
 
 \subsection{Examples}
 
-Here we add some examples of patches over fixpoints. These can be seen
+Here we add some more examples of patches over fixpoints. These can be seen
 in the respective \texttt{Lab.agda} modules. Here are a few examples of list patches:
 
-\Agda{Examples}{Example-list-1}
+\Agda{Report/code/Examples}{Example-list-1}
 
 Previously we also mentioned that \emph{2-3-Trees} were a good motivation for the \IC{A$\otimes$} 
 constructor. Here is the actual example (the full code follows to illustrate how modules are imported
 and used):
 
-\Agda{Examples}{Example-2-3-tree-full}
+\Agda{Report/code/Examples}{Example-2-3-tree-full}
 
 The patches we calculate are:
 
-\Agda{Examples}{Example-2-3-patches}
+\Agda{Report/code/Examples}{Example-2-3-patches}
 
 Which are normalized to the following patches. Note that it is the 
 \IC{A$\otimes$} in \F{r1} that lets us copy \F{k1} and \F{k2} from the \F{2-node} to
 the \F{3-node}.
 
-\Agda{Examples}{Example-2-3-tree-norm1}
+\Agda{Report/code/Examples}{Example-2-3-tree-norm1}
 
-\Agda{Examples}{Example-2-3-tree-norm2}
-  
-In fact, the code is working nicely for fixpoints, but it needs some adjustment
-for mutually recursive families. So, chances are, somethings will change.
+\Agda{Report/code/Examples}{Example-2-3-tree-norm2}
 
 \end{document}

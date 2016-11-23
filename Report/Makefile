@@ -26,8 +26,7 @@ $(TEXT_PARTS_SRC_GENTEX)/%.tex: $(TEXT_PARTS_SRC_GENTEX)/%.lhs
 	lhs2TeX --agda -o $@ $<
 
 code/reg-diff-compiled:
-	code/compileAgdaTex .. code/excerpts
-	touch code/reg-diff-compiled
+	code/compileAgdaTex .. code/excerpts && touch code/reg-diff-compiled
 
 force:
 	$(COMPILER) $(MAINTEX)
