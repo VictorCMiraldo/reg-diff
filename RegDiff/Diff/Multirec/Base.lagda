@@ -55,24 +55,23 @@ module RegDiff.Diff.Multirec.Base
     T k = lookup k fam
 \end{code}
 %</Fami-def>
-%<*Patchmu-def>
-\begin{code}
-    mutual
-      data Patchμ : U → U → Set where
-        skel : {ty     : U}     → S       Patchμ ty      → Patchμ ty ty
-        chng : {ty tv  : U}     → Cμ (Al  Patchμ) ty tv  → Patchμ ty tv
-        fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')    → Patchμ (I k) (I k')
-        set  : {ty tv  : U}     → Δ ty tv                → Patchμ ty tv
-\end{code}
-%</Patchmu-def>
 %<*Patchmu-aux-def>
 \begin{code}
-      data Cμ (P : UUSet) : U → U → Set where
-        Cins  : {k k' : Famᵢ} → C P  (I k)  (T k')  → Cμ P  (T k)  (T k')
-        Cdel  : {k k' : Famᵢ} → C P  (T k)  (I k')  → Cμ P  (T k)  (T k')
-        Cmod  : {ty tv : U}   → C P  ty     tv      → Cμ P  ty     tv
+    data Cμ (P : UUSet) : U → U → Set where
+      Cins  : {k k' : Famᵢ} → C P  (I k)  (T k')  → Cμ P  (T k)  (T k')
+      Cdel  : {k k' : Famᵢ} → C P  (T k)  (I k')  → Cμ P  (T k)  (T k')
+      Cmod  : {ty tv : U}   → C P  ty     tv      → Cμ P  ty     tv
 \end{code}
 %</Patchmu-aux-def>
+%<*Patchmu-def>
+\begin{code}
+    data Patchμ : U → U → Set where
+      skel : {ty     : U}     → S       Patchμ ty      → Patchμ ty ty
+      chng : {ty tv  : U}     → Cμ (Al  Patchμ) ty tv  → Patchμ ty tv
+      fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')    → Patchμ (I k) (I k')
+      set  : {ty tv  : U}     → Δ ty tv                → Patchμ ty tv
+\end{code}
+%</Patchmu-def>
 
   The rest of the code is exactly the same as for single fixpoints.
 
