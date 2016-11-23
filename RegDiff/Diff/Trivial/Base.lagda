@@ -57,7 +57,8 @@ module RegDiff.Diff.Trivial.Base
   cost-Δ-raw : {ty tv : U} → Δ ty tv → ℕ
   cost-Δ-raw {ty} {tv} (x , y) 
     -- = size1 sized ty x + size1 sized tv y
-    = 1
+    -- = 1
+    = 2
 \end{code}
 
 %<*Trivial-cost-def>

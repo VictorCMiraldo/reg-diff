@@ -64,8 +64,8 @@ module RegDiff.Diff.Fixpoint.Lab where
     s1 = diffμ l3 l2 -- 6
 
     s2 : Patchμ (T fz) (T fz)
-    s2 = diffμ l4 l1 -- 6
-
+    s2 = diffμ l4 l0 -- 6
+{-
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public
     open DOMAIN.Internal (2-3-TREE-F ∷ []) public
@@ -115,6 +115,6 @@ module RegDiff.Diff.Fixpoint.Lab where
 
     still-ok-2 : r2 ≡ r2-computed
     still-ok-2 = refl
-    
+-}    
 
-  open T2 public
+  open T1 public

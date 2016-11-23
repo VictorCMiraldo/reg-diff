@@ -83,10 +83,7 @@ module RegDiff.Diff.Regular.Base
     
     spine : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → S Δ ty
     spine {ty ⊗ tv}  (x1 , x2)  (y1 , y2) 
-      with spine-cp x1 y1 | spine-cp x2 y2
-    ...| SX (k1 , k2) | SX (l1 , l2) = SX ((k1 , l1) , (k2 , l2))
-    ...| k            | l            = S⊗ k l
-    --  = S⊗ (spine-cp x1 y1) (spine-cp x2 y2)
+      = S⊗ (spine-cp x1 y1) (spine-cp x2 y2)
     spine {tv ⊕ tw}  (i1 x)     (i1 y)  = Si1 (spine-cp x y) 
     spine {tv ⊕ tw}  (i2 x)     (i2 y)  = Si2 (spine-cp x y)
     spine {ty}       x          y       = SX (delta {ty} {ty} x y)
