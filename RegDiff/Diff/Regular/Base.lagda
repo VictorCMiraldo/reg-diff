@@ -193,11 +193,11 @@ module RegDiff.Diff.Regular.Base
   change {ty ⊕ tw} {tv} (i2 x) y = Ci2ᵒ (change x y)
   change {ty} {tv}      x      y = CX (delta {ty} {tv} x y)
 \end{code}
+%</change-def>
 \begin{code}
   change-list : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C Δ ty tv)
   change-list x = return ∘ change x
 \end{code}
-%</change-def>
 
   We can also assign costs to them, in order to choose the
   best one.
