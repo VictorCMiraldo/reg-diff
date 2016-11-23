@@ -59,16 +59,20 @@ module RegDiff.Diff.Regular.Base
   S-mapM f (S⊗ s o)  = S-mapM f s >>= λ s' → S-mapM f o >>= return ∘ (S⊗ s')
   S-mapM f (Si1 s)   = S-mapM f s >>= return ∘ Si1
   S-mapM f (Si2 s)   = S-mapM f s >>= return ∘ Si2
+\end{code}
 
+%<*S-map-def>
+\begin{code}
   S-map  : {ty : U}{P Q : UUSet}
-          → (f : ∀{k} → P k k → Q k k)
-          → S P ty → S Q ty
+         → (f : ∀{k} → P k k → Q k k)
+         → S P ty → S Q ty
   S-map f (SX x)    = SX (f x)
   S-map f Scp       = Scp
   S-map f (S⊗ s o)  = S⊗ (S-map f s) (S-map f o)
   S-map f (Si1 s)   = Si1 (S-map f s)
   S-map f (Si2 s)   = Si2 (S-map f s)
 \end{code}
+%</S-map-def>
 
   Computing the inhabitants of S is fairly simple:
 
@@ -165,7 +169,10 @@ module RegDiff.Diff.Regular.Base
   C-mapM f (Ci2 s) = C-mapM f s >>= return ∘ Ci2
   C-mapM f (Ci1ᵒ s) = C-mapM f s >>= return ∘ Ci1ᵒ 
   C-mapM f (Ci2ᵒ s) = C-mapM f s >>= return ∘ Ci2ᵒ
+\end{code}
 
+%<*C-map-def>
+\begin{code}
   C-map : {ty tv : U}{P Q : UUSet}
          → (f : ∀{k v} → P k v → Q k v)
          → C P ty tv → C Q ty tv
@@ -175,6 +182,7 @@ module RegDiff.Diff.Regular.Base
   C-map f (Ci1ᵒ s) = Ci1ᵒ (C-map f s)
   C-map f (Ci2ᵒ s) = Ci2ᵒ (C-map f s)
 \end{code}
+%</C-map-def>
 
 %<*change-def>
 \begin{code}
