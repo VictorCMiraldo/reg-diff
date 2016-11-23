@@ -39,6 +39,10 @@ module RegDiff.Diff.Regular.Apply
   C-applyₗ doP (CX x) el  = goₗ doP x el
   C-applyₗ doP (Ci1 c) el = i1 <$> C-applyₗ doP c el
   C-applyₗ doP (Ci2 c) el = i2 <$> C-applyₗ doP c el
+  C-applyₗ doP (Ci1ᵒ c) (i1 el) = C-applyₗ doP c el
+  C-applyₗ doP (Ci1ᵒ c) (i2 el) = nothing
+  C-applyₗ doP (Ci2ᵒ c) (i1 el) = nothing
+  C-applyₗ doP (Ci2ᵒ c) (i2 el) = C-applyₗ doP c el
 
   C-applyᵣ : {ty tv : U}{P : UUSet}
            → (doP : Appliable P)
@@ -48,15 +52,11 @@ module RegDiff.Diff.Regular.Apply
   C-applyᵣ doP (Ci1 c) (i2 el) = nothing
   C-applyᵣ doP (Ci2 c) (i1 el) = nothing
   C-applyᵣ doP (Ci2 c) (i2 el) = C-applyᵣ doP c el
+  C-applyᵣ doP (Ci1ᵒ c) el = i1 <$> C-applyᵣ doP c el
+  C-applyᵣ doP (Ci2ᵒ c) el = i2 <$> C-applyᵣ doP c el
 
   C-Appliable : {P : UUSet} → Appliable P → Appliable (C P)
   C-Appliable doP = apply (C-applyₗ doP) (C-applyᵣ doP)
-
-  Sym-Appliable : {P : UUSet} → Appliable P → Appliable (Sym P)
-  Sym-Appliable (apply a1 a2) = apply a2 a1
-
-  SymCSym-Appliable : {P : UUSet} → Appliable P → Appliable (Sym (C (Sym P)))
-  SymCSym-Appliable doP = Sym-Appliable (C-Appliable (Sym-Appliable doP))
 
   Al-applyₗ : {ty tv : U}{P : UUSet}
             → (doP : Appliable P)
@@ -96,12 +96,8 @@ module RegDiff.Diff.Regular.Apply
 
 \begin{code}
   private
-    patch-appliable : Appliable (C (Sym (C (Sym (Al Δ)))))
-    patch-appliable = (C-Appliable 
-                      (Sym-Appliable 
-                      (C-Appliable 
-                      (Sym-Appliable 
-                      (Al-Appliable Δ-apply)))))
+    patch-appliable : Appliable (C (Al Δ))
+    patch-appliable = C-Appliable (Al-Appliable Δ-apply)
 
   Patch-applyₗ : {ty : U} → Patch ty → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
   Patch-applyₗ = S-apply (goₗ patch-appliable)

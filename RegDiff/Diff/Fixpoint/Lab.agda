@@ -1,6 +1,7 @@
-open import Prelude
+open import Prelude hiding (⊥)
 open import Prelude.Eq
 open import Prelude.Vector
+open import Prelude.RelCalc.Base
 
 module RegDiff.Diff.Fixpoint.Lab where
 
@@ -10,8 +11,8 @@ module RegDiff.Diff.Fixpoint.Lab where
 
   import RegDiff.Diff.Multirec.Base konstants keqs 
     as DIFF
-  -- import RegDiff.Diff.Fixpoint.Domains konstants keqs
-  --  as DOMAINS
+  import RegDiff.Diff.Multirec.Domain konstants keqs
+    as DOMAIN
 
   LIST-F : Uₙ 1
   LIST-F = u1 ⊕ (K kℕ) ⊗ I
@@ -49,16 +50,20 @@ module RegDiff.Diff.Fixpoint.Lab where
 
   module T1 where
     open DIFF.Internal (LIST-F ∷ []) public
+    open DOMAIN.Internal (LIST-F ∷ []) public
 
     l0 l1 l2 l3 l4 : list
     l0 = (1 > #)
-    l1 = (1 > 4 > #)
+    l1 = (5 > 3 > #)
     l2 = (3 > 50 > 4 > #)
     l3 = (1 > 50 > 4 > 20 > #)
     l4 = (5 > 1 > #)
 
     s1 : Patchμ (T fz) (T fz)
-    s1 = diffμ l0 l4 -- 6
+    s1 = diffμ l4 l0 -- 6
+
+    s2 : Patchμ (T fz) (T fz)
+    s2 = diffμ l4 l1 -- 6
 {-    
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public

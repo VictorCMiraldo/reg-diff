@@ -33,6 +33,9 @@ module RegDiff.Diff.Regular.Lab where
   d1 : Patch Type1
   d1 = diff1 (i2 (i1 6)) (i2 (i2 (1 , 6)))
 
+  d2 : Patch Type1
+  d2 = diff1 (i2 (i1 6)) (i1 unit)
+
   d3 : Patch Type3
   d3 = diff1 (i2 (i1 (weighted 1))) (i2 (i2 (weighted 100 , weighted 30)))
 

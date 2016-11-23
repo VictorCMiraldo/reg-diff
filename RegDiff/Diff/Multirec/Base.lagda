@@ -68,10 +68,9 @@ module RegDiff.Diff.Multirec.Base
 %<*Patchmu-aux-def>
 \begin{code}
       data Cμ (P : UUSet) : U → U → Set where
-        Cins  : {k k' : Famᵢ} → C       P  (I k) (T k')  → Cμ P (T k) (T k')
-        Cdel  : {k k' : Famᵢ} → C (Sym  P) (I k) (T k')  → Cμ P (T k') (T k)
-        Cmod  : {ty tv : U}
-              → C (Sym (C (Sym P))) ty tv → Cμ P ty tv
+        Cins  : {k k' : Famᵢ} → C P  (I k)  (T k')  → Cμ P  (T k)  (T k')
+        Cdel  : {k k' : Famᵢ} → C P  (T k)  (I k')  → Cμ P  (T k)  (T k')
+        Cmod  : {ty tv : U}   → C P  ty     tv      → Cμ P  ty     tv
 \end{code}
 %</Patchmu-aux-def>
 
@@ -92,7 +91,7 @@ module RegDiff.Diff.Multirec.Base
               → Cμ P ty tv → ℕ
       Cμ-cost c (Cins x) = 1 + C-cost c x
       Cμ-cost c (Cdel x) = 1 + C-cost c x
-      Cμ-cost c (Cmod y) = C-cost (C-cost c) y
+      Cμ-cost c (Cmod y) = C-cost c y
 \end{code}
 %</diffmu-costs>
 
@@ -110,9 +109,6 @@ module RegDiff.Diff.Multirec.Base
       refine-Al : {k v : U} → Δ k v → List (Patchμ k v)
       refine-Al {I k} {I k'} (x , y) = fix <$> diffμ* x y
       refine-Al              (x , y) = return (set (x , y))
-
-      refine-CSym : {k v : U} → Δ k v → List (Sym (Al Patchμ) k v)
-      refine-CSym (x , y) = refine-C (y , x)
 \end{code}
 %</diffmu-refinements>
 %<*diffmu-non-det>
@@ -120,7 +116,7 @@ module RegDiff.Diff.Multirec.Base
       changeμ : {ty tv : U} 
               → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
               → List (Cμ (Al Patchμ) ty tv)
-      changeμ x y = Cmod <$> CSym²-mapM refine-C (change-sym-det x y)
+      changeμ x y = Cmod <$> C-mapM refine-C (change x y)
 
       spineμ : {ty tv : U} → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) → List (Patchμ ty tv)
       spineμ {ty} {tv} x y with U-eq ty tv 
@@ -132,8 +128,8 @@ module RegDiff.Diff.Multirec.Base
       diffμ* : {k k' : Famᵢ} → Fix fam k → Fix fam k' → List (Patchμ (T k) (T k'))
       diffμ* {k} {k'} ⟨ x ⟩ ⟨ y ⟩ 
         =  spineμ {T k} {T k'} x y
-        ++ ((chng ∘ Cdel {k = k'} {k}) <$> (C-mapM refine-CSym (change ⟨ y ⟩ x)))
-        ++ ((chng ∘ Cins {k = k} {k'}) <$> (C-mapM refine-C    (change ⟨ x ⟩ y)))
+        ++ ((chng ∘ Cdel {k = k} {k'}) <$> (C-mapM refine-C (change x ⟨ y ⟩)))
+        ++ ((chng ∘ Cins {k = k} {k'}) <$> (C-mapM refine-C (change ⟨ x ⟩ y)))
 \end{code}
 %</diffmu-non-det>
 

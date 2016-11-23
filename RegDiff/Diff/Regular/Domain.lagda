@@ -51,12 +51,11 @@ module RegDiff.Diff.Regular.Domain
   S-rel doP (Si2 s)  = ⊥ -|- S-rel doP s
 
   C-rel : {P : UUSet}(doP : HasRel P) → HasRel (C P)
-  C-rel doP (CX x)  = doP x 
-  C-rel doP (Ci1 c) = ι₁ ∙ C-rel doP c
-  C-rel doP (Ci2 c) = ι₂ ∙ C-rel doP c
-
-  Sym-rel : {P : UUSet}(doP : HasRel P) → HasRel (Sym P)
-  Sym-rel doP s = (doP s) ᵒ
+  C-rel doP (CX x)   = doP x 
+  C-rel doP (Ci1 c)  = ι₁ ∙ C-rel doP c
+  C-rel doP (Ci2 c)  = ι₂ ∙ C-rel doP c
+  C-rel doP (Ci1ᵒ c) = C-rel doP c ∙ ι₁ ᵒ
+  C-rel doP (Ci2ᵒ c) = C-rel doP c ∙ ι₂ ᵒ
 
   Al-rel : {P : UUSet}(doP : HasRel P) → HasRel (Al P)
   Al-rel doP (AX x)     = doP x
@@ -68,17 +67,9 @@ module RegDiff.Diff.Regular.Domain
 \end{code}
 
 \begin{code}
-  CSymCSym-rel : {P : UUSet} → HasRel P →  HasRel (C (Sym (C (Sym P))))
-  CSymCSym-rel doP
-    = C-rel (λ k → Sym-rel (λ {ty} {tv} k → 
-                   C-rel   (λ {ty} {tv} k → 
-                   Sym-rel (λ {ty} {tv} k → 
-                              doP {ty} {tv} k) {ty} {tv} k) {ty} {tv} k) k)
-   
-
-  CSymCSymAlΔ-rel : HasRel (C (Sym (C (Sym (Al (Δ))))))
-  CSymCSymAlΔ-rel = CSymCSym-rel (Al-rel (λ {ty} {tv} → Δ-rel {ty} {tv}))
+  CAlΔ-rel : HasRel (C (Al Δ))
+  CAlΔ-rel = C-rel (Al-rel (λ {ty} {tv} → Δ-rel {ty} {tv}))
 
   Patch-rel : ∀{ty} → Patch ty → EndoRel (⟦ ty ⟧ A)
-  Patch-rel p = S-rel CSymCSymAlΔ-rel p
+  Patch-rel p = S-rel CAlΔ-rel p
 \end{code}
