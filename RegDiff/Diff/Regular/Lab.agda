@@ -30,14 +30,32 @@ module RegDiff.Diff.Regular.Lab where
   Type3 : U
   Type3 = u1 ⊕ I x₃ ⊕ I x₃ ⊗ I x₃
 
-  d1 : Patch Type1
-  d1 = diff1 (i2 (i1 6)) (i2 (i2 (1 , 6)))
+  d1 : Patch* Type1
+  d1 = diff1* (i2 (i1 6)) (i2 (i2 (1 , 6)))
 
   d2 : Patch Type1
   d2 = diff1 (i2 (i1 6)) (i1 unit)
 
   d3 : Patch Type3
   d3 = diff1 (i2 (i1 (weighted 1))) (i2 (i2 (weighted 100 , weighted 30)))
+
+  Type4 : U
+  Type4 = I x₂ ⊗ I x₂ ⊗ I x₂
+
+  Type5 : U
+  Type5 = Type4 ⊕ Type4
+
+  Type6 : U
+  Type6 = I x₁ ⊗ I x₁
+
+  v41 : Patch* Type4
+  v41 = diff1* (R , G , B) (B , R , G)
+
+  v42 : Patch* Type5
+  v42 = diff1* (i1 (R , G , B)) (i2 (R , B , G))
+  
+  as : List (Al Δ Type6 Type6)
+  as = align (3 , 4) (4 , 5)
 
 {-
   module T1 where
