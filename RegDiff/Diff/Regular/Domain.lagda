@@ -62,8 +62,8 @@ module RegDiff.Diff.Regular.Domain
   Al-rel doP (A⊗ a a')  = Al-rel doP a >< Al-rel doP a'
   Al-rel doP (Ap1  x a) = < Al-rel doP a ∣ ≣ᵣ x         >
   Al-rel doP (Ap2  x a) = < ≣ᵣ x         ∣ Al-rel doP a >
-  Al-rel doP (Ap1ᵒ x a) = π₁ ∙ (Al-rel doP a >< ≣ᵣ x)
-  Al-rel doP (Ap2ᵒ x a) = π₂ ∙ (≣ᵣ x         >< Al-rel doP a)
+  Al-rel doP (Ap1ᵒ x a) = π₁ {B = Unit} ∙ (Al-rel doP a >< ≣ₗ x)
+  Al-rel doP (Ap2ᵒ x a) = π₂ {A = Unit} ∙ (≣ₗ x         >< Al-rel doP a)
 \end{code}
 
 \begin{code}

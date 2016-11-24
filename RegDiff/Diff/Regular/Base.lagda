@@ -208,10 +208,10 @@ module RegDiff.Diff.Regular.Base
          → (costP : ∀{ty tv} → P ty tv → ℕ)
          → C P ty tv → ℕ
   C-cost c (CX x)    = c x
-  C-cost c (Ci1 s)   = 1 + C-cost c s
-  C-cost c (Ci2 s)   = 1 + C-cost c s
-  C-cost c (Ci1ᵒ s)  = 1 + C-cost c s
-  C-cost c (Ci2ᵒ s)  = 1 + C-cost c s
+  C-cost c (Ci1 s)   = C-cost c s
+  C-cost c (Ci2 s)   = C-cost c s
+  C-cost c (Ci1ᵒ s)  = C-cost c s
+  C-cost c (Ci2ᵒ s)  = C-cost c s
 \end{code}
 %</C-cost-def>
 
@@ -270,15 +270,75 @@ module RegDiff.Diff.Regular.Base
   Obviusly, the more expressive the alignment, the more
   expensive it's computation.
 
+%<*align-exp-all-paths-def>
+\begin{code}
+  align-exp : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (Al Δ ty tv)
+  align-exp {ty ⊗ ty'} {tv ⊗ tv'} (x1 , x2) (y1 , y2) 
+    =  A⊗ <$> align-exp x1 y1 <*> align-exp x2 y2
+    ++ Ap1  y2 <$> align-exp (x1 , x2) y1
+    ++ Ap2  y1 <$> align-exp (x1 , x2) y2
+    ++ Ap1ᵒ x2 <$> align-exp x1 (y1 , y2)
+    ++ Ap2ᵒ x1 <$> align-exp x2 (y1 , y2)
+\end{code}
+%</align-exp-all-paths-def>
+%<*align-exp-rest-def>
+\begin{code}
+  align-exp {ty ⊗ ty'} {tv} (x1 , x2) y 
+    =  Ap1ᵒ x2 <$> align-exp x1 y
+    ++ Ap2ᵒ x1 <$> align-exp x2 y
+  align-exp {ty} {tv ⊗ tv'} x (y1 , y2) 
+    =  Ap1  y2 <$> align-exp x y1
+    ++ Ap2  y1 <$> align-exp x y2
+  align-exp {ty} {tv} x y = return (AX (x , y))
+\end{code}
+%</align-exp-rest-def>
+
+  The above function is looking through a bunch of redundant paths.
+  Let's look at a concrete scenario:
+
+  Imagine we are aligning a ℕ × ℕ against a ℕ × ℕ.
+
+  align (3 , 4) (5 , 6)
+    = A⊗ (AX (3 , 5)) (AX (4 , 6)) ∷ (i)
+      Ap1 6 (Ap1ᵒ 4 (AX (3 , 5))) ∷ (i)
+      Ap1 6 (Ap2ᵒ 3 (AX (4 , 5))) ∷ (iii)
+      Ap2 5 (Ap1ᵒ 4 (AX (3 , 6))) ∷ (ii)
+      Ap2 5 (Ap2ᵒ 3 (AX (4 , 6))) ∷ (i)
+      Ap1ᵒ 4 (Ap1 6 (AX (3 , 5))) ∷ (i)
+      Ap1ᵒ 4 (Ap2 5 (AX (3 , 6))) ∷ (ii)
+      Ap2ᵒ 3 (Ap1 6 (AX (4 , 5))) ∷ (iii)
+      Ap2ᵒ 3 (Ap2 5 (AX (4 , 6))) ∷ (i)
+      []
+
+  The roman numerals indicate the branches that are equal. Note how many branches are
+  equal to the first one!
+
+  Well, removing the equal patches, we have:
+
+  align (3 , 4) (5 , 6)
+    = A⊗ (AX (3 , 5)) (AX (4 , 6)) ∷ 
+      Ap1 6 (Ap2ᵒ 3 (AX (4 , 5))) ∷
+      Ap2 5 (Ap1ᵒ 4 (AX (3 , 6))) ∷
+      []
+
+\begin{code}
+  kill-p2 : {ty tv : U} → List (Al Δ ty tv) → List (Al Δ ty tv)
+  kill-p2 [] = []
+  kill-p2 (Ap2 _ _ ∷ l) = l
+  kill-p2 (x ∷ l)       = x ∷ kill-p2 l
+
+  kill-p1 : {ty tv : U} → List (Al Δ ty tv) → List (Al Δ ty tv)
+  kill-p1 [] = []
+  kill-p1 (Ap1 _ _ ∷ l) = l
+  kill-p1 (x ∷ l)       = x ∷ kill-p1 l
+\end{code}
 %<*align-all-paths-def>
 \begin{code}
   align : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (Al Δ ty tv)
   align {ty ⊗ ty'} {tv ⊗ tv'} (x1 , x2) (y1 , y2) 
     =  A⊗ <$> align x1 y1 <*> align x2 y2
-    ++ Ap1  y2 <$> align (x1 , x2) y1
-    ++ Ap2  y1 <$> align (x1 , x2) y2
-    ++ Ap1ᵒ x2 <$> align x1 (y1 , y2)
-    ++ Ap2ᵒ x1 <$> align x2 (y1 , y2)
+    ++ (Ap1  y2 ∘ Ap2ᵒ x1) <$> kill-p2 (align x2 y1)
+    ++ (Ap2  y1 ∘ Ap1ᵒ x2) <$> kill-p1 (align x1 y2)
 \end{code}
 %</align-all-paths-def>
 %<*align-rest-def>
@@ -292,6 +352,14 @@ module RegDiff.Diff.Regular.Base
   align {ty} {tv} x y = return (AX (x , y))
 \end{code}
 %</align-rest-def>
+
+\begin{code}
+  Al-cost-raw : {k : U} → ⟦ k ⟧ A → ℕ → ℕ
+  Al-cost-raw {k} x n
+    -- = n
+    = suc n
+    -- = size1 sized k x + n
+\end{code}
 %<*Al-cost-def>
 \begin{code}
   Al-cost : {ty tv : U}{P : UUSet}
@@ -299,10 +367,10 @@ module RegDiff.Diff.Regular.Base
           → Al P ty tv → ℕ
   Al-cost c (AX xy) = c xy
   Al-cost c (A⊗ s o) = Al-cost c s + Al-cost c o
-  Al-cost c (Ap1  {tw = k} x s) = size1 sized k x + Al-cost c s
-  Al-cost c (Ap2  {tw = k} x s) = size1 sized k x + Al-cost c s
-  Al-cost c (Ap1ᵒ {tw = k} x s) = size1 sized k x + Al-cost c s
-  Al-cost c (Ap2ᵒ {tw = k} x s) = size1 sized k x + Al-cost c s
+  Al-cost c (Ap1  {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
+  Al-cost c (Ap2  {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
+  Al-cost c (Ap1ᵒ {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
+  Al-cost c (Ap2ᵒ {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
 \end{code}
 %</Al-cost-def>
 
@@ -335,13 +403,22 @@ module RegDiff.Diff.Regular.Base
   _<>'_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
   s <>' []       = s
   s <>' (o ∷ os) = (s <> o) <>' os
+
+  Patch* : U → Set
+  Patch* = List ∘ Patch
+
+  Patch& : U → Set
+  Patch& ty = List (ℕ × Patch ty)
+
+  addCosts : {ty : U} → Patch* ty → Patch& ty
+  addCosts = map (λ x → S-cost (C-cost AlΔ-cost) x , x)
 \end{code}
 
   Here is the final algorithm.
   
 %<*diff1-nondet-def>
 \begin{code}
-  diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (Patch ty)
+  diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch* ty
   diff1* x y = S-mapM (C-mapM (uncurry align) ∘ uncurry change) (spine-cp x y)
 \end{code}
 %</diff1-nondet-def>
