@@ -65,7 +65,6 @@ module RegDiff.Diff.Fixpoint.Lab where
 
     s2 : Patchμ (T fz) (T fz)
     s2 = diffμ l4 l0 -- 6
-
 {-
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public
@@ -87,27 +86,26 @@ module RegDiff.Diff.Fixpoint.Lab where
     -- 3971 with bad align
     -- 40591 with horrible align (align-exp + heterogeneous set)
 
-    r1-computed 
-     = skel
-       (Si2
-        (SX
-         (chng
-          (Cmod
+    r1-computed
+      = chng
+        (Cmod
+         (Si2
+          (SX
            (Ci2
             (Ci1ᵒ
              (CX
               (A⊗ (AX (set (4 , 5)))
-               (A⊗ (AX (fix (skel Scp)))
-                (Ap2 ⟨ i1 unit ⟩ (AX (fix (skel Scp)))))))))))))
+               (A⊗ (AX (fix (chng (Cmod Scp))))
+                (Ap2 ⟨ i1 unit ⟩ (AX (fix (chng (Cmod Scp)))))))))))))
 
     r2 = diffμ k1 k3
     -- 74  with good align
     -- 471 with bad align
     -- 4276 with horrible align
 
-    r2-computed 
+    r2-computed
       = chng
-        (Cins {k = fz} {fz}
+        (Cins
          (Ci2
           (Ci2
            (CX
@@ -115,9 +113,9 @@ module RegDiff.Diff.Fixpoint.Lab where
              (Ap1
               (⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩ ,
                ⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩)
-              (AX (fix (skel Scp)))))))))
+              (AX (fix (chng (Cmod Scp))))))))))
 
-    
+
     still-ok-1 : r1 ≡ r1-computed
     still-ok-1 = refl
 

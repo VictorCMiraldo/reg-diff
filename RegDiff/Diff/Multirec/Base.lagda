@@ -55,24 +55,22 @@ module RegDiff.Diff.Multirec.Base
     T k = lookup k fam
 \end{code}
 %</Fami-def>
-%<*Patchmu-def>
-\begin{code}
-    mutual
-      data Patchμ : U → U → Set where
-        skel : {ty     : U}     → S       Patchμ ty      → Patchμ ty ty
-        chng : {ty tv  : U}     → Cμ (Al  Patchμ) ty tv  → Patchμ ty tv
-        fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')    → Patchμ (I k) (I k')
-        set  : {ty     : U}     → Δ ty ty                → Patchμ ty ty
-\end{code}
-%</Patchmu-def>
 %<*Patchmu-aux-def>
 \begin{code}
-      data Cμ (P : UUSet) : U → U → Set where
-        Cins  : {k k' : Famᵢ} → C P  (I k)  (T k')  → Cμ P  (T k)  (T k')
-        Cdel  : {k k' : Famᵢ} → C P  (T k)  (I k')  → Cμ P  (T k)  (T k')
-        Cmod  : {ty tv : U}   → C P  ty     tv      → Cμ P  ty     tv
+    data Cμ (P : UUSet) : U → U → Set where
+      Cins  : {k k' : Famᵢ} → C (Al P)  (I k)  (T k')  → Cμ P  (T k)  (T k')
+      Cdel  : {k k' : Famᵢ} → C (Al P)  (T k)  (I k')  → Cμ P  (T k)  (T k')
+      Cmod  : {ty   : U}    → S (C (Al P)) ty          → Cμ P  ty     ty
 \end{code}
 %</Patchmu-aux-def>
+%<*Patchmu-def>
+\begin{code}
+    data Patchμ : U → U → Set where
+      chng : {ty tv  : U}     → Cμ Patchμ ty tv      → Patchμ ty tv
+      fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')  → Patchμ (I k) (I k')
+      set  : {ty     : U}     → Δ ty ty              → Patchμ ty ty
+\end{code}
+%</Patchmu-def>
 
   The rest of the code is exactly the same as for single fixpoints.
 
@@ -81,33 +79,25 @@ module RegDiff.Diff.Multirec.Base
     mutual
       {-# TERMINATING #-}
       Patchμ-cost : {ty tv : U} → Patchμ ty tv → ℕ
-      Patchμ-cost (skel x) = S-cost Patchμ-cost x
-      Patchμ-cost (chng x) = Cμ-cost (Al-cost Patchμ-cost) x
+      Patchμ-cost (chng x) = Cμ-cost Patchμ-cost x
       Patchμ-cost (fix s)  = Patchμ-cost s
       Patchμ-cost (set {ty} x)  = cost-Δ {ty} {ty} x
 
       Cμ-cost : {ty tv : U}{P : UUSet} 
               → (costP : ∀{k v} → P k v → ℕ)
               → Cμ P ty tv → ℕ
-      Cμ-cost c (Cins x) -- = 1 + C-cost c x
-        = C-cost c x
-      Cμ-cost c (Cdel x) -- = 1 + C-cost c x
-        = C-cost c x
-      Cμ-cost c (Cmod y) = C-cost c y
+      Cμ-cost c (Cins x)
+        = C-cost (Al-cost c) x
+      Cμ-cost c (Cdel x)
+        = C-cost (Al-cost c) x
+      Cμ-cost c (Cmod y) 
+        = S-cost (C-cost (Al-cost c)) y
 \end{code}
 %</diffmu-costs>
 
 %<*diffmu-refinements>
 \begin{code}
     mutual
-      refine-S : {ty : U} → Δ ty ty → List (Patchμ ty ty)
-      refine-S {I k}  (x , y) = fix  <$> diffμ* x y
-      refine-S        (x , y) = chng <$> changeμ x y
-
-      refine-C : {k v : U} → Δ k v → List (Al Patchμ k v)
-      refine-C {I k} {I k'} (x , y) = (AX ∘ fix) <$> diffμ* x y
-      refine-C              (x , y) = align x y >>= Al-mapM refine-Al
-
       refine-Al : {k v : U} → Δ k v → List (Patchμ k v)
       refine-Al {I k} {I k'} (x , y) = fix <$> diffμ* x y
       refine-Al {k}   {v}    (x , y) with U-eq k v
@@ -119,21 +109,21 @@ module RegDiff.Diff.Multirec.Base
 \begin{code}
       changeμ : {ty tv : U} 
               → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
-              → List (Cμ (Al Patchμ) ty tv)
-      changeμ x y = Cmod <$> C-mapM refine-C (change x y)
+              → List (C (Al Patchμ) ty tv)
+      changeμ x y = C-mapM ((_>>= Al-mapM refine-Al) ∘ uncurry align) (change x y) 
 
-      spineμ : {ty tv : U} → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) → List (Patchμ ty tv)
-      spineμ {ty} {tv} x y with U-eq ty tv 
-      ...| no _     = chng <$> changeμ x y
-      spineμ {ty} {.ty} x y 
-         | yes refl = skel <$> S-mapM refine-S (spine-cp x y)
+      try-mod : {ty tv : U} → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) → List (Patchμ ty tv)
+      try-mod {ty} {tv}  x y with U-eq ty tv 
+      try-mod {ty} {tv}  x y | no  _    = []
+      try-mod {ty} {.ty} x y | yes refl 
+        = (chng ∘ Cmod) <$> S-mapM (uncurry changeμ) (spine-cp x y)
   
       {-# TERMINATING #-}
       diffμ* : {k k' : Famᵢ} → Fix fam k → Fix fam k' → List (Patchμ (T k) (T k'))
       diffμ* {k} {k'} ⟨ x ⟩ ⟨ y ⟩ 
-        =  spineμ {T k} {T k'} x y
-        ++ ((chng ∘ Cdel {k = k} {k'}) <$> (C-mapM refine-C (change x ⟨ y ⟩)))
-        ++ ((chng ∘ Cins {k = k} {k'}) <$> (C-mapM refine-C (change ⟨ x ⟩ y)))
+        =  try-mod {T k} {T k'} x y
+        ++ ((chng ∘ Cdel {k = k} {k'}) <$> changeμ x ⟨ y ⟩)
+        ++ ((chng ∘ Cins {k = k} {k'}) <$> changeμ ⟨ x ⟩ y)
 \end{code}
 %</diffmu-non-det>
 

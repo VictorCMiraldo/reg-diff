@@ -27,15 +27,14 @@ module RegDiff.Diff.Multirec.Domain
     ⟨⟩ = fun ⟨_⟩
 
     Cμ-rel : {P : UUSet} → HasRel P → HasRel (Cμ P)
-    Cμ-rel doP (Cins x) = C-rel doP x ∙ ⟨⟩
-    Cμ-rel doP (Cdel x) = ⟨⟩ ᵒ ∙ C-rel doP x
-    Cμ-rel doP (Cmod x) = C-rel doP x
+    Cμ-rel doP (Cins x) = C-rel (Al-rel doP) x ∙ ⟨⟩
+    Cμ-rel doP (Cdel x) = ⟨⟩ ᵒ ∙ C-rel (Al-rel doP) x
+    Cμ-rel doP (Cmod x) = S-rel (C-rel (Al-rel doP)) x
 
     {-# TERMINATING #-}
     Patchμ-rel : HasRel Patchμ
     Patchμ-rel (fix p) = ⟨⟩ ∙ Patchμ-rel p ∙ ⟨⟩ ᵒ
-    Patchμ-rel (skel s) = S-rel Patchμ-rel s
-    Patchμ-rel (chng s) = Cμ-rel (Al-rel Patchμ-rel) s
+    Patchμ-rel (chng s) = Cμ-rel Patchμ-rel s
     Patchμ-rel (set {ty} s) = Δ-rel {ty} {ty} s
     
 \end{code}
