@@ -23,9 +23,6 @@
 
 %% My commands
 
-\newcommand{\TODO}[1]{%
-\[ \bullet \text{\color{blue} #1} \] }
-
 \newcommand{\warnme}[1]{%
 {\color{red} \textbf{$[$} #1 \textbf{$]$}}}
 
@@ -34,6 +31,12 @@
              ,colframe=blue!75!black%
              ,fonttitle=\bfseries%
              ,title={Needs discussion:}}
+
+\newtcolorbox{TODO}%
+             {colback=green!5!white%
+             ,colframe=green!75!black%
+             ,fonttitle=\bfseries%
+             ,title={TODO}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Agda related stuff
@@ -250,6 +253,21 @@ what in the above schema. We will present different parts of the code,
 how do they relate to this relational view and give examples here and there!
 
 \subsection{Trivial Diff}
+\label{subsec:trivialdiff}
+%format (REL p)       = p "^\flat"
+%format (CONST x)     = "\underline{" x "}"
+%format .             = "\cdot"
+%format (CONV x)      = x "^\circ"
+%format *             = "\times"
+%format (SINGLR x y)  = "\SingletonRel{" x "}{" y "}"
+%format (SPLIT (a) (b)) = "\langle {" a "} , {" b "} \rangle"
+%format inj1          = "\iota_1"
+%format inj2          = "\iota_2"
+%format pi1           = "\pi_1"
+%format pi2           = "\pi_2"
+
+
+%format Delta = "\F{$\Delta$}"
 
    The simplest possible way to describe a transformation is to say
 what is the source and what is the destination of such
@@ -258,7 +276,7 @@ fine.
 
 \Agda{RegDiff/Diff/Trivial/Base}{delta-def}
 
-  Now, take an element $(x , y) : \F{$\Delta$}\;ty\;tv$. The ``application''
+  Now, take an element |(x , y) : Delta ty tv|. The ``application''
 relation it defines is trivial: $ \{ (x , y) \} $, or, in PF style:
 
 \newcommand{\SingletonRel}[2]{\underline{#2} \cdot \underline{#1}^\circ}
@@ -277,18 +295,51 @@ represents the \emph{everywhere} $x$ relation, defined by
 
   This is a horrible patch however: We can't calculate with it because
 we don't know \emph{anything} about \emph{how} $x$ changed into $y$. Note, however,
-that $(x , y)^\flat \equiv \SingletonRel{x}{y}$ is trivially functional.
+that | REL (x , y) == (SINGLR x y) | is trivially functional.
+
+\begin{withsalt}
+  In the code, we actually define the ``application'' relation of |Delta|
+as:
+
+\begin{align*}
+  |REL (x , x)| &= |id| \\
+  |REL (x , y)| &= |SINGLR x y|
+\end{align*}
+
+  This suggests that copies might be better off being handled by
+the trivial diff. We will return to this discussion in section \ref{sec:patchesasrelations}
+\end{withsalt}
+
 
 \subsection{Spines}
 \label{subsec:spines}
+%format CONS   = "\IC{:\hspace{-.5em}:}"
+%format NIL    = "\IC{[]}"
+
+%format Stimes = "\IC{S$\otimes$}"
+%format Si1    = "\IC{Si1}"
+%format Si2    = "\IC{Si2}"
+%format Scp    = "\IC{Scp}"
+%format SX     = "\IC{SX}"
+
+%format s1 = "s_1"
+%format s2 = "s_2"
+
+%format spine-cp = "\F{spine-cp}"
+%format S        = "\F{S}"
+%format S-map    = "\F{S-map}"
+%format Maybe    = "\F{Maybe}"
+%format just     = "\IC{just}"
+%format nothing  = "\IC{nothing}"
+
 
   We can try to make it better by identifying the longest prefix of
-constructors where $x$ and $y$ agree, before giving up and using \F{$\Delta$}. 
+constructors where $x$ and $y$ agree, before giving up and using |Delta|. 
 Moreover, this becomes much easier if $x$ and $y$ actually have the same type.
 In practice, we are only interested in diffing elements of the same language.
 It does not make sense to diff a C source file against a Haskell source file.
 
-Nevertheless, we define an \F{S} structure to capture the longest common prefix
+Nevertheless, we define an |S| structure to capture the longest common prefix
 of $x$ and $y$:
 
 \Agda{RegDiff/Diff/Regular/Base}{S-def}
@@ -304,36 +355,35 @@ constructor and traverse it. Then we repeat.
 
 \Agda{RegDiff/Diff/Regular/Base}{spine-def}
 
-The ``application'' relations specified by a spine $s = \F{spine-cp}\;x\;y$, denoted $s^\flat$ are:
+The ``application'' relations specified by a spine |s = spine-cp x y|, denoted |REL s| are:
 
 \begin{align*}
-  \IC{Scp}^\flat                    &= \hspace{2.3em} \xymatrix{ A & A \ar[l]_{id}} \\
-  (\IC{S$\otimes$}\;s_1\;s_2)^\flat &= \xymatrix{ A \times B & A \times B \ar[l]_(.45){s_1^\flat \times s_2^\flat}} \\
-  (\IC{Si1}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_1 \cdot s^\flat \cdot i_1^\circ}} \\                                                   
-  (\IC{Si2}\;s)^\flat               &= \xymatrix{ A + B & A + B \ar[l]_(.45){i_2 \cdot s^\flat \cdot i_2^\circ}} \\    
-  (\IC{SX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix{ A & A \ar[l]_{\SingletonRel{x}{y}} }
+  |REL Scp|             &= \hspace{2.3em} \xymatrix@@C=5em{ A & A \ar[l]_{id}} \\
+  |REL (Stimes s1 s2)|  &= \xymatrix@@C=5em{ A \times B & A \times B \ar[l]_(.45){|(REL s1) * (REL s2)|}} \\
+  |REL (Si1 s)|         &= \xymatrix@@C=5em{ A + B & A + B \ar[l]_(.45){|inj1 . (REL s) . (CONV inj1)|}} \\ 
+  |REL (Si2 s)|         &= \xymatrix@@C=5em{ A + B & A + B \ar[l]_(.45){|inj2 . (REL s) . (CONV inj2)|}} \\    
+  |REL (SX p)|          &= \hspace{2.3em} \xymatrix@@C=5em{ A & A \ar[l]_{|REL p|} }
 \end{align*}
 
-  Note that, in the $(\IC{SX}\;(x , y))$ case, we already assume there is a \F{$\Delta$} there
-because $s$ was the output of \F{spine-cp}. In the general case this is slightly different.
-The \texttt{Domain} modules are the ones responsible for handling the ``application'' relations.
+  Note that, in the |(SX p)| case, we simply ask for the ``application'' relation
+of |p|.
 
 \begin{withsalt}
-  Non-cannonicity can be a problem: $\IC{Scp}^\flat \equiv (\IC{S$\otimes$}\;\IC{Scp}\;\IC{Scp})^\flat$
-  Even though the \F{spine-cp} function will never find the right-hand above, 
+  Non-cannonicity can be a problem: |REL Scp ==  (REL (Stimes Scp Scp))|
+  Even though the |spine-cp| function will never find the right-hand above, 
   it feels sub-optimal to allow this.
 
-  One possible solution could be to remove \IC{Scp} and handle them through
-  the maybe monad. Instead of (\F{S}\;\F{$\Delta$}) we would have (\F{S}\;(\F{Maybe}\;\F{$\Delta$})),
+  One possible solution could be to remove |Scp| and handle them through
+  the maybe monad. Instead of |S Delta| we would have |S (Maybe Delta)|,
   where the \IC{nothing}s represent copy. This ensures that we can only copy on the leaves.
   Branch \texttt{explicit-cpy} of the repo has this experiment going. It is easier said
   than done.
 \end{withsalt}
 
 Ignoring the problems and moving forward; note that for any $x$ and
-$y$, a spine $s = \F{spine-cp}\;x\;y$ will NEVER contain a product nor
+$y$, a spine |s = spine-cp x y| will NEVER contain a product nor
 a unit on a leaf (we force going through products and copying units).
-Hence, whenever we are traversing $s$ and find a $\IC{SX}$, we know
+Hence, whenever we are traversing $s$ and find a |SX|, we know
 that: (1) the values of the pair are different and (2) we must be at a
 coproduct, a constant type or a type variable. The constant type or
 the type variable are out of our control. But we can refine our
@@ -344,13 +394,23 @@ the type variable are out of our control. But we can refine our
 
 %format i1 = "\IC{i1}"
 %format i2 = "\IC{i2}"
+%format Ci1    = "\IC{Ci1}"
+%format Ci2    = "\IC{Ci2}"
+%format Ci1o   = "\IC{Ci1$^\circ$}"
+%format Ci2o   = "\IC{Ci2$^\circ$}"
+%format CX     = "\IC{CX}"
+
+%format C      = "\F{C}"
+%format change = "\F{change}"
+%format C-map  = "\F{C-map}"
+%format C-mapM = "\F{C-mapM}"
   Let's imagine we are diffing the following values of a type $\mathbbm{1} + (\mathbbm{N}^2 + \mathbbm{N})\times \mathbbm{N}$:
 \begin{align*}
-  s & = \F{spine-cp}\;(|i2 (i1 (4 , 10) , 5)|)\;(|i2 (i2 10 , 5)|) \\
-    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (|i1 (4 , 10)| , |i2 10|))\; \IC{Scp})
+  s & = | spine-cp (inj2 (inj1 (4 , 10) , 5)) (inj2 (inj2 10 , 5)) | \\
+    & = | Si2 (Stimes (SX (inj1 (4 , 10) , inj2 10)) Scp)|
 \end{align*}
 
-  And now, we want to \F{S-map} over $s$ and refine the \F{$\Delta$} inside. We want to have information
+  And now, we want to \F{S-map} over $s$ and refine the |Delta| inside. We want to have information
 about which injections we need to pattern match on and which we need to introduce. 
 We begin with a type (that's also a free monad) that encodes the injections we need to insert
 or pattern-match on:
@@ -369,40 +429,38 @@ and destination:
 Now, we could \F{S-map} \F{change} over $s$:
 
 \begin{align*}
-  \F{S-map}\; \F{change} \; s 
-    & = \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$} \; (\IC{CX} \; ((4 , 10) , 10)))\; \IC{Scp}) \\
-    &= s'
+  |S-map change s| 
+    & = | Si2 (Stimes (SX (Ci2 (Ci1o (CX ((4 , 10) , 10))))) Scp)| \\
+    & = |s'|
 \end{align*}
 
 
 The whole thing also becomes of a much more expressive type:
 
-\begin{align*}
- s'= \F{S-map}\; \F{change} \; s &: \F{S}\;(\F{C}\;\F{$\Delta$})
-\end{align*}
+| s'= S-map change s : S (C Delta)|
 
 We can read the type as: a common prefix from both terms followed by injections into the target term and
 pattern matching on the source term followed by point-wise changes from source to destination. 
 
-  Note that we can also say, for sure, that we will never have a $\IC{SX}\;(\IC{Ci1}\;(\IC{Ci1$^\circ$}\;c))$
-at the S-leaves of $s'$; this would mean that we need to inject the target with $\iota_1$ and
-pattern match the source on $\iota_1$, but this is a common-prefix! Hence it would be recognized
-by \F{spine-cp} and instead we would have: $\IC{Si1}\;(\IC{SX}\;c)$.
+  Note that we can also say, for sure, that we will never have a |SX (Ci1 (Ci1o c))|
+at the S-leaves of $s'$; this would mean that we need to inject the target with |inj1| and
+pattern match the source on |inj1|, but this is a common-prefix! Hence it would be recognized
+by \F{spine-cp} and instead we would have: |Si1 (SX c)|.
 
 \begin{withsalt}
-  Even though the algorithm does not produce $\IC{SX}\;(\IC{Ci1}\;(\IC{Ci1$^\circ$}\;c))$, as mentioned
-  above, this is still a valid inhabitant of $\F{S}\;(\F{C}\;\F{$\Delta$})$!
+  Even though the algorithm does not produce |SX (Ci1 (Ci1o c))|, as mentioned
+  above, this is still a valid inhabitant of |S (C Delta)|!
 \end{withsalt}
 
-Just like the values of \F{S}, we can also define the ``application'' relation induced by the 
-values of \F{C}:
+Just like the values of |S|, we can also define the ``application'' relation induced by the 
+values of |C|:
 
 \begin{align*}
-  (\IC{Ci1}\;c)^\flat &= \xymatrix{ B + X & A \ar[l]_(.3){\iota_1 \cdot c^\flat}} \\
-  (\IC{Ci2}\;c)^\flat &= \xymatrix{ X + B & A \ar[l]_(.3){\iota_2 \cdot c^\flat}} \\                                                   
-  (\IC{Ci1$^\circ$}\;c)^\flat &= \hspace{2.3em} \xymatrix{ B & A + X \ar[l]_(.5){c^\flat \cdot \iota_1^\circ}} \\
-  (\IC{Ci2$^\circ$}\;c)^\flat &= \hspace{2.3em} \xymatrix{ B & X + A \ar[l]_(.5){c^\flat \cdot \iota_2^\circ}} \\   
-  (\IC{CX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix{ B & A \ar[l]_{\SingletonRel{x}{y}} }
+  |REL (Ci1 c)|  &= \xymatrix@@C=5em{ B + X & A \ar[l]_{|inj1 . (REL c)|}} \\
+  |REL (Ci2 c)|  &= \xymatrix@@C=5em{ X + B & A \ar[l]_{|inj2 . (REL c)|}} \\                                                   
+  |REL (Ci1o c)| &= \hspace{2.3em} \xymatrix@@C=5em{ B & A + X \ar[l]_{|REL c . (CONV inj1)|}} \\
+  |REL (Ci2o c)| &= \hspace{2.3em} \xymatrix@@C=5em{ B & X + A \ar[l]_{|REL c . (CONV inj2)|}} \\   
+  |REL (CX p)|   &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \ar[l]_{|REL p|} }
 \end{align*}
 
 
@@ -410,20 +468,34 @@ Note that up until now, everything was deterministic! This is something we are a
 
 \subsection{Aligning Everything}
 \label{subsec:align}
+%format Atimes = "\IC{A$\otimes$}"
+%format Ap1    = "\IC{Ap1}"
+%format Ap2    = "\IC{Ap2}"
+%format Ap1o   = "\IC{Ap1$^\circ$}"
+%format Ap2o   = "\IC{Ap2$^\circ$}"
+%format AX     = "\IC{AX}"
 
-Following a similar reasoning as from \F{S} to \F{C}; the leaves of a \F{C} produced through
-\F{change} will NEVER contain a coproduct as the topmost type. Hence, we know that they will contain
+%format align      = "\F{align}"
+%format align-exp  = "\F{align-exp}"
+%format Al      = "\F{Al}"
+%format Al-mapM = "\F{Al-mapM}"
+
+%format a1 = "a_1"
+%format a2 = "a_2"
+
+Following a similar reasoning as from |S| to |C|; the leaves of a |C| produced through
+|change| will NEVER contain a coproduct as the topmost type. Hence, we know that they will contain
 either a product, or a constant type, or a type variable. In the case of a constant type
 or a type variable, there is not much we can do at the moment, but for a product we can 
-refine this a little bit more before using \F{$\Delta$}\footnote{%
+refine this a little bit more before using |Delta|\footnote{%
 In fact, splitting the different stages of the algorithm into different types reinforced
 our intuition that the alignment is the source of difficulties. As we shall see, we now need
 to introduce non-determinism.}.
 
-Looking at our running example, we have a leaf $(\IC{CX} \; ((4 , 10) , 10))$ to take care of.
+Looking at our running example, we have a leaf |(CX ((4 , 10) , 10))| to take care of.
 Here the source type is $\mathbbm{N}^2$ and the destination is $\mathbbm{N}$. Note that
 the $\mathbbm{N}$ is treated as a constant type here. As we mentioned above, we have a product
-on the source, so we could extract some more information before giving up and using \F{$\Delta$}!
+on the source, so we could extract some more information before giving up and using |Delta|!
 
 Here is where our design space starts to be huge. Our definition of alignment is:
 
@@ -432,53 +504,107 @@ Here is where our design space starts to be huge. Our definition of alignment is
 Which states that we can force components of the source or destination product to be
 equal to a given value or we can join two alignments together (This is a big source of inefficiency!).
 
-Computing alignments is very expensive! In the case we actually have products on both the
-source and the destination we have a lot of options (hence the list monad!):
+Computing alignments is very expensive, specially if done in the dumb way.
+We distinguish the expensive align function with an \emph{exp} suffix.
+In the case we actually have products on both the source and the destination 
+we have a lot of options (hence the list monad!):
 
-\Agda{RegDiff/Diff/Regular/Base}{align-all-paths-def}
+\Agda{RegDiff/Diff/Regular/Base}{align-exp-all-paths-def}
 
 If we only have products on the left or on the right (or none), 
 we have less options:
 
-\Agda{RegDiff/Diff/Regular/Base}{align-rest-def}
+\Agda{RegDiff/Diff/Regular/Base}{align-exp-rest-def}
 
-Following our previous example, we could \F{C-mapM} our alignment function (the \F{C-mapM} is the monadic
-variant of \F{C-map}) on $s'$, in order to find all alignments of $(4 , 10)$ and $10$. In this case,
+Following our previous example, we could \F{C-mapM} our alignment function (the |C-mapM| is the monadic
+variant of |C-map|) on $s'$, in order to find all alignments of $(4 , 10)$ and $10$. In this case,
 this is very easy\footnote{%
-It might be hard to build intuition for why we need the \IC{$A\otimes$} constructor.
+It might be hard to build intuition for why we need the |Atimes| constructor.
 On the \texttt{Lab} module of Fixpoint there is an example using 2-3-Trees that motivates the
 importance of that constructor}.
 
 \begin{align*}
-  \F{C-map}\;\F{align}\;s' = & [ \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$}\;(\IC{CX} \; (\IC{Ap1$^\circ$}\; 10\; (\IC{AX} \; (4 , 10)))))\; \IC{Scp}) \\
-                                    & , \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{SX}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$}\;(\IC{CX} \; (\IC{Ap2$^\circ$}\; 4\; (\IC{AX} \; (10 , 10)))))\; \IC{Scp}) \; ]
+  |C-map align s'| = & | [ Si2 (Stimes (SX (Ci2 (Ci1o (CX (Ap1o 10 (AX (4 , 10))))))) Scp)    | \\
+                     & | , Si2 (Stimes (SX (Ci2 (Ci1o (CX (Ap2o 4  (AX (10 , 10))))))) Scp) ] |
 \end{align*}
 
-If we ommit the \IC{SX} and \IC{CX} constructors this becomes slightly more readable:
+If we ommit the |SX| and |CX| constructors this becomes slightly more readable:
 
 \begin{align*}
-  \F{C-map}\;\F{align}\;s' = & [ \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$}\;(\IC{Ap1$^\circ$}\; 10\; (\IC{AX} \; (4 , 10)))))\; \IC{Scp}) \tag{P1} \\
-                                    & , \; \IC{Si2}\; (\IC{S$\otimes$}\; (\IC{Ci2}\;(\IC{Ci1$^\circ$}\;(\IC{Ap2$^\circ$}\; 4\; (\IC{AX} \; (10 , 10)))))\; \IC{Scp}) \; ] \tag{P2}
+  |C-map align s'| = & | [ Si2 (Stimes (Ci2 (Ci1o (Ap1o 10 (AX (4 , 10))))) Scp)    | \\
+                     & | , Si2 (Stimes (Ci2 (Ci1o (Ap2o 4  (AX (10 , 10))))) Scp) ] |
 \end{align*}
 
   But now we end up having to choose between one of those to be \emph{the} patch. This is where we start to need a cost function.
-Before talking about cost, let's look at the ``application'' relations of \F{Al}:
+Before talking about cost, let's look at the ``application'' relations of |Al|:
 
 \begin{align*}
-  (\IC{A$\otimes$}\;a_1\;a_2)^\flat &= \xymatrix@@C=5em{ B \times D & A \times C \ar[l]_{a_1^\flat \times a_1^\flat}} \\
-  (\IC{Ap1}\;x\;c)^\flat &= \xymatrix@@C=5em{ B \times X & A \ar[l]_{< c^\flat , \underline{x} >}} \\
-  (\IC{Ap2}\;x\;c)^\flat &= \xymatrix@@C=5em{ X \times B & A \ar[l]_{< \underline{x} , c^\flat  >}} \\ 
-  (\IC{Ap1$^\circ$}\;x\;c)^\flat &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \times X \ar[l]_{\pi_1 \cdot (c^\flat \times \underline{x}^\circ) }} \\
-  (\IC{Ap2$^\circ$}\;x\;c)^\flat &= \hspace{2.3em} \xymatrix@@C=5em{ B & X \times A \ar[l]_{\pi_2 \cdot (\underline{x}^\circ \times c^\flat)}} \\   
-  (\IC{AX}\;(x , y))^\flat          &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \ar[l]_{\SingletonRel{x}{y}} }
+  | REL (Atimes a1 a2)| &= \xymatrix@@C=5em{ B \times D & A \times C \ar[l]_{|(REL a1) * (REL a2)|}} \\
+  | REL (Ap1 x c)|      &= \xymatrix@@C=5em{ B \times X & A \ar[l]_{| SPLIT (REL c) (CONST x) |}} \\
+  | REL (Ap2 x c)|      &= \xymatrix@@C=5em{ X \times B & A \ar[l]_{| SPLIT (CONST x) (REL c)|}} \\ 
+  | REL (Ap1o x c)|     &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \times X \ar[l]_{ |pi1 . ((REL c) * (CONV (CONST x)))| }} \\
+  | REL (Ap2o x c)|     &= \hspace{2.3em} \xymatrix@@C=5em{ B & X \times A \ar[l]_{ |pi2 . ((CONV (CONST x)) * (REL c))| }} \\   
+  | REL (AX p))|        &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \ar[l]_{ |REL p| } }
 \end{align*}
 
-\section{Patches as Relations}
+\subsection{A simple optimization}
 
-On Section \ref{subsec:spines} we mentioned that the copy constructor was problematic. Another motivation for removing
-it and handling everything externally is that we would like to say that the patch (P2) above copies the 10, instead
-of saying that 10 changes into 10. We can postpone this by changing the relation semantics of \F{$\Delta$}. We can say
-that: $(x , x)^\flat = id$ and $(x , y)^\flat = \SingletonRel{x}{y}$.
+  Looking carefully at the \F{align-exp} function above, we are computing
+a lot of unecessary branches, specially in the case for products
+on both sides. Below we compute |align-exp (x , y) (w , z)| and
+put arrows indicating which \F{Al} have an isomorphic underlying
+``application'' relation.
+
+\begin{displaymath}
+\xymatrix@@R=.5em@@C=.05em{%
+  |align-exp (x,y) (w,z)| 
+   &  & |= Atimes (AX (x , w)) (AX (y , z))| & \\
+   &  & |CONS Ap1  z (Ap1o y (AX (x , w)))| & \ar@@/_2em/[u] \\
+   &  & |CONS Ap1  z (Ap2o x (AX (y , w)))| & \\
+   &  & |CONS Ap2  w (Ap1o y (AX (x , z)))| & \\
+   &  & |CONS Ap2  w (Ap2o x (AX (y , z)))| & \ar@@/_2em/[uuuu] \\
+   &  \ar@@/^2em/[uuuu] & |CONS Ap1o y (Ap1  z (AX (x , w)))| & \\
+   &  \ar@@/^2em/[uuuu] & |CONS Ap2o x (Ap1  z (AX (y , w)))| & \\
+   &  \ar@@/^2em/[uuuu] & |CONS Ap1o y (Ap2  w (AX (x , z)))| & \\
+   &  \ar@@/^2em/[uuuu] & |CONS Ap2o x (Ap2  w (AX (y , z)))| & \\
+   & & |CONS NIL|
+}                  
+\end{displaymath}
+
+If we then look at which |Al|ignments do \emph{not} have an arrow out of it, that
+is, the ones that don't have an isomorphic alignment also being computed, we get:
+
+\begin{align*}
+  |align (x , y) (w , z)|
+    & |= Atimes (AX (x , w)) (AX (y , z))| \\
+    & |CONS Ap1  z (Ap2o x (AX (y , w)))| \\
+    & |CONS Ap2  w (Ap1o y (AX (x , z)))| \\
+    & |CONS NIL|
+\end{align*}
+
+We hence simplify the alignment function:
+
+\Agda{RegDiff/Diff/Regular/Base}{align-all-paths-def}
+
+\vspace{-.7em}
+
+\Agda{RegDiff/Diff/Regular/Base}{align-rest-def}
+
+The \F{kill-p2} (resp. \F{kill-p1}) functions above are used to prune the search space
+further. They will ignore every branch that starts with a |Ap2| (resp |Ap1|), which
+will, for sure, have had an isomorphic alignment computed already (in terms of |Atimes|).
+Writing down the ``application'' relations makes this easy to see.
+
+
+\section{Patches as Relations}
+\label{sec:patchesasrelations}
+
+Here we will be using the semantics for |REL (x , y)| as described in
+the discussion box at Section~\ref{subsec:trivialdiff}.  That is, we
+would like to say that the patch (P2), above, copies the 10, instead
+of saying that 10 changes into 10.  We can postpone this by changing
+the relation semantics of \F{$\Delta$}.  Hence: $(x , x)^\flat` = id$
+and $(x , y)^\flat = \SingletonRel{x}{y}$.
 
 Nevertheless, if we look at the two patches above as relations, we have:
 
@@ -565,7 +691,14 @@ This suggests an interesting justification for the cost function. For some reaso
 We are always choosing the patch that gives rise to the maximal relation. I still don't clearly understand why or how,
 but it works.
 
+\begin{TODO}
+
 Below are our cost functions:
+
+we should actually be able to choose patches without cost functions...
+discuss this up! Use the |align| optimization example...
+
+ADD VALUES, FORGET ABOUT THOSE RAW FUNCTIONS!
 
 \Agda{RegDiff/Diff/Trivial/Base}{Trivial-cost-def}
 
@@ -574,6 +707,8 @@ Below are our cost functions:
 \Agda{RegDiff/Diff/Regular/Base}{C-cost-def}
 
 \Agda{RegDiff/Diff/Regular/Base}{Al-cost-def}
+
+\end{TODO}
 
 \subsection{Patches for Regular Types}
 
@@ -587,6 +722,10 @@ Computing inhabitants of such type is done with:
 \Agda{RegDiff/Diff/Regular/Base}{diff1-nondet-def}
 
 \section{Mutually Recursive Types}
+
+\begin{TODO}
+  Re-explain why we removed the \IC{skel} constructor.
+\end{TODO}
 
 Now that we have a clear picture of regular types, 
 extending this to recursive types is not
@@ -661,6 +800,9 @@ very important for mutually recursive families.
 %format Patchmu = "Patch\mu"
   | set : {ty : U} -> Delta ty ty -> Patchmu ty ty |
 \end{withsalt}
+\begin{TODO}
+  Not anymore! discuss this!
+\end{TODO}
 
 Computing a \F{Patch$\mu$} is done by piggybacking on the functions for computing \F{S}, \F{C} and \F{Al}
 separately, then mapping over them with some refinement functions:
@@ -675,6 +817,12 @@ Obviously, we can also define the ``application'' relation for fixed points, and
 is done in \texttt{RegDiff/Diff/Multirec/Domain}. I believe it is more worthwhile to
 look at some example patches and their ``application'' relation instead of the general
 case, though. Let's begin with the lists we just discussed:
+
+\begin{TODO}
+  recompile the examples
+\end{TODO}
+
+\end{document}
 
 \Agda{Report/code/Examples}{Example-list-2}
 
