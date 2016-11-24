@@ -54,8 +54,8 @@ module RegDiff.Diff.Regular.Lab where
   v42 : Patch* Type5
   v42 = diff1* (i1 (R , G , B)) (i2 (R , B , G))
   
-  as : List (Al Δ (I x₁ ⊗ Type6) (I x₁ ⊗ Type6))
-  as = align-exp (2 , 3 , 4) (5 , 6 , 7)
+  as : List (Al Δ Type6 Type6)
+  as = align (3 , 4) (4 , 5)
 
 {-
   module T1 where
