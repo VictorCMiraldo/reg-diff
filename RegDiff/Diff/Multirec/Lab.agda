@@ -63,6 +63,9 @@ module RegDiff.Diff.Multirec.Lab where
 
   t1t3 t1t3-norm t1t3-computed : Patchμ (T (fs fz)) (T (fs fz))
   t1t3 = diffμ t1 t3
+  -- 2185 good align
+  -- 4996 bad align
+  -- 52545 horrible align
 
   t1t3-norm = skel
                (S⊗ Scp
@@ -157,11 +160,13 @@ module RegDiff.Diff.Multirec.Lab where
           (Cins {k = fz} {fz}
            (Ci2 (CX (Ap2 ⟨ 3 , ⟨ i1 unit ⟩ ⟩ (AX (fix (skel Scp)))))))))))
 
+
   wlemma : Patchμ-apply-famₗ w1w3-norm w1 ≡ just w3
   wlemma = refl
 
   wlemma' : Patchμ-apply-famᵣ w1w3-norm w3 ≡ just w1
   wlemma' = refl
+
 
 {-  
   w1 w3 : rtree
