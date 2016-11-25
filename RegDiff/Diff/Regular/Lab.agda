@@ -46,17 +46,27 @@ module RegDiff.Diff.Regular.Lab where
   Type5 = Type4 ⊕ Type4
 
   Type6 : U
-  Type6 = I x₁ ⊗ I x₁
+  Type6 = I x₁ ⊗ I x₁ ⊗ I x₁ ⊗ I x₁ ⊗ I x₁
 
   v41 : Patch* Type4
   v41 = diff1* (R , G , B) (B , R , G)
 
   v42 : Patch* Type5
   v42 = diff1* (i1 (R , G , B)) (i2 (R , B , G))
-  
-  as : List (Al Δ Type6 Type6)
-  as = align (3 , 4) (4 , 5)
 
+  _^_ : Set → ℕ → Set
+  A ^ 0 = Unit
+  A ^ 1 = A
+  A ^ (suc n) = A × (A ^ n)
+
+  as : List (Al Δ Type6 (I x₁ ⊗ Type6))
+  as = align-exp (1 , 3 , 4 , 2 , 5) (3 , 7 , 4 , 8 , 5 , 9)
+
+  as' : Al Δ Type6 (I x₁ ⊗ Type6)
+  as' = Ap2ᵒ 1 (A⊗ (AX (3 , 3)) (Ap2 7 (A⊗ (AX (4 , 4)) (A⊗ (AX (2 , 8)) (Ap1 9 (AX (5 , 5)))))))
+  
+  ap-as : ⟦ Type6 ⟧ PARMS → Maybe (⟦ I x₁ ⊗ Type6 ⟧ PARMS)
+  ap-as = goₗ (Al-Appliable Δ-apply-cp) as'
 {-
   module T1 where
   

@@ -261,10 +261,10 @@ how do they relate to this relational view and give examples here and there!
 %format *             = "\times"
 %format (SINGLR x y)  = "\SingletonRel{" x "}{" y "}"
 %format (SPLIT (a) (b)) = "\langle {" a "} , {" b "} \rangle"
-%format inj1          = "\iota_1"
-%format inj2          = "\iota_2"
-%format pi1           = "\pi_1"
-%format pi2           = "\pi_2"
+%format inj1          = "\IC{$\iota_1$}"
+%format inj2          = "\IC{$\iota_2$}"
+%format pi1           = "\IC{$\pi_1$}"
+%format pi2           = "\IC{$\pi_2$}"
 
 
 %format Delta = "\F{$\Delta$}"
@@ -421,8 +421,8 @@ Note that \F{C} is also a functor on $P$:
 
 \Agda{RegDiff/Diff/Regular/Base}{C-map-def}
 
-And we make an eager function that will consume ALL coproduct injections from both source
-and destination:
+We just need an eager function that will consume ALL coproduct injections from both source
+and destination and record them using |C|:
 
 \Agda{RegDiff/Diff/Regular/Base}{change-def}
 
@@ -497,15 +497,64 @@ Here the source type is $\mathbbm{N}^2$ and the destination is $\mathbbm{N}$. No
 the $\mathbbm{N}$ is treated as a constant type here. As we mentioned above, we have a product
 on the source, so we could extract some more information before giving up and using |Delta|!
 
-Here is where our design space starts to be huge. Our definition of alignment is:
+\subsubsection{A Parenthesis}
+
+On the literature for version control system, the \emph{alignment} problem is the problem
+of mapping two strings $l_1$ and $l_2$ in $\mathcal{L}$ into $\mathcal{L} \cup \{ - \}$, for $ \{ - \} \nsubseteq \mathcal{L}$ 
+such that the resulting strings $l_1'$ and $l_2'$ are of the same length such that
+for all $i$, it must not be happen that $l_1'[i] = - = l_2'[i]$. For example,
+Take strings $l_1 = "CGTCG"$ and $l_2 = "GATAGT"$, then, the following is an (optimal)
+alignment:
+
+\begin{center}
+\begin{tabular}{c c c c c c c}
+  C & G & - & T & C & G & - \\
+  - & G & A & T & A & G & T
+\end{tabular}
+\end{center}
+
+Let $\mathcal{DNA} = \{A , T , C , G\}$. Finding the table above is the same as
+finding a partial map:
+
+\[ f : \mathcal{DNA}^5 \rightarrow \mathcal{DNA}^6 \]
+
+such that $f\; (C,G,T,C,G) = (G,A,T,A,G,T)$. There are many ways of defining such
+a map. We would like, however, that our definition have a maximal domain, that is, we require
+impose the least possible amount of restrictions. In this case, we can actually define $a$ 
+with some pattern matching as:
+
+\[
+\begin{array}{l l l}  
+  f & (C , x , y , C , z) & = (x , A , y , A , z , T) \\
+  f & \_ & = \text{undefined}
+\end{array}
+\] 
+
+And it is easy to verify that, in fact, $f\; (C,G,T,C,G) = (G,A,T,A,G,T)$. Moreover,
+this is the \emph{maximal} such $f$ that still (provably) assigns the correct destination
+to the correct source.
+
+\subsubsection{Back to Agda}
+
+We will look at alignments from the ``finding a map between products'' perspective.
+Here is where our design space starts to be huge, and so, we should start making
+some distinctios:
+\begin{itemize}
+  \item We want to allow sharing. This means that the there can be more than one variable
+        in the defining pattern of our $f$.
+  \item We do \emph{not} allow permutations, as the search space would be too big.
+        This means that the variables appear in the right-hand side of $f$ in the
+        same order as they appear in the left-hand-side.
+  \item We do \emph{not} allow contractions nor weakenings. That is, every variable
+        on the left-hand-side of $f$ must appear \emph{exactly} once on the right-hand-side.
+\end{itemize}
+
+The following datatype describe such maps:
 
 \Agda{RegDiff/Diff/Regular/Base}{Al-def}
 
-Which states that we can force components of the source or destination product to be
-equal to a given value or we can join two alignments together (This is a big source of inefficiency!).
-
-Computing alignments is very expensive, specially if done in the dumb way.
-We distinguish the expensive align function with an \emph{exp} suffix.
+Computing alignments is very expensive, specially if done in the naive way.
+Nevertheless, we present the naive alignment first, and gistinguish it with an \emph{exp} suffix.
 In the case we actually have products on both the source and the destination 
 we have a lot of options (hence the list monad!):
 
@@ -516,7 +565,8 @@ we have less options:
 
 \Agda{RegDiff/Diff/Regular/Base}{align-exp-rest-def}
 
-Following our previous example, we could \F{C-mapM} our alignment function (the |C-mapM| is the monadic
+Let's come back to our running example! 
+Following the previous trend, we could \F{C-mapM} our alignment function (the |C-mapM| is the monadic
 variant of |C-map|) on $s'$, in order to find all alignments of $(4 , 10)$ and $10$. In this case,
 this is very easy\footnote{%
 It might be hard to build intuition for why we need the |Atimes| constructor.
@@ -540,14 +590,34 @@ Before talking about cost, let's look at the ``application'' relations of |Al|:
 
 \begin{align*}
   | REL (Atimes a1 a2)| &= \xymatrix@@C=5em{ B \times D & A \times C \ar[l]_{|(REL a1) * (REL a2)|}} \\
-  | REL (Ap1 x c)|      &= \xymatrix@@C=5em{ B \times X & A \ar[l]_{| SPLIT (REL c) (CONST x) |}} \\
-  | REL (Ap2 x c)|      &= \xymatrix@@C=5em{ X \times B & A \ar[l]_{| SPLIT (CONST x) (REL c)|}} \\ 
-  | REL (Ap1o x c)|     &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \times X \ar[l]_{ |pi1 . ((REL c) * (CONV (CONST x)))| }} \\
-  | REL (Ap2o x c)|     &= \hspace{2.3em} \xymatrix@@C=5em{ B & X \times A \ar[l]_{ |pi2 . ((CONV (CONST x)) * (REL c))| }} \\   
+  | REL (Ap1 x a)|      &= \xymatrix@@C=5em{ B \times X & A \ar[l]_{| SPLIT (REL a) (CONST x) |}} \\
+  | REL (Ap2 x a)|      &= \xymatrix@@C=5em{ X \times B & A \ar[l]_{| SPLIT (CONST x) (REL a)|}} \\ 
+  | REL (Ap1o x a)|     &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \times X \ar[l]_{ |pi1 . ((REL a) * (CONV (CONST x)))| }} \\
+  | REL (Ap2o x a)|     &= \hspace{2.3em} \xymatrix@@C=5em{ B & X \times A \ar[l]_{ |pi2 . ((CONV (CONST x)) * (REL a))| }} \\   
   | REL (AX p))|        &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \ar[l]_{ |REL p| } }
 \end{align*}
 
+Note how |Ap1o| and |Ap2o| force a component of the source to be equal to something (that's equivalent to
+pattern matching on the source) whereas |Ap1| and |Ap2| set a component of the destination to
+be equal to something. Let us represent the $f$ we devised on the $\mathcal{DNA}$ example using |Al|.
+Recall $f \;(C , x , y , C , z) = (x , A , y , A , z , T)$.
+
+%format bC = "C"
+| f == Ap2o bC (Atimes Scp (Ap2 A (Atimes Scp (Atimes (AX (bC , A)) (Ap1 T Scp))))) |
+
+\begin{TODO}
+
+ Yet... for some reason, our simple optimization below is not finding the above
+  alignment... we need to fix it!
+
+ I can see Tarmo's coalgebras for sharing working wonders in computing
+ these alignments in linear time.
+
+\end{TODO}
+
 \subsection{A simple optimization}
+
+\begin{withsalt}
 
   Looking carefully at the \F{align-exp} function above, we are computing
 a lot of unecessary branches, specially in the case for products
@@ -582,6 +652,9 @@ is, the ones that don't have an isomorphic alignment also being computed, we get
     & |CONS NIL|
 \end{align*}
 
+\end{withsalt}
+\begin{withsalt}
+
 We hence simplify the alignment function:
 
 \Agda{RegDiff/Diff/Regular/Base}{align-all-paths-def}
@@ -595,6 +668,7 @@ further. They will ignore every branch that starts with a |Ap2| (resp |Ap1|), wh
 will, for sure, have had an isomorphic alignment computed already (in terms of |Atimes|).
 Writing down the ``application'' relations makes this easy to see.
 
+\end{withsalt}
 
 \section{Patches as Relations}
 \label{sec:patchesasrelations}
@@ -684,12 +758,14 @@ The second is easier to prove once we add variables!
    & True 
 \end{align*}
 
-Nevertheless, it is clear which patch we should choose! We should always choose the patch that
-gives rise to the biggest relation, as this is applicable to much more elements.
+Nevertheless, it is clear which patch we should choose! We should
+always choose the patch that gives rise to the biggest relation, as
+this is applicable to much more elements.
 
-This suggests an interesting justification for the cost function. For some reason, looks like we won the lottery with our cost functions.
-We are always choosing the patch that gives rise to the maximal relation. I still don't clearly understand why or how,
-but it works.
+This suggests an interesting justification for the cost function. For
+some reason, looks like we won the lottery with our cost functions.
+We are always choosing the patch that gives rise to the maximal
+relation. I still don't clearly understand why or how, but it works.
 
 \begin{TODO}
 
@@ -723,10 +799,6 @@ Computing inhabitants of such type is done with:
 
 \section{Mutually Recursive Types}
 
-\begin{TODO}
-  Re-explain why we removed the \IC{skel} constructor.
-\end{TODO}
-
 Now that we have a clear picture of regular types, 
 extending this to recursive types is not
 very difficult.
@@ -754,13 +826,14 @@ the indexes of our family.
 
 Remember that we have \F{S}pines, to handle the common prefixes; \F{C}hanges to
 handle different coproduct injections on source and destination and \F{Al}ignments to
-make sure we exploit products. We kept mentioning that we could not do anything
+make sure we exploit product structure. We kept mentioning that we could not do anything
 on the leaves that were type variables or constant types. Well, constant types
 we still can't, and we have to stick to \F{$\Delta$}, but now we need to handle
-the type-variables.
+the type-variables since they are used to tie the recursion knot.
 
-A patch for a fixed point might not follow the precise order of operations (\F{S}, then \F{C}, then \F{Al})
-that regular types enjoyed. For instance, imagine we are transforming the following
+A patch for a fixed point might not follow the precise order of
+operations (\F{S}, then \F{C}, then \F{Al}) that regular types
+enjoyed. For instance, imagine we are transforming the following
 lists:
 
 \[
@@ -772,44 +845,46 @@ then, both lists are inhabitants of $\mu L_{\mathbbm{N}}$, but, more precisely,
 the source is an inhabitant of $L_{\mathbbm{N}} (L_{\mathbbm{N}} (L_{\mathbbm{N}} (L_{\mathbbm{N}}\; \mathbbm{1})))$
 whereas the target is an inhabitant of $L_{\mathbbm{N}} (L_{\mathbbm{N}} (L_{\mathbbm{N}}\; \mathbbm{1}))$.
 
-Here, we are already beginning with different types, so a spine (which is homogeneous) might not
-be the best start! In fact, the best start is to say that the first $5$ is deleted, then the spine
-can kick in and say that everything else is copied!
+Here, we are already beginning with different types, so a spine (which
+is homogeneous) might not be the best start! In fact, the best start
+is to say that the first $5$ is deleted, then the spine can kick in
+and say that everything else is copied!
 
 Here is the definition:
 
 \Agda{RegDiff/Diff/Multirec/Base}{Patchmu-def}
 
-The \IC{skel} constructor lets a spine kick in, which has \F{Patch$\mu$} on it's leaves again.
-The \IC{fix} constructor ties the know between type-variables and their lookup in the family, which
-is isomorphic. The \IC{set} constructor specifies that we are setting something.
-The \F{C$\mu$} type extends the previous \F{C} with options for inserting and deleting:
+The \IC{fix} constructor ties the know between type-variables and
+their lookup in the recursive family, which is isomorphic. The
+\IC{set} constructor specifies that we are setting something. Note that
+we require the source and destination types to be equal here!
+
+\begin{withsalt}
+  Experimenting with this, I found out that set is only used for constant types
+(as expected!). A proof of this would be great.
+\end{withsalt}
+
+\F{C$\mu$} type extends the previous \F{C} with the usual edit operations
+everyone talks about: modify, delete or insert!
 
 \Agda{RegDiff/Diff/Multirec/Base}{Patchmu-aux-def}
 
-Note that \IC{fix}, \IC{Cins} and \IC{Cdel} are heterogeneous on the \F{Fam$_i$} indexes! This is
-very important for mutually recursive families.
+Note how insertions (resp. deletions) happen by \emph{changing and aligning} a type-variable into a type
+(resp. a type into a type-variable). Note also that \IC{fix}, \IC{Cins} and \IC{Cdel} are heterogeneous 
+on the \F{Fam$_i$} indexes! This is very important for mutually recursive families.
 
-\begin{withsalt}
-  I have been experimenting with different cost models and slight variations on
-  the definitions of \F{Patch$\mu$}. I found that requiring \IC{set} to set the \emph{same}
-  type is a great idea! Not only it removes a lot of absurd patches, but it also 
-  speeds up the process quite a bit:
-
-%format Delta = "\Delta"
-%format Patchmu = "Patch\mu"
-  | set : {ty : U} -> Delta ty ty -> Patchmu ty ty |
-\end{withsalt}
-\begin{TODO}
-  Not anymore! discuss this!
-\end{TODO}
+The modifications, therefore, happen when we can take a spine before changing and aligning
+something.
 
 Computing a \F{Patch$\mu$} is done by piggybacking on the functions for computing \F{S}, \F{C} and \F{Al}
 separately, then mapping over them with some refinement functions:
 
 \Agda{RegDiff/Diff/Multirec/Base}{diffmu-non-det}
 
-The refinement functions are given by:
+The refinement function is easy. We just need to make sure we have
+equal source and destination types before we \IC{set} something; otherwise
+we simply prune that branch out. This makes the code much more efficient as
+we are not trying to \IC{set} an integer into a list.
 
 \Agda{RegDiff/Diff/Multirec/Base}{diffmu-refinements}
 

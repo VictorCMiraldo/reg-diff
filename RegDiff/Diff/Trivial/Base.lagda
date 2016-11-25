@@ -103,4 +103,16 @@ module RegDiff.Diff.Trivial.Base
         with dec-eq _≟-A_ ty x z
       ...| yes _ = just y
       ...| no  _ = nothing
+
+  Δ-apply-cp : Appliable Δ
+  Δ-apply-cp = apply (λ {ty} {tv} → doit {ty} {tv}) 
+                     (λ { {ty} {tv} (x , y) z → doit {ty = tv} {tv = ty} (y , x) z })
+    where
+      doit : {ty tv : U}
+           → Δ ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
+      doit {ty} {tv} (x , y) z with U-eq ty tv
+      ...| no _ = goₗ Δ-apply {ty} {tv} (x , y) z
+      doit {ty} {.ty} (x , y) z | yes refl with dec-eq _≟-A_ ty x y
+      ...| no  _ = goₗ Δ-apply {ty} {ty} (x , y) z
+      ...| yes _ = just z     
 \end{code}
