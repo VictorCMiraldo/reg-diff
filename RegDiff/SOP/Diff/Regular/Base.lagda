@@ -67,3 +67,4 @@ module RegDiff.SOP.Diff.Regular.Base
            → C P ty tv
 \end{code}
 %</S1-def>
+
