@@ -95,3 +95,12 @@ module Prelude where
   just-inj : ∀{a}{A : Set a}{x y : A}
            → _≡_ {a} {Maybe A} (just x) (just y) → x ≡ y
   just-inj refl = refl
+
+  ifd_then_else_ : ∀{a b}{A : Set a}{B : Set b} 
+                 → Dec A → (A → B) → (¬ A → B) → B
+  ifd (yes p) then f else _ = f p
+  ifd (no ¬p) then _ else g = g ¬p
+
+  ¬-inv : ∀{a b}{A : Set a}{B : Set b}
+        → (A → B) → (¬ B → ¬ A)
+  ¬-inv f ¬B a = ¬B (f a)
