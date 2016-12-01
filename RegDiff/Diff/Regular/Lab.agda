@@ -82,3 +82,10 @@ module RegDiff.Diff.Regular.Lab where
 
   open T1
 -}
+
+  Type8 : U
+  Type8 = I x₁ ⊗ I x₁ ⊕ I x₁ ⊗ I x₁ ⊗ I x₁
+
+  d8 : Patch* Type8
+  d8 = diff1*  (i1 (3 , 6)) 
+              (i2 (5 , 3 , 8))

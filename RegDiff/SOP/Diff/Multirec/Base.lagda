@@ -6,17 +6,18 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
+open import Prelude.ListI
 open import RegDiff.Generic.Parms
 
-module RegDiff.Diff.Multirec.Base
+module RegDiff.SOP.Diff.Multirec.Base
        {ks# : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
     where
 
   open Monad {{...}}
   open Applicative {{...}}
 
-  open import RegDiff.Generic.Multirec ks
-  open import RegDiff.Generic.Eq ks keqs
+  open import RegDiff.SOP.Generic.Multirec ks
+  open import RegDiff.SOP.Generic.Eq ks keqs
 \end{code}
 %<*UUSet-coprod>
 \begin{code}
@@ -37,7 +38,7 @@ module RegDiff.Diff.Multirec.Base
 \end{code}
 
 \begin{code}
-    open import RegDiff.Diff.Regular.Base ks keqs (Fix fam) WB-FAM
+    open import RegDiff.SOP.Diff.Regular.Base ks keqs (Fix fam) WB-FAM
       public
 \end{code}
 
@@ -57,18 +58,18 @@ module RegDiff.Diff.Multirec.Base
 %</Fami-def>
 %<*Patchmu-aux-def>
 \begin{code}
-    data Cμ (P : UUSet) : U → U → Set where
-      Cins  : {k k' : Famᵢ} → C (Al P)  (I k)  (T k')  → Cμ P  (T k)  (T k')
-      Cdel  : {k k' : Famᵢ} → C (Al P)  (T k)  (I k')  → Cμ P  (T k)  (T k')
+    data Cμ (P : AASet) : U → U → Set where
+      Cins  : {k k' : Famᵢ} → C (Al P)  (𝓐 (I k))  (T k')  → Cμ P  (T k)  (T k')
+      Cdel  : {k k' : Famᵢ} → C (Al P)  (T k)  (𝓐 (I k'))  → Cμ P  (T k)  (T k')
       Cmod  : {ty   : U}    → S (C (Al P)) ty          → Cμ P  ty     ty
 \end{code}
 %</Patchmu-aux-def>
 %<*Patchmu-def>
 \begin{code}
     data Patchμ : U → U → Set where
-      chng : {ty tv  : U}     → Cμ Patchμ ty tv      → Patchμ ty tv
-      fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')  → Patchμ (I k) (I k')
-      set  : {ty     : U}     → Δ ty ty              → Patchμ ty ty
+      chng : {ty tv  : U}     → Cμ (UU→AA Patchμ) ty tv      → Patchμ ty tv
+      fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')  → Patchμ (𝓐 (I k)) (𝓐 (I k'))
+      set  : {ty     : Aty}     → Δ ty ty              → Patchμ (𝓐 ty) (𝓐 ty)
 \end{code}
 %</Patchmu-def>
 
@@ -83,7 +84,7 @@ module RegDiff.Diff.Multirec.Base
       Patchμ-cost (fix s)  = Patchμ-cost s
       Patchμ-cost (set {ty} x)  = cost-Δ {ty} {ty} x
 
-      Cμ-cost : {ty tv : U}{P : UUSet} 
+      Cμ-cost : {ty tv : U}{P : AASet} 
               → (costP : ∀{k v} → P k v → ℕ)
               → Cμ P ty tv → ℕ
       Cμ-cost c (Cins x)
@@ -98,9 +99,9 @@ module RegDiff.Diff.Multirec.Base
 %<*diffmu-refinements>
 \begin{code}
     mutual
-      refine-Al : {k v : U} → Δ k v → List (Patchμ k v)
+      refine-Al : {k v : Aty} → Δ k v → List (Patchμ (𝓐 k) (𝓐 v))
       refine-Al {I k} {I k'} (x , y) = fix <$> diffμ* x y
-      refine-Al {k}   {v}    (x , y) with U-eq k v
+      refine-Al {k}   {v}    (x , y) with Atom-eq k v
       refine-Al {k}   {v}    (x , y) | no _     = []
       refine-Al {k}   {.k}   (x , y) | yes refl = return (set (x , y))
 \end{code}
@@ -109,21 +110,21 @@ module RegDiff.Diff.Multirec.Base
 \begin{code}
       changeμ : {ty tv : U} 
               → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) 
-              → List (C (Al Patchμ) ty tv)
-      changeμ x y = C-mapM ((_>>= Al-mapM refine-Al) ∘ uncurry align) (change x y) 
+              → List (C (Al (UU→AA Patchμ)) ty tv)
+      changeμ x y = C-mapM ((_>>= Al-mapM refine-Al) ∘ uncurry align*) (change x y) 
 
       try-mod : {ty tv : U} → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) → List (Patchμ ty tv)
       try-mod {ty} {tv}  x y with U-eq ty tv 
       try-mod {ty} {tv}  x y | no  _    = []
       try-mod {ty} {.ty} x y | yes refl 
-        = (chng ∘ Cmod) <$> S-mapM (uncurry changeμ) (spine-cp x y)
+        = (chng ∘ Cmod) <$> S-mapM (uncurry changeμ) (spine x y)
   
       {-# TERMINATING #-}
       diffμ* : {k k' : Famᵢ} → Fix fam k → Fix fam k' → List (Patchμ (T k) (T k'))
       diffμ* {k} {k'} ⟨ x ⟩ ⟨ y ⟩ 
         =  try-mod {T k} {T k'} x y
-        ++ ((chng ∘ Cdel {k = k} {k'}) <$> changeμ x ⟨ y ⟩)
-        ++ ((chng ∘ Cins {k = k} {k'}) <$> changeμ ⟨ x ⟩ y)
+        ++ ((chng ∘ Cins {k = k} {k'}) <$> changeμ (i1 (⟨ x ⟩ , unit)) y)
+        ++ ((chng ∘ Cdel {k = k} {k'}) <$> changeμ x (i1 (⟨ y ⟩ , unit)))
 \end{code}
 %</diffmu-non-det>
 
@@ -148,10 +149,8 @@ module RegDiff.Diff.Multirec.Base
 \begin{code}
     diffμ : {k : Famᵢ} → Fix fam k → Fix fam k → Patchμ (T k) (T k)
     diffμ {k} x y with diffμ* x y
-    ...| []     = set (unmu x , unmu y)
     ...| s ∷ ss = s <μ> ss
+    ...| []     = impossible {k}
+      where postulate impossible : {k : Famᵢ} → Patchμ (T k) (T k)
 \end{code}
 %</diffmu-det>
-
-
-

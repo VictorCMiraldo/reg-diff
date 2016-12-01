@@ -32,6 +32,9 @@ module RegDiff.SOP.Diff.Trivial.Base
 
   Aty : Set
   Aty = Atom parms#
+  
+  Π : Set
+  Π = Prod parms#
 
   sized : {p : Fin parms#} → A p → ℕ
   sized = parm-size WBA
@@ -44,6 +47,12 @@ module RegDiff.SOP.Diff.Trivial.Base
 
   AASet : Set₁
   AASet = Aty → Aty → Set
+
+  ΠΠSet : Set₁
+  ΠΠSet = Π → Π → Set
+
+  UU→AA : UUSet → AASet
+  UU→AA P a a' = P (𝓐 a) (𝓐 a')
 \end{code}
 %</Trivial-defs>
 
@@ -52,15 +61,15 @@ module RegDiff.SOP.Diff.Trivial.Base
 
 %<*delta-def>
 \begin{code}
-  Δ : UUSet
-  Δ ty tv = ⟦ ty ⟧ A × ⟦ tv ⟧ A
+  Δ : AASet
+  Δ ty tv = ⟦ ty ⟧ₐ A × ⟦ tv ⟧ₐ A
 \end{code}
 %</delta-def>
 
   It has a cost function:
 
 \begin{code}
-  cost-Δ-raw : {ty tv : U} → Δ ty tv → ℕ
+  cost-Δ-raw : {ty tv : Aty} → Δ ty tv → ℕ
   cost-Δ-raw {ty} {tv} (x , y) 
     -- = size1 sized ty x + size1 sized tv y
     -- = 1
@@ -69,10 +78,10 @@ module RegDiff.SOP.Diff.Trivial.Base
 
 %<*Trivial-cost-def>
 \begin{code}
-  cost-Δ : {ty tv : U} → Δ ty tv → ℕ
-  cost-Δ {ty} {tv}  (x , y) with U-eq ty tv
+  cost-Δ : {ty tv : Aty} → Δ ty tv → ℕ
+  cost-Δ {ty} {tv}  (x , y) with Atom-eq ty tv
   cost-Δ {ty} {.ty} (x , y) | yes refl
-    with dec-eq _≟-A_ ty x y
+    with dec-eqₐ _≟-A_ ty x y
   ...| yes _ = 0
   ...| no  _ = cost-Δ-raw {ty} {ty} (x , y)
   cost-Δ {ty} {tv}  (x , y) | no _
@@ -81,13 +90,13 @@ module RegDiff.SOP.Diff.Trivial.Base
 %</Trivial-cost-def>
 
 \begin{code}
-  delta : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → Δ ty tv
+  delta : {ty tv : Aty} → ⟦ ty ⟧ₐ A → ⟦ tv ⟧ₐ A → Δ ty tv
   delta x y = (x , y)
 \end{code}
 
   And it can be applied in both directions:
 
-\begin{code}
+begin{code}
   record Appliable (Q : UUSet) : Set₁ where
     constructor apply
     field
