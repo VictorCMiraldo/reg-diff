@@ -33,4 +33,4 @@ module RegDiff.SOP.Diff.Regular.Lab where
   d1 = diff1* (i2 (i1 (3 , 6 , unit))) 
               (i2 (i2 (i1 (5 , 3 , 6 , unit))))
 
- 
+  
