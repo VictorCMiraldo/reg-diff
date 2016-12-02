@@ -6,13 +6,13 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 
-module RegDiff.Diff.Fixpoint.Base
+module RegDiff.SOP.Diff.Fixpoint.Base
        {ks# : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
     where
 
-  open import RegDiff.Generic.Fixpoint ks keqs
-  open import RegDiff.Generic.Eq ks keqs
-  import RegDiff.Diff.Multirec.Base ks keqs
+  open import RegDiff.SOP.Generic.Fixpoint ks keqs
+  open import RegDiff.SOP.Generic.Eq ks keqs
+  import RegDiff.SOP.Diff.Multirec.Base ks keqs
     as MREC
 
   module Internal (T : Uₙ 1) where

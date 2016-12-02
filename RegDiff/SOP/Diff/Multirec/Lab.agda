@@ -85,5 +85,22 @@ module RegDiff.SOP.Diff.Multirec.Lab where
   -- 4996 bad align
   -- 52545 horrible align
 
+  -- 7303 SOP type-heterogeneous set.
+
   t1t3-norm
     = {!!}
+
+{-  
+  ABS : Fam 2
+  ABS = (K kBool ⊗ []) ⊕ []
+      ∷ (K kℕ ⊗ []) ⊕ []
+      ∷ []
+
+  open DIFF.Internal ABS public
+
+  d1 : List (Patchμ (T fz) (T (fs fz)))
+  d1 = diffμ* {fz} {fs fz} ⟨ i1 (true , unit) ⟩ ⟨ i1 (10 , unit) ⟩
+
+  al : List (Al Δ (K kBool ⊗ []) (K kℕ ⊗ []))
+  al = align* (true , unit) (10 , unit)
+-}

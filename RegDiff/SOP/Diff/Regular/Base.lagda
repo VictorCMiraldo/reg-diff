@@ -29,10 +29,11 @@ module RegDiff.SOP.Diff.Regular.Base
   data S (P : UUSet) : U → Set where
     SX  : {ty : U} → P ty ty → S P ty
     Scp : {ty : U} → S P ty
+{-
     S1  : {ty : U}{i : Constr ty}
         → ListI (λ k → P (𝓐 k) (𝓐 k)) (typeOf ty i)
         → S P ty
-
+-}
   data C (P : ΠΠSet) : U → U → Set where
     CX  : {ty tv : U}
         → (i : Constr ty)(j : Constr tv)
@@ -40,10 +41,10 @@ module RegDiff.SOP.Diff.Regular.Base
         → C P ty tv
 
   data Al (P : AASet) : Π → Π → Set where
-    A0   :                                            Al P [] []
-    Ap1  : ∀{a ty tv}     → ⟦ a ⟧ₐ A  → Al P ty tv →  Al P (a ∷ ty) tv
-    Ap1ᵒ : ∀{a ty tv}     → ⟦ a ⟧ₐ A  → Al P ty tv →  Al P ty (a ∷ tv)
-    AX   : ∀{a a' ty tv}  → P a a'    → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
+    A0   :                                             Al P [] []
+    Ap1  : ∀{a ty tv}     → ⟦ a ⟧ₐ A   → Al P ty tv →  Al P (a ∷ ty) tv
+    Ap1ᵒ : ∀{a ty tv}     → ⟦ a ⟧ₐ A   → Al P ty tv →  Al P ty       (a ∷ tv)
+    AX   : ∀{a a' ty tv}  → P a a'     → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
 \end{code}
 %</S1-def>
 
@@ -53,14 +54,14 @@ module RegDiff.SOP.Diff.Regular.Base
         → S P ty → S Q ty
   S-map f (SX x) = SX (f x)
   S-map f Scp    = Scp
-  S-map f (S1 l) = S1 (mapᵢ f l)
+  -- S-map f (S1 l) = S1 (mapᵢ f l)
 
   S-mapM : {ty : U}{M : Set → Set}{{m : Monad M}}
            {P Q : UUSet}(X : ∀{k v} → P k v → M (Q k v))
          → S P ty → M (S Q ty)
   S-mapM f (SX x) = f x >>= return ∘ SX
   S-mapM f Scp    = return Scp
-  S-mapM f (S1 l) = mapMᵢ f l >>= return ∘ S1
+  -- S-mapM f (S1 l) = mapMᵢ f l >>= return ∘ S1
 
   C-map : {ty tv : U}
           {P Q : ΠΠSet}(X : ∀{k v} → P k v → Q k v)
@@ -87,7 +88,7 @@ module RegDiff.SOP.Diff.Regular.Base
          → S P ty → ℕ
   S-cost doP (SX x) = doP x
   S-cost doP Scp = 0
-  S-cost doP (S1 x) = foldrᵢ (λ h r → doP h + r) 0 x
+  -- S-cost doP (S1 x) = foldrᵢ (λ h r → doP h + r) 0 x
 
   C-cost : {ty tv : U}{P : ΠΠSet}(doP : {k v : Π} → P k v → ℕ)
          → C P ty tv → ℕ
@@ -117,12 +118,13 @@ module RegDiff.SOP.Diff.Regular.Base
   spine : {ty : U}(x y : ⟦ ty ⟧ A) → S Δ' ty
   spine {ty} x y with dec-eq _≟-A_ ty x y 
   ...| yes _ = Scp
-  ...| no  _ with sop x | sop y
+  ...| no  _ = SX (x , y)
+    {- with sop x | sop y
   spine _ _ | no _ | strip cx dx | strip cy dy
     with cx ≟-Fin cy
   spine _ _ | no _ | strip _ dx | strip cy dy 
      | yes refl = S1 (zipₚ dx dy)
-  ...| no  _    = SX (inject cx dx , inject cy dy)
+  ...| no  _    = SX (inject cx dx , inject cy dy) -}
 
   change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → C Δₚ ty tv
   change x y with sop x | sop y
@@ -135,7 +137,7 @@ module RegDiff.SOP.Diff.Regular.Base
   align* {y ∷ ty} {[]}     (m , mm) n 
     = Ap1 m <$> align* mm n
   align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
-    =  AX  (m , n)  <$> align* mm nn
+    =  AX (m , n)   <$> align* mm nn
     ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
     ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
     where
@@ -165,8 +167,8 @@ module RegDiff.SOP.Diff.Regular.Base
 
   choose : {ty : U} → Patch ty → Patch ty → Patch ty
   choose c d with Patch-cost c ≤?-ℕ Patch-cost d
-  ...| yes _ = c
-  ...| no  _ = d
+  ...| yes _ = d
+  ...| no  _ = c
 
   _<>_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
   c <> [] = c
