@@ -27,6 +27,11 @@ module RegDiff.SOP.Diff.Regular.Domain
 \end{code}
 
 \begin{code}
+  HasRelₚ : ΠΠSet → Set₁
+  HasRelₚ Q = ∀{ty tv} → Q ty tv → ⟦ tv ⟧ₚ A ⟵ ⟦ ty ⟧ₚ A
+\end{code}
+
+\begin{code}
   ≣ₗ : ∀{a}{A B : Set a} → A → (B ⟵ A)
   ≣ₗ a = fun (const a) ᵒ
 
@@ -56,16 +61,7 @@ module RegDiff.SOP.Diff.Regular.Domain
   Al-rel doP (Ap1ᵒ x a)  = < ≣ᵣ x ∣ Al-rel doP a >
   Al-rel doP (AX   x a)  = doP x >< Al-rel doP a
 
-  C-rel : {P : AASet}(doP : HasRelₐ P)
+  C-rel : {P : ΠΠSet}(doP : HasRelₚ P)
         → ∀{ty tv} → C P ty tv → ⟦ tv ⟧ A ⟵ ⟦ ty ⟧ A
-  C-rel doP (skel x)     = inj ∙ Al-rel doP x ∙ inj ᵒ
-  C-rel doP (set i j x)  = inj ∙ Al-rel doP x ∙ inj ᵒ
-\end{code}
-
-begin{code}
-  CAlΔ-rel : HasRel (C (Al Δ))
-  CAlΔ-rel = C-rel (Al-rel (λ {ty} {tv} → Δ-rel {ty} {tv}))
-
-  Patch-rel : ∀{ty} → Patch ty → EndoRel (⟦ ty ⟧ A)
-  Patch-rel p = S-rel CAlΔ-rel p
+  C-rel doP (CX i j k) = inj ∙ doP k ∙ inj ᵒ
 \end{code}

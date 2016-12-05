@@ -4,7 +4,7 @@ open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
 
-module RegDiff.Diff.Fixpoint.Domain
+module RegDiff.SOP.Diff.Fixpoint.Domain
        {ks# : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
     where
 

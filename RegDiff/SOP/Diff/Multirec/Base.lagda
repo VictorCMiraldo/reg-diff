@@ -61,18 +61,24 @@ module RegDiff.SOP.Diff.Multirec.Base
     data Cμ (P : AASet) : U → U → Set where
       Cins  : {ty : U}{k : Famᵢ}(i : Constr ty)
             → Al P (I k ∷ []) (typeOf ty i) → Cμ P (T k) ty
+
       Cdel  : {ty : U}{k : Famᵢ}(i : Constr ty)
             → Al P (typeOf ty i) (I k ∷ []) → Cμ P ty (T k)
+
       Cmod  : {ty tv : U}(i : Constr ty)(j : Constr tv)
             → Al P (typeOf ty i) (typeOf tv j) → Cμ P ty tv
+
+      Ccpy  : {ty : U}(i : Constr ty)
+            → ListI (λ k → P k k) (typeOf ty i) → Cμ P ty ty
 \end{code}
 %</Patchmu-aux-def>
 %<*Patchmu-def>
 \begin{code}
     data Patchμ : U → U → Set where
+      
       chng : {ty tv  : U}     → Cμ (UU→AA Patchμ) ty tv  → Patchμ ty tv
       fix  : {k k'   : Famᵢ}  → Patchμ (T k) (T k')      → Patchμ (𝓐 (I k)) (𝓐 (I k'))
-      set  : {ty tv  : Aty }     → Δ ty tv              → Patchμ (𝓐 ty) (𝓐 tv)
+      set  : {k  : Fin ks# }  → (x y : lookup k ks)      → Patchμ (𝓐 (K k)) (𝓐 (K k))
       cp   : {ty : U} → Patchμ ty ty
 \end{code}
 %</Patchmu-def>
@@ -84,10 +90,13 @@ module RegDiff.SOP.Diff.Multirec.Base
     mutual
       {-# TERMINATING #-}
       Patchμ-cost : {ty tv : U} → Patchμ ty tv → ℕ
-      Patchμ-cost (chng x) = Cμ-cost Patchμ-cost x
-      Patchμ-cost (fix s)  = Patchμ-cost s
-      Patchμ-cost cp  = 0
-      Patchμ-cost (set {ty} {tv} x)  = cost-Δ {ty} {tv} x
+      Patchμ-cost (chng x)  = Cμ-cost Patchμ-cost x
+      Patchμ-cost (fix s)   = Patchμ-cost s
+      Patchμ-cost cp        = 0
+      Patchμ-cost (set {k = k} x y) 
+        with Eq.cmp (lookupᵢ k keqs) x y 
+      ...| yes _ = 0
+      ...| no  _ = 2
 
       Cμ-cost : {ty tv : U}{P : AASet} 
               → (costP : ∀{k v} → P k v → ℕ)
@@ -98,6 +107,8 @@ module RegDiff.SOP.Diff.Multirec.Base
         = Al-cost c x
       Cμ-cost c (Cmod i j y) 
         = Al-cost c y
+      Cμ-cost c (Ccpy i xs)
+        = foldrᵢ (λ h r → c h + r) 0 xs
 \end{code}
 %</diffmu-costs>
 
@@ -106,13 +117,12 @@ module RegDiff.SOP.Diff.Multirec.Base
     mutual
       refine-Al : {k v : Aty} → Δ k v → List (Patchμ (𝓐 k) (𝓐 v))
       refine-Al {I k} {I k'} (x , y) = fix <$> diffμ* x y
-      refine-Al {K k} {K k'} (x , y) = return (set (x , y))
+      refine-Al {K k} {K k'} (x , y) 
+        with k ≟-Fin k' 
+      ...| no  _ = []
+      refine-Al {K k} {K _} (x , y) 
+         | yes refl = return (set x y)
       refine-Al {_}   {_}    _       = []
-{-
-      refine-Al {k}   {v}    (x , y) with Atom-eq k v
-      refine-Al {k}   {v}    (x , y) | no _     = []
-      refine-Al {k}   {.k}   (x , y) | yes refl = return (set (x , y))
--}
 \end{code}
 %</diffmu-refinements>
 %<*diffmu-non-det>
@@ -137,12 +147,27 @@ module RegDiff.SOP.Diff.Multirec.Base
       diffμ*-mod' _ _ | strip cx dx | strip cy dy 
         = (chng ∘ Cmod cx cy) <$> alignμ dx dy
 
+      zipμ : {ty : Π}
+       → ⟦ ty ⟧ₚ (Fix fam)  → ⟦ ty ⟧ₚ (Fix fam) → List (ListI (λ k → UU→AA Patchμ k k) ty)
+      zipμ {[]} x y = return []
+      zipμ {ty ∷ tys} (x , xs) (y , ys) 
+        = diffμ*-aux x y >>= λ xy → zipμ xs ys >>= return ∘ (xy ∷_) 
+
+      diffμ*-mod-cpy : {ty : U} → ⟦ ty ⟧ (Fix fam) → ⟦ ty ⟧ (Fix fam) → List (Patchμ ty ty)
+      diffμ*-mod-cpy x y with sop x | sop y
+      diffμ*-mod-cpy _ _ | strip cx dx | strip cy dy
+        with cx ≟-Fin cy
+      ...| no _ = (chng ∘ Cmod cx cy) <$> alignμ dx dy
+      diffμ*-mod-cpy _ _ | strip _ dx | strip cy dy
+         | yes refl = (chng ∘ Ccpy cy) <$>  zipμ dx dy
+      
+
       diffμ*-mod : {ty tv : U} → ⟦ ty ⟧ (Fix fam) → ⟦ tv ⟧ (Fix fam) → List (Patchμ ty tv)
       diffμ*-mod {ty} {tv}  x y with U-eq ty tv 
       diffμ*-mod {ty} {tv}  x y | no  _    = diffμ*-mod' x y
       diffμ*-mod {ty} {.ty} x y | yes refl with dec-eq _≟-A_ ty x y
       ...| yes _ = return cp
-      ...| no  _ = diffμ*-mod' x y
+      ...| no  _ = diffμ*-mod-cpy x y
 
       diffμ*-ins : {ty : U}{k : Famᵢ} → Fix fam k → ⟦ ty ⟧ (Fix fam) → List (Patchμ (T k) ty)
       diffμ*-ins x y with sop y
@@ -154,6 +179,10 @@ module RegDiff.SOP.Diff.Multirec.Base
       diffμ*-del {k} {k'} x y with sop x
       diffμ*-del {k} {k'} _ y | strip cx dx
         = (chng ∘ Cdel cx) <$> alignμ' dx (y , unit)
+
+      diffμ*-aux : {ty : Aty} → (x y : ⟦ ty ⟧ₐ (Fix fam)) → List (Patchμ (𝓐 ty) (𝓐  ty))
+      diffμ*-aux {I k} x y = fix <$> diffμ* x y
+      diffμ*-aux {K k} x y = return (set x y)
         
   
       {-# TERMINATING #-}

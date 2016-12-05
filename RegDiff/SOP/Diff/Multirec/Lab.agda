@@ -42,8 +42,9 @@ module RegDiff.SOP.Diff.Multirec.Lab where
 
   fork : ℕ → list → rtree
   fork n xs = ⟨ i1 (n , xs , unit) ⟩
-
+{-
   open DIFF.Internal RTREE-NAT public
+
 {-
   open APPLY.Internal RTREE-NAT public
   open import RegDiff.Diff.Regular.Domain konstants keqs (Fix RTREE-NAT) DIFF.WB-FAM
@@ -86,11 +87,12 @@ module RegDiff.SOP.Diff.Multirec.Lab where
   -- 52545 horrible align
 
   -- 7303 SOP type-heterogeneous set.
+  -- 6415 SOP with cpy
 
   t1t3-norm
     = {!!}
+-}
 
-{-  
   ABS : Fam 2
   ABS = (K kBool ⊗ []) ⊕ []
       ∷ (K kℕ ⊗ []) ⊕ []
@@ -103,4 +105,4 @@ module RegDiff.SOP.Diff.Multirec.Lab where
 
   al : List (Al Δ (K kBool ⊗ []) (K kℕ ⊗ []))
   al = align* (true , unit) (10 , unit)
--}
+
