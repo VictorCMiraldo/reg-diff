@@ -19,54 +19,146 @@ module RegDiff.SOP.Diff.Regular.Base
   open Monad {{...}}
 
   open import RegDiff.SOP.Generic.Multirec ks
+    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
   open import RegDiff.SOP.Generic.Eq ks keqs
   open import RegDiff.SOP.Diff.Trivial.Base ks keqs A WBA
     public
 \end{code}
 
-%<*S1-def>
+  We begin with the definition of a spine. The spine is 
+  responsible for agressively copying structure.
+ 
+  Scp copies the whole structure where Scns copies only
+  the top most constructor. Note that we do NOT align
+  values comming from the same constructor.
+
+%<*Spine-def>
 \begin{code}
   data S (P : UUSet) : U → Set where
-    SX  : {ty : U} → P ty ty → S P ty
-    Scp : {ty : U} → S P ty
+    SX   : {ty : U} → P ty ty → S P ty
+    Scp  : {ty : U} → S P ty
+    Scns : {ty : U}(i : Constr ty)
+         → ListI (contr P ∘ α) (typeOf ty i)
+         → S P ty
+\end{code}
+%</Spine-def>
 
+%<*S-map-def>
+\begin{code}
+  S-map  :  {ty : U}
+            {P Q : UUSet}(X : ∀{k v} → P k v → Q k v)
+         → S P ty → S Q ty
+  S-map f (SX x)       = SX (f x)
+  S-map f Scp          = Scp
+  S-map f (Scns i xs)  = Scns i (mapᵢ f xs)
+\end{code}
+%</S-map-def>
+%<*S-mapM-def>
+\begin{code}
+  S-mapM  :  {ty : U}{M : Set → Set}{{m : Monad M}}
+             {P Q : UUSet}(X : ∀{k v} → P k v → M (Q k v))
+          → S P ty → M (S Q ty)
+  S-mapM f (SX x)       = f x >>= return ∘ SX
+  S-mapM f Scp          = return Scp
+  S-mapM f (Scns i xs)  = mapMᵢ f xs >>= return ∘ (Scns i)
+\end{code}
+%</S-mapM-def>
+
+%<*S-cost-def>
+\begin{code}
+  S-cost : {ty : U}{P : UUSet}(doP : {k v : U} → P k v → ℕ)
+         → S P ty → ℕ
+  S-cost doP (SX x)      = doP x
+  S-cost doP Scp         = 0
+  S-cost doP (Scns i xs) = foldrᵢ (λ h r → doP h + r) 0 xs
+\end{code}
+%</S-cost-def>
+
+%<*zip-product-def>
+\begin{code}
+  zipₚ : {ty : Π}
+       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → ListI (λ k → Δₛ (α k) (α k)) ty
+  zipₚ {[]}     _        _         
+    = []
+  zipₚ {_ ∷ ty} (x , xs) (y , ys)  
+    = (i1 (x , unit) , i1 (y , unit)) ∷ zipₚ xs ys
+\end{code}
+%</zip-product-def>
+%<*spine-def>
+\begin{code}
+  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Δₛ ty
+  spine-cns x y  with sop x | sop y
+  spine-cns _ _ | strip cx dx | strip cy dy
+    with cx ≟-Fin cy
+  ...| no  _     = SX (inject cx dx , inject cy dy)
+  spine-cns _ _ | strip _ dx | strip cy dy
+     | yes refl  = Scns cy (zipₚ dx dy)
+  
+  spine : {ty : U}(x y : ⟦ ty ⟧) → S Δₛ ty
+  spine {ty} x y 
+    with dec-eq _≟-A_ ty x y 
+  ...| yes _     = Scp
+  ...| no  _     = spine-cns x y
+\end{code}
+%</spine-def>
+
+  Unsurprisingly, when a spine can't copy anything
+  we gotta perform a change!
+
+%<*C-def>
+\begin{code}
   data C (P : ΠΠSet) : U → U → Set where
     CX  : {ty tv : U}
         → (i : Constr ty)(j : Constr tv)
         → P (typeOf ty i) (typeOf tv j) 
         → C P ty tv
-
-  data Al (P : AASet) : Π → Π → Set where
-    A0   :                                             Al P [] []
-    Ap1  : ∀{a ty tv}     → ⟦ a ⟧ₐ A   → Al P ty tv →  Al P (a ∷ ty) tv
-    Ap1ᵒ : ∀{a ty tv}     → ⟦ a ⟧ₐ A   → Al P ty tv →  Al P ty       (a ∷ tv)
-    AX   : ∀{a a' ty tv}  → P a a'     → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
 \end{code}
-%</S1-def>
-
+%</C-def>
+%<*C-map-def>
 \begin{code}
-  S-map : {ty : U}
-          {P Q : UUSet}(X : ∀{k v} → P k v → Q k v)
-        → S P ty → S Q ty
-  S-map f (SX x) = SX (f x)
-  S-map f Scp    = Scp
-
-  S-mapM : {ty : U}{M : Set → Set}{{m : Monad M}}
-           {P Q : UUSet}(X : ∀{k v} → P k v → M (Q k v))
-         → S P ty → M (S Q ty)
-  S-mapM f (SX x) = f x >>= return ∘ SX
-  S-mapM f Scp    = return Scp
-
-  C-map : {ty tv : U}
-          {P Q : ΠΠSet}(X : ∀{k v} → P k v → Q k v)
-        → C P ty tv → C Q ty tv
+  C-map  :  {ty tv : U}
+            {P Q : ΠΠSet}(X : ∀{k v} → P k v → Q k v)
+         → C P ty tv → C Q ty tv
   C-map f (CX i j x) = CX i j (f x)
-
-  C-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}
-           {P Q : ΠΠSet}(X : ∀{k v} → P k v → M (Q k v))
-         → C P ty tv → M (C Q ty tv)
+\end{code}
+%</C-map-def>
+%<*C-mapM-def>
+\begin{code}
+  C-mapM  :  {ty tv : U}{M : Set → Set}{{m : Monad M}}
+             {P Q : ΠΠSet}(X : ∀{k v} → P k v → M (Q k v))
+          → C P ty tv → M (C Q ty tv)
   C-mapM f (CX i j x) = f x >>= return ∘ CX i j
+\end{code}
+%</C-mapM-def>
+%<*C-cost>
+\begin{code}
+  C-cost  : {ty tv : U}{P : ΠΠSet}(doP : {k v : Π} → P k v → ℕ)
+          → C P ty tv → ℕ
+  C-cost doP (CX i j x) = doP x
+\end{code}
+%</C-cost>
+%<*change-def>
+\begin{code}
+  change : {ty tv : U} → ⟦ ty ⟧ → ⟦ tv ⟧ → C Δₚ ty tv
+  change x y with sop x | sop y
+  change _ _ | strip cx dx | strip cy dy = CX cx cy (dx , dy)
+\end{code}
+%</change-def>
 
+  Last but not least, we are left with products that need some alignment!
+
+%<*Al-def>
+\begin{code}
+  data Al (P : AASet) : Π → Π → Set where
+    A0   :                                          Al P [] []
+    Ap1  : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P (a ∷ ty) tv
+    Ap1ᵒ : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P ty       (a ∷ tv)
+    AX   : ∀{a a' ty tv}  → P a a'  → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
+\end{code}
+%</Al-def>
+
+%<*Al-mapM-def>
+\begin{code}
   Al-mapM : {ty tv : Π}{M : Set → Set}{{m : Monad M}}
             {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
           → Al P ty tv → M (Al Q ty tv)
@@ -75,50 +167,20 @@ module RegDiff.SOP.Diff.Regular.Base
   Al-mapM f (Ap1ᵒ x a) = Al-mapM f a >>= return ∘ (Ap1ᵒ x)
   Al-mapM f (AX x a) = f x >>= λ x' → Al-mapM f a >>= return ∘ (AX x') 
 \end{code}
-
-
+%</Al-mapM-def>
+%<*Al-cost-def>
 \begin{code}
-  S-cost : {ty : U}{P : UUSet}(doP : {k v : U} → P k v → ℕ)
-         → S P ty → ℕ
-  S-cost doP (SX x) = doP x
-  S-cost doP Scp = 0
-
-  C-cost : {ty tv : U}{P : ΠΠSet}(doP : {k v : Π} → P k v → ℕ)
-         → C P ty tv → ℕ
-  C-cost doP (CX i j x) = doP x
-
-  Al-cost : {ty tv : Π}{P : AASet}(doP : {k v : Aty} → P k v → ℕ)
+  Al-cost : {ty tv : Π}{P : AASet}(doP : {k v : Atom} → P k v → ℕ)
           → Al P ty tv → ℕ
   Al-cost doP A0         = 0
   Al-cost doP (Ap1 x a)  = 1 + Al-cost doP a
   Al-cost doP (Ap1ᵒ x a) = 1 + Al-cost doP a
   Al-cost doP (AX x a)   = doP x + Al-cost doP a
 \end{code}
-
+%</Al-cost-def>
+%<*align-star-def>
 \begin{code}
-  Δ' : UUSet
-  Δ' ty tv = ⟦ ty ⟧ A × ⟦ tv ⟧ A
-
-  Δₚ : ΠΠSet
-  Δₚ ty tv = ⟦ ty ⟧ₚ A × ⟦ tv ⟧ₚ A
-
-  zipₚ : {ty : Π}
-       → ⟦ ty ⟧ₚ A  → ⟦ ty ⟧ₚ A → ListI (λ k → Δ' (𝓐 k) (𝓐 k)) ty
-  zipₚ {[]}     _        _         = []
-  zipₚ {_ ∷ ty} (x , xs) (y , ys)  
-    = (i1 (x , unit) , i1 (y , unit)) ∷ zipₚ xs ys
-
-  spine : {ty : U}(x y : ⟦ ty ⟧ A) → S Δ' ty
-  spine {ty} x y with dec-eq _≟-A_ ty x y 
-  ...| yes _ = Scp
-  ...| no  _ = SX (x , y)
-
-  change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → C Δₚ ty tv
-  change x y with sop x | sop y
-  change _ _ | strip cx dx | strip cy dy = CX cx cy (dx , dy)
-
-
-  align* : {ty tv : Π} → ⟦ ty ⟧ₚ A → ⟦ tv ⟧ₚ A → List (Al Δ ty tv)
+  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
   align* {[]}     {[]}     m n = return A0
   align* {[]}     {v ∷ tv} m (n , nn) 
     = Ap1ᵒ n <$> align* m nn
@@ -129,18 +191,23 @@ module RegDiff.SOP.Diff.Regular.Base
     ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
     ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
     where
-      is-ap1 : {ty tv : Π} → Al Δ ty tv → Bool
+      is-ap1 : {ty tv : Π} → Al Δₐ ty tv → Bool
       is-ap1 (Ap1 _ _) = true
       is-ap1 _         = false
 
-      is-ap1ᵒ : {ty tv : Π} → Al Δ ty tv → Bool
+      is-ap1ᵒ : {ty tv : Π} → Al Δₐ ty tv → Bool
       is-ap1ᵒ (Ap1ᵒ _ _) = true
       is-ap1ᵒ _          = false 
 \end{code}
+%</align-star-def>
+
+%<*Patch-def>
 \begin{code}
   Patch : U → Set
-  Patch = S (C (Al Δ))
-
+  Patch = S (C (Al Δₐ))
+\end{code}
+%</Patch-def>
+\begin{code}
   Patch* : U → Set
   Patch* = List ∘ Patch
 
@@ -148,7 +215,7 @@ module RegDiff.SOP.Diff.Regular.Base
   Patch& = List ∘ (ℕ ×_) ∘ Patch
 
   Patch-cost : {ty : U} → Patch ty → ℕ
-  Patch-cost = S-cost (C-cost (Al-cost (λ {k} {v} → cost-Δ {k} {v})))
+  Patch-cost = S-cost (C-cost (Al-cost (λ {k} {v} → cost-Δₐ {k} {v})))
 
   addCosts : {ty : U} → Patch* ty → Patch& ty
   addCosts = map (λ k → Patch-cost k , k)
@@ -161,13 +228,16 @@ module RegDiff.SOP.Diff.Regular.Base
   _<>_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
   c <> [] = c
   c <> (d ∷ ds) = (choose c d) <> ds
-
-  diff1* : {ty : U}(x y : ⟦ ty ⟧ A) → Patch* ty
+\end{code}
+%<*diff1-star-def>
+\begin{code}
+  diff1* : {ty : U}(x y : ⟦ ty ⟧) → Patch* ty
   diff1* x y = S-mapM (C-mapM (uncurry align*) ∘ uncurry change) (spine x y)
 \end{code}
+%</diff1-star-def>
 %<*diff1-def>
 \begin{code}
-  diff1 : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch ty
+  diff1 : {ty : U} → ⟦ ty ⟧ → ⟦ ty ⟧ → Patch ty
   diff1 x y with diff1* x y
   ...| s ∷ ss = s <> ss
   ...| []     = impossible

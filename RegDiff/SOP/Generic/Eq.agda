@@ -26,8 +26,11 @@ module RegDiff.SOP.Generic.Eq
       then yes ∘ cong K
       else (no ∘ ¬-inv K-inj)
 
-  U-eq : {n : ℕ}(ty tv : σπ n) → Dec (ty ≡ tv)
-  U-eq = Eq.cmp (eq-List {{ eq-List {{ eq Atom-eq }} }})
+  π-eq : {n : ℕ}(ty tv : π n) → Dec (ty ≡ tv)
+  π-eq = Eq.cmp (eq-List {{ eq Atom-eq }})
+
+  σπ-eq : {n : ℕ}(ty tv : σπ n) → Dec (ty ≡ tv)
+  σπ-eq = Eq.cmp (eq-List {{ eq π-eq }})
 
   dec-eqₐ : {n : ℕ}{A : Parms n}
           → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
