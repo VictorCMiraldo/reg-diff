@@ -71,6 +71,9 @@ module RegDiff.SOP.Diff.Trivial.Base
 
   UU→AA : UUSet → AASet
   UU→AA P a a' = P (α a) (α a')
+
+  →α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
+  →α k = i1 (k , unit)
 \end{code}
 %</Trivial-aux-defs>
 

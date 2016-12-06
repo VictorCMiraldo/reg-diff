@@ -2,11 +2,14 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.RelCalc.Base
+open import Prelude.ListI
 
 module RegDiff.SOP.Diff.Multirec.Lab where
 
   open import RegDiff.Generic.Konstants
-  open import RegDiff.SOP.Generic.Multirec konstants public
+  open import RegDiff.SOP.Generic.Multirec konstants 
+    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
+    public
   open import RegDiff.SOP.Generic.Eq konstants keqs public
 
   import RegDiff.SOP.Diff.Multirec.Base konstants keqs 
@@ -42,7 +45,7 @@ module RegDiff.SOP.Diff.Multirec.Lab where
 
   fork : ℕ → list → rtree
   fork n xs = ⟨ i1 (n , xs , unit) ⟩
-{-
+
   open DIFF.Internal RTREE-NAT public
 
 {-
@@ -88,11 +91,12 @@ module RegDiff.SOP.Diff.Multirec.Lab where
 
   -- 7303 SOP type-heterogeneous set.
   -- 6415 SOP with cpy
+  -- 2727 SOP with spine
 
   t1t3-norm
     = {!!}
--}
 
+{-
   ABS : Fam 2
   ABS = (K kBool ⊗ []) ⊕ []
       ∷ (K kℕ ⊗ []) ⊕ []
@@ -100,9 +104,9 @@ module RegDiff.SOP.Diff.Multirec.Lab where
 
   open DIFF.Internal ABS public
 
-  d1 : List (Patchμ (T fz) (T (fs fz)))
-  d1 = diffμ* {fz} {fs fz} ⟨ i1 (true , unit) ⟩ ⟨ i1 (10 , unit) ⟩
+  d1 : Patchμ (T fz) (T (fs fz))
+  d1 = diffμ {fz} {fs fz} ⟨ i1 (true , unit) ⟩ ⟨ i1 (10 , unit) ⟩
 
-  al : List (Al Δ (K kBool ⊗ []) (K kℕ ⊗ []))
+  al : List (Al Δₐ (K kBool ⊗ []) (K kℕ ⊗ []))
   al = align* (true , unit) (10 , unit)
-
+-}

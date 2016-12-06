@@ -60,6 +60,10 @@ module RegDiff.SOP.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
   ⟦ p ∷ ps ⟧   A = ⟦ p ⟧ₚ A ⊎ ⟦ ps ⟧ A
 \end{code}
 %</sop-denotation-def>
+\begin{code}
+  injₐ : {n : ℕ}{k : Atom n}{P : Parms n} → ⟦ k ⟧ₐ P → ⟦ α k ⟧ P
+  injₐ k = i1 (k , unit)
+\end{code}
 %<*Constr-def>
 \begin{code}
   cons# : {n : ℕ} → σπ n → ℕ

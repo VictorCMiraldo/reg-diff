@@ -7,7 +7,9 @@ open import Prelude.ListI
 module RegDiff.SOP.Diff.Fixpoint.Lab where
 
   open import RegDiff.Generic.Konstants
-  open import RegDiff.SOP.Generic.Fixpoint konstants keqs public
+  open import RegDiff.SOP.Generic.Fixpoint konstants keqs
+    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
+    public
   open import RegDiff.SOP.Generic.Eq konstants keqs public
 
   import RegDiff.SOP.Diff.Multirec.Base konstants keqs 
@@ -15,7 +17,7 @@ module RegDiff.SOP.Diff.Fixpoint.Lab where
   import RegDiff.SOP.Diff.Multirec.Domain konstants keqs
     as DOMAIN
 
-  LIST-F : Uₙ 1
+  LIST-F : σπ 1
   LIST-F = u1 ⊕ (K kℕ) ⊗ I ⊗ [] ⊕ []
 
   list : Set
@@ -28,7 +30,7 @@ module RegDiff.SOP.Diff.Fixpoint.Lab where
   _>_ : ℕ → list → list
   x > xs = ⟨ i2 (i1 (x , xs , unit)) ⟩
 
-  2-3-TREE-F : Uₙ 1
+  2-3-TREE-F : σπ 1
   2-3-TREE-F = u1 ⊕ (K kℕ) ⊗ I ⊗ I ⊗ [] ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I ⊗ [] ⊕ []
 
   2-3-Tree : Set
@@ -91,6 +93,7 @@ module RegDiff.SOP.Diff.Fixpoint.Lab where
     -- 40591 with horrible align (align-exp + heterogeneous set)
 
     -- 905 sop
+    -- 853 new sop
 
     r2 = diffμ k1 k3
     -- 74  with good align
@@ -98,6 +101,7 @@ module RegDiff.SOP.Diff.Fixpoint.Lab where
     -- 4276 with horrible align
 
     -- 128 sop
+    -- 128 new sop
 -}
 {-
     r1-computed
@@ -131,5 +135,5 @@ module RegDiff.SOP.Diff.Fixpoint.Lab where
     still-ok-2 : r2 ≡ r2-computed
     still-ok-2 = refl
 -}
-
+  
   open T1 public

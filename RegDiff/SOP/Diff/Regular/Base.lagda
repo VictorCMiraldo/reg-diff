@@ -203,29 +203,39 @@ module RegDiff.SOP.Diff.Regular.Base
 
 %<*Patch-def>
 \begin{code}
-  Patch : U → Set
-  Patch = S (C (Al Δₐ))
+  Patch : AASet → U → Set
+  Patch P = S (C (Al P))
 \end{code}
 %</Patch-def>
 \begin{code}
+  Patch-cost : {ty : U}{P : AASet}(doP : ∀{k v} → P k v → ℕ)
+             → Patch P ty → ℕ
+  Patch-cost doP = S-cost (C-cost (Al-cost doP))
+
+  Patch-mapM : {ty : U}{M : Set → Set}{{m : Monad M}}
+               {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
+             → Patch P ty → M (Patch Q ty)
+  Patch-mapM X = S-mapM (C-mapM (Al-mapM X))
+\end{code}
+\begin{code}
+  Patch-cost-Δₐ : {ty : U} → Patch Δₐ ty → ℕ
+  Patch-cost-Δₐ = Patch-cost (λ {k} {v} → cost-Δₐ {k} {v})
+
   Patch* : U → Set
-  Patch* = List ∘ Patch
+  Patch* = List ∘ Patch Δₐ
 
   Patch& : U → Set
-  Patch& = List ∘ (ℕ ×_) ∘ Patch
-
-  Patch-cost : {ty : U} → Patch ty → ℕ
-  Patch-cost = S-cost (C-cost (Al-cost (λ {k} {v} → cost-Δₐ {k} {v})))
+  Patch& = List ∘ (ℕ ×_) ∘ Patch Δₐ
 
   addCosts : {ty : U} → Patch* ty → Patch& ty
-  addCosts = map (λ k → Patch-cost k , k)
+  addCosts = map (λ k → Patch-cost-Δₐ k , k)
 
-  choose : {ty : U} → Patch ty → Patch ty → Patch ty
-  choose c d with Patch-cost c ≤?-ℕ Patch-cost d
+  choose : {ty : U} → Patch Δₐ ty → Patch Δₐ ty → Patch Δₐ ty
+  choose c d with Patch-cost-Δₐ c ≤?-ℕ Patch-cost-Δₐ d
   ...| yes _ = d
   ...| no  _ = c
 
-  _<>_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
+  _<>_ : {ty : U} → Patch Δₐ ty → List (Patch Δₐ ty) → Patch Δₐ ty
   c <> [] = c
   c <> (d ∷ ds) = (choose c d) <> ds
 \end{code}
@@ -237,10 +247,10 @@ module RegDiff.SOP.Diff.Regular.Base
 %</diff1-star-def>
 %<*diff1-def>
 \begin{code}
-  diff1 : {ty : U} → ⟦ ty ⟧ → ⟦ ty ⟧ → Patch ty
+  diff1 : {ty : U} → ⟦ ty ⟧ → ⟦ ty ⟧ → Patch Δₐ ty
   diff1 x y with diff1* x y
   ...| s ∷ ss = s <> ss
   ...| []     = impossible
-     where postulate impossible : {ty : U} → Patch ty
+     where postulate impossible : {ty : U} → Patch Δₐ ty
 \end{code}
 %</diff1-def>
