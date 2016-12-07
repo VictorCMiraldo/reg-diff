@@ -224,7 +224,7 @@ module Report.code.Examples where
 
     r1-normalized : Patchμ (T rtreeᵢ) (T rtreeᵢ)
     r1-normalized
-      = {!!}
+      = {!r1!}
 
     r1-expected : Patchμ (T rtreeᵢ) (T rtreeᵢ)
     r1-expected 
