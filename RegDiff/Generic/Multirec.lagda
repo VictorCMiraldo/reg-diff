@@ -12,7 +12,7 @@ module RegDiff.Generic.Multirec {ks# : ℕ}(ks : Vec Set ks#)
 %<*Fam-def>
 \begin{code}
   Fam : ℕ → Set
-  Fam n = Vec (Uₙ n) n
+  Fam n = Vec (σπ n) n
 \end{code}
 %</Fam-def>
 

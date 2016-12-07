@@ -14,81 +14,58 @@ module RegDiff.Generic.Eq
   K-inj : {n : ℕ}{i j : Fin ks#} → K {n = n} i ≡ K j → i ≡ j
   K-inj refl = refl
 
-  ⊗-inj : {n : ℕ}{a b c d : Uₙ n} → a ⊗ b ≡ c ⊗ d → a ≡ c × b ≡ d
-  ⊗-inj refl = refl , refl
+  Atom-eq : {n : ℕ}(ty tv : Atom n) → Dec (ty ≡ tv)
+  Atom-eq (I x) (K y) = no (λ ())
+  Atom-eq (K x) (I y) = no (λ ())
+  Atom-eq (I x) (I y) 
+    = ifd (x ≟-Fin y)
+      then yes ∘ cong I
+      else (no ∘ ¬-inv I-inj)
+  Atom-eq (K x) (K y)
+    = ifd (x ≟-Fin y)
+      then yes ∘ cong K
+      else (no ∘ ¬-inv K-inj)
 
-  ⊕-inj : {n : ℕ}{a b c d : Uₙ n} → a ⊕ b ≡ c ⊕ d → a ≡ c × b ≡ d
-  ⊕-inj refl = refl , refl
+  π-eq : {n : ℕ}(ty tv : π n) → Dec (ty ≡ tv)
+  π-eq = Eq.cmp (eq-List {{ eq Atom-eq }})
 
-  U-eq : {n : ℕ}(ty tv : Uₙ n) → Dec (ty ≡ tv)
-  U-eq (I x) (I y) with x ≟-Fin y
-  ...| yes h0  = yes (cong I h0)
-  ...| no  abs = no (abs ∘ I-inj)
-  U-eq (I _) u1 = no (λ ())
-  U-eq (I _) (tv ⊕ tv₁) = no (λ ())
-  U-eq (I _) (tv ⊗ tv₁) = no (λ ())
-  U-eq (I _) (K _) = no (λ ())
-  U-eq (K k) (I _) = no (λ ())
-  U-eq (K k) u1 = no (λ ())
-  U-eq (K k) (K k₁) 
-    with k ≟-Fin k₁
-  ...| yes prf = yes (cong K prf)
-  ...| no  abs = no (abs ∘ K-inj)
-  U-eq (K k) (tv ⊕ tv₁) = no (λ ())
-  U-eq (K k) (tv ⊗ tv₁) = no (λ ())
-  U-eq u1 (I _) = no (λ ())
-  U-eq u1 (K _) = no (λ ())
-  U-eq u1 u1 = yes refl
-  U-eq u1 (tv ⊕ tv₁) = no (λ ())
-  U-eq u1 (tv ⊗ tv₁) = no (λ ())
-  U-eq (ty ⊕ ty₁) (I _) = no (λ ())
-  U-eq (ty ⊕ ty₁) (K _) = no (λ ())
-  U-eq (ty ⊕ ty₁) u1 = no (λ ())
-  U-eq (ty ⊕ ty₁) (tv ⊕ tv₁) 
-    with U-eq ty tv | U-eq ty₁ tv₁
-  ...| no abs | _ = no (abs ∘ p1 ∘ ⊕-inj)
-  ...| yes h0 | no abs = no (abs ∘ p2 ∘ ⊕-inj)
-  ...| yes h0 | yes h1 = yes (cong₂ _⊕_ h0 h1)
-  U-eq (ty ⊕ ty₁) (tv ⊗ tv₁) = no (λ ())
-  U-eq (ty ⊗ ty₁) (I _) = no (λ ())
-  U-eq (ty ⊗ ty₁) (K _) = no (λ ())
-  U-eq (ty ⊗ ty₁) u1 = no (λ ())
-  U-eq (ty ⊗ ty₁) (tv ⊕ tv₁) = no (λ ())
-  U-eq (ty ⊗ ty₁) (tv ⊗ tv₁) 
-    with U-eq ty tv | U-eq ty₁ tv₁
-  ...| no abs | _ = no (abs ∘ p1 ∘ ⊗-inj)
-  ...| yes h0 | no abs = no (abs ∘ p2 ∘ ⊗-inj)
-  ...| yes h0 | yes h1 = yes (cong₂ _⊗_ h0 h1)
+  σπ-eq : {n : ℕ}(ty tv : σπ n) → Dec (ty ≡ tv)
+  σπ-eq = Eq.cmp (eq-List {{ eq π-eq }})
+
+  dec-eqₐ : {n : ℕ}{A : Parms n}
+          → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
+          → (ty : Atom n)(x y : ⟦ ty ⟧ₐ A)
+          → Dec (x ≡ y)
+  dec-eqₐ eqA (I k) x y = eqA x y
+  dec-eqₐ eqA (K k) x y = Eq.cmp (lookupᵢ k eqs) x y
+
+  dec-eqₚ : {n : ℕ}{A : Parms n}
+          → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
+          → (ty : List (Atom n))(x y : ⟦ ty ⟧ₚ A)
+          → Dec (x ≡ y)
+  dec-eqₚ eqA [] unit unit = yes refl
+  dec-eqₚ eqA (a ∷ as) (xa , xs) (ya , ys) 
+    = ifd dec-eqₐ eqA a xa ya 
+      then ifd dec-eqₚ eqA as xs ys 
+           then (λ hb ha → yes (cong₂ _,_ ha hb)) 
+           else flip (const (no ∘ ¬-inv (p2 ∘ ×-inj))) 
+      else (no ∘ ¬-inv (p1 ∘ ×-inj))
 
   dec-eq : {n : ℕ}{A : Parms n}
          → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
-         → (ty : Uₙ n)(x y : ⟦ ty ⟧ A)
+         → (ty : σπ n)(x y : ⟦ ty ⟧ A)
          → Dec (x ≡ y)
-  dec-eq e (I k) x y 
-    = e x y
-  dec-eq e u1 unit unit 
-    = yes refl
-  dec-eq e (K k) x y 
-    = Eq.cmp (lookupᵢ k eqs) x y
-  dec-eq e (ty ⊕ tv) (i1 x) (i1 y) 
-    with dec-eq e ty x y
-  ...| yes prf = yes (cong i1 prf)
-  ...| no  prf = no (prf ∘ i1-inj)
-  dec-eq e (ty ⊕ tv) (i1 x) (i2 y) 
-    = no (λ ())
-  dec-eq e (ty ⊕ tv) (i2 x) (i1 y) 
-    = no (λ ())
-  dec-eq e (ty ⊕ tv) (i2 x) (i2 y) 
-    with dec-eq e tv x y
-  ...| yes prf = yes (cong i2 prf)
-  ...| no  prf = no (prf ∘ i2-inj)
-  dec-eq e (ty ⊗ tv) (x1 , x2) (y1 , y2)
-    with dec-eq e ty x1 y1
-  ...| no prf = no (prf ∘ p1 ∘ ×-inj)
-  ...| yes prf1
-    with dec-eq e tv x2 y2
-  ...| no prf = no (prf ∘ p2 ∘ ×-inj)
-  ...| yes prf2 = yes (cong₂ _,_ prf1 prf2)
+  dec-eq eqA [] () ()
+  dec-eq eqA (p ∷ ps) (i1 x) (i2 y) = no (λ ())
+  dec-eq eqA (p ∷ ps) (i2 x) (i1 y) = no (λ ())
+  dec-eq eqA (p ∷ ps) (i1 x) (i1 y) 
+    = ifd dec-eqₚ eqA p x y 
+      then yes ∘ cong i1 
+      else (no ∘ ¬-inv i1-inj)
+  dec-eq eqA (p ∷ ps) (i2 x) (i2 y) 
+    = ifd dec-eq eqA ps x y 
+      then yes ∘ cong i2 
+      else (no ∘ ¬-inv i2-inj)
 
   {-# TERMINATING #-}
   _≟_ : {n : ℕ}{F : Fam n}{k : Fin n}

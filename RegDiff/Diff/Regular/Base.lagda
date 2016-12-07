@@ -8,6 +8,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
+open import Prelude.ListI
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Base
@@ -18,415 +19,238 @@ module RegDiff.Diff.Regular.Base
   open Monad {{...}}
 
   open import RegDiff.Generic.Multirec ks
+    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
   open import RegDiff.Generic.Eq ks keqs
   open import RegDiff.Diff.Trivial.Base ks keqs A WBA
     public
 \end{code}
 
-  An inhabitant of S represents a spine. 
-  A Spine intuitively is the maximal shared prefix between two
-  elements of the same type.
+  We begin with the definition of a spine. The spine is 
+  responsible for agressively copying structure.
+ 
+  Scp copies the whole structure where Scns copies only
+  the top most constructor. Note that we do NOT align
+  values comming from the same constructor.
 
-  Here we also add a Copy (Scp) instruction, representing
-  the fact that both elements are propositionally equal.
-
-  It is unsure to us, at this point, whether Scp should belong
-  here or to Δ.
-
-%<*S-def>
+%<*Spine-def>
 \begin{code}
   data S (P : UUSet) : U → Set where
     SX   : {ty : U} → P ty ty → S P ty
     Scp  : {ty : U} → S P ty
-    S⊗   : {ty tv : U} 
-         → S P ty → S P tv → S P (ty ⊗ tv)
-    Si1  : {ty tv : U} 
-         → S P ty → S P (ty ⊕ tv)
-    Si2  : {ty tv : U} 
-         → S P ty → S P (tv ⊕ ty)
+    Scns : {ty : U}(i : Constr ty)
+         → ListI (contr P ∘ α) (typeOf ty i)
+         → S P ty
 \end{code}
-%</S-def>
-
-  As expected, S makes an indexed functor.
-  It will be especially usefull to monadically map over it later on.
-
-\begin{code}
-  S-mapM  : {ty : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
-          → (f : ∀{k} → P k k → M (Q k k))
-          → S P ty → M (S Q ty)
-  S-mapM f (SX x)    = f x >>= return ∘ SX
-  S-mapM f Scp       = return Scp
-  S-mapM f (S⊗ s o)  = S-mapM f s >>= λ s' → S-mapM f o >>= return ∘ (S⊗ s')
-  S-mapM f (Si1 s)   = S-mapM f s >>= return ∘ Si1
-  S-mapM f (Si2 s)   = S-mapM f s >>= return ∘ Si2
-\end{code}
+%</Spine-def>
 
 %<*S-map-def>
 \begin{code}
-  S-map  : {ty : U}{P Q : UUSet}
-         → (f : ∀{k} → P k k → Q k k)
+  S-map  :  {ty : U}
+            {P Q : UUSet}(X : ∀{k v} → P k v → Q k v)
          → S P ty → S Q ty
-  S-map f (SX x)    = SX (f x)
-  S-map f Scp       = Scp
-  S-map f (S⊗ s o)  = S⊗ (S-map f s) (S-map f o)
-  S-map f (Si1 s)   = Si1 (S-map f s)
-  S-map f (Si2 s)   = Si2 (S-map f s)
+  S-map f (SX x)       = SX (f x)
+  S-map f Scp          = Scp
+  S-map f (Scns i xs)  = Scns i (mapᵢ f xs)
 \end{code}
 %</S-map-def>
-
-  Computing the inhabitants of S is fairly simple:
-
-%<*spine-def>
+%<*S-mapM-def>
 \begin{code}
-  mutual
-    spine-cp : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → S Δ ty
-    spine-cp {ty} x y
-      with dec-eq _≟-A_ ty x y 
-    ...| no  _ = spine x y
-    ...| yes _ = Scp
-    
-    spine : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → S Δ ty
-    spine {ty ⊗ tv}  (x1 , x2)  (y1 , y2) 
-      = S⊗ (spine-cp x1 y1) (spine-cp x2 y2)
-    spine {tv ⊕ tw}  (i1 x)     (i1 y)  = Si1 (spine-cp x y) 
-    spine {tv ⊕ tw}  (i2 x)     (i2 y)  = Si2 (spine-cp x y)
-    spine {ty}       x          y       = SX (delta {ty} {ty} x y)
+  S-mapM  :  {ty : U}{M : Set → Set}{{m : Monad M}}
+             {P Q : UUSet}(X : ∀{k v} → P k v → M (Q k v))
+          → S P ty → M (S Q ty)
+  S-mapM f (SX x)       = f x >>= return ∘ SX
+  S-mapM f Scp          = return Scp
+  S-mapM f (Scns i xs)  = mapMᵢ f xs >>= return ∘ (Scns i)
 \end{code}
-%</spine-def>
-
-\begin{code}
-  spine-list : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → List (S Δ ty)
-  spine-list x = return ∘ spine-cp x
-\end{code}
-
-  But we eventually need to choose one of them! In fact, the patch between
-  (x : ⟦ ty ⟧ A) and (y : ⟦ tv ⟧ A) is the one with the lowest cost!
+%</S-mapM-def>
 
 %<*S-cost-def>
 \begin{code}
-  S-cost : {ty : U}{P : UUSet}
-         → (costP : ∀{ty} → P ty ty → ℕ)
+  S-cost : {ty : U}{P : UUSet}(doP : {k v : U} → P k v → ℕ)
          → S P ty → ℕ
-  S-cost c (SX x)   = c x
-  S-cost c Scp      = 0
-  S-cost c (S⊗ s o) = S-cost c s + S-cost c o
-  S-cost c (Si1 s)  = S-cost c s
-  S-cost c (Si2 s)  = S-cost c s
+  S-cost doP (SX x)      = doP x
+  S-cost doP Scp         = 0
+  S-cost doP (Scns i xs) = foldrᵢ (λ h r → doP h + r) 0 xs
 \end{code}
 %</S-cost-def>
 
+%<*zip-product-def>
 \begin{code}
-  SΔ-cost : {ty : U} → S Δ ty → ℕ
-  SΔ-cost = S-cost (λ {ty} xy → cost-Δ {ty} {ty} xy)
+  zipₚ : {ty : Π}
+       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → ListI (λ k → Δₛ (α k) (α k)) ty
+  zipₚ {[]}     _        _         
+    = []
+  zipₚ {_ ∷ ty} (x , xs) (y , ys)  
+    = (i1 (x , unit) , i1 (y , unit)) ∷ zipₚ xs ys
 \end{code}
-
-  Here we add some binary operators to choose
-  between S's as long as we can compute the cost
-  of P's inside of S.
-
-\begin{code} 
-  private
-    chooseS : {ty : U}{P : UUSet}(costP : ∀{k} → P k k → ℕ)
-            → (s1 s2 : S P ty) → S P ty
-    chooseS c s o with S-cost c s ≤?-ℕ S-cost c o 
-    ...| yes _ = s
-    ...| no  _ = o
-
-    chooseS* : {ty : U}{P : UUSet}(costP : ∀{k} → P k k → ℕ)
-             → S P ty → List (S P ty)  → S P ty
-    chooseS* c s []       = s
-    chooseS* c s (o ∷ os) = chooseS* c (chooseS c s o) os
-\end{code}
-
-  Now that we can extract the shared prefix between an (x , y : ⟦ ty ⟧ A),
-  we need to be able to change the non-agreeing parts.
+%</zip-product-def>
+%<*spine-def>
+\begin{code}
+  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Δₛ ty
+  spine-cns x y  with sop x | sop y
+  spine-cns _ _ | strip cx dx | strip cy dy
+    with cx ≟-Fin cy
+  ...| no  _     = SX (inject cx dx , inject cy dy)
+  spine-cns _ _ | strip _ dx | strip cy dy
+     | yes refl  = Scns cy (zipₚ dx dy)
   
-  First we start by adapting coproducts. Here we are making the symmetric nature of this
-  step explicit.
+  spine : {ty : U}(x y : ⟦ ty ⟧) → S Δₛ ty
+  spine {ty} x y 
+    with dec-eq _≟-A_ ty x y 
+  ...| yes _     = Scp
+  ...| no  _     = spine-cns x y
+\end{code}
+%</spine-def>
 
-  An inhabitant of C tells us which coproducts to insert or pattern-match
-  in order to bet the best candidate for alignment.
+  Unsurprisingly, when a spine can't copy anything
+  we gotta perform a change!
 
 %<*C-def>
 \begin{code}
-  data C (P : UUSet) : U → U → Set where
-    CX    : {ty tv : U}   → P ty tv → C P ty tv
-    Ci1   : {ty tv k : U} → C P ty tv → C P ty (tv ⊕ k)
-    Ci2   : {ty tv k : U} → C P ty tv → C P ty (k ⊕ tv)
-    Ci1ᵒ  : {ty tv k : U} → C P ty tv → C P (ty ⊕ k) tv
-    Ci2ᵒ  : {ty tv k : U} → C P ty tv → C P (k ⊕ ty) tv
+  data C (P : ΠΠSet) : U → U → Set where
+    CX  : {ty tv : U}
+        → (i : Constr ty)(j : Constr tv)
+        → P (typeOf ty i) (typeOf tv j) 
+        → C P ty tv
 \end{code}
 %</C-def>
-
-  Just like S, we can map over these guys.
-
-\begin{code}
-  C-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
-         → (f : ∀{k v} → P k v → M (Q k v))
-         → C P ty tv → M (C Q ty tv)
-  C-mapM f (CX x) = f x >>= return ∘ CX
-  C-mapM f (Ci1 s) = C-mapM f s >>= return ∘ Ci1
-  C-mapM f (Ci2 s) = C-mapM f s >>= return ∘ Ci2
-  C-mapM f (Ci1ᵒ s) = C-mapM f s >>= return ∘ Ci1ᵒ 
-  C-mapM f (Ci2ᵒ s) = C-mapM f s >>= return ∘ Ci2ᵒ
-\end{code}
-
 %<*C-map-def>
 \begin{code}
-  C-map : {ty tv : U}{P Q : UUSet}
-         → (f : ∀{k v} → P k v → Q k v)
+  C-map  :  {ty tv : U}
+            {P Q : ΠΠSet}(X : ∀{k v} → P k v → Q k v)
          → C P ty tv → C Q ty tv
-  C-map f (CX x)  = CX (f x)
-  C-map f (Ci1 s) = Ci1 (C-map f s)
-  C-map f (Ci2 s) = Ci2 (C-map f s)
-  C-map f (Ci1ᵒ s) = Ci1ᵒ (C-map f s)
-  C-map f (Ci2ᵒ s) = Ci2ᵒ (C-map f s)
+  C-map f (CX i j x) = CX i j (f x)
 \end{code}
 %</C-map-def>
-
+%<*C-mapM-def>
+\begin{code}
+  C-mapM  :  {ty tv : U}{M : Set → Set}{{m : Monad M}}
+             {P Q : ΠΠSet}(X : ∀{k v} → P k v → M (Q k v))
+          → C P ty tv → M (C Q ty tv)
+  C-mapM f (CX i j x) = f x >>= return ∘ CX i j
+\end{code}
+%</C-mapM-def>
+%<*C-cost>
+\begin{code}
+  C-cost  : {ty tv : U}{P : ΠΠSet}(doP : {k v : Π} → P k v → ℕ)
+          → C P ty tv → ℕ
+  C-cost doP (CX i j x) = doP x
+\end{code}
+%</C-cost>
 %<*change-def>
 \begin{code}
-  change : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → C Δ ty tv
-  change {ty} {tv ⊕ tw} x (i1 y) = Ci1  (change x y) 
-  change {ty} {tv ⊕ tw} x (i2 y) = Ci2  (change x y)
-  change {ty ⊕ tw} {tv} (i1 x) y = Ci1ᵒ (change x y) 
-  change {ty ⊕ tw} {tv} (i2 x) y = Ci2ᵒ (change x y)
-  change {ty} {tv}      x      y = CX (delta {ty} {tv} x y)
+  change : {ty tv : U} → ⟦ ty ⟧ → ⟦ tv ⟧ → C Δₚ ty tv
+  change x y with sop x | sop y
+  change _ _ | strip cx dx | strip cy dy = CX cx cy (dx , dy)
 \end{code}
 %</change-def>
-\begin{code}
-  change-list : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (C Δ ty tv)
-  change-list x = return ∘ change x
-\end{code}
 
-  We can also assign costs to them, in order to choose the
-  best one.
-
-%<*C-cost-def>
-\begin{code}
-  C-cost : {ty tv : U}{P : UUSet}
-         → (costP : ∀{ty tv} → P ty tv → ℕ)
-         → C P ty tv → ℕ
-  C-cost c (CX x)    = c x
-  C-cost c (Ci1 s)   = C-cost c s
-  C-cost c (Ci2 s)   = C-cost c s
-  C-cost c (Ci1ᵒ s)  = C-cost c s
-  C-cost c (Ci2ᵒ s)  = C-cost c s
-\end{code}
-%</C-cost-def>
-
-\begin{code} 
-  private
-    chooseC : {ty tv : U}{P : UUSet}(costP : ∀{k v} → P k v → ℕ)
-            → (s1 s2 : C P ty tv) → C P ty tv
-    chooseC c s o with C-cost c s ≤?-ℕ C-cost c o 
-    ...| yes _ = s
-    ...| no  _ = o
-
-    chooseC* : {ty tv : U}{P : UUSet}(costP : ∀{k v} → P k v → ℕ)
-             → C P ty tv → List (C P ty tv) → C P ty tv
-    chooseC* c s []       = s
-    chooseC* c s (o ∷ os) = chooseC* c (chooseC c s o) os
-\end{code}
-
-  Finally, we will be left with with two different products.
-  And this is where the notion of alignment comes into play.
-
-  An inhabitnat of Al represents a product alignment.
-  The workflow is the same as with S and C; Al makes
-  an indexed functor; we can compute it's cost, and
-  we can compute it's inhabitants.
+  Last but not least, we are left with products that need some alignment!
 
 %<*Al-def>
 \begin{code}
-  data Al (P : UUSet) : U → U → Set where
-    AX    : {ty tv : U}     → P ty tv → Al P ty tv
-    Ap1   : {ty tv tw : U}  → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tv ⊗ tw)
-    Ap1ᵒ  : {ty tv tw : U}  → ⟦ tw ⟧ A → Al P ty tv → Al P (ty ⊗ tw) tv
-    Ap2   : {ty tv tw : U}  → ⟦ tw ⟧ A → Al P ty tv → Al P ty (tw ⊗ tv)
-    Ap2ᵒ  : {ty tv tw : U}  → ⟦ tw ⟧ A → Al P ty tv → Al P (tw ⊗ ty) tv
-    A⊗    : {ty tv tw tz : U}
-          → Al P ty tw → Al P tv tz → Al P (ty ⊗ tv) (tw ⊗ tz)
+  data Al (P : AASet) : Π → Π → Set where
+    A0   :                                          Al P [] []
+    Ap1  : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P (a ∷ ty) tv
+    Ap1ᵒ : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P ty       (a ∷ tv)
+    AX   : ∀{a a' ty tv}  → P a a'  → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
 \end{code}
 %</Al-def>
 
+%<*Al-mapM-def>
 \begin{code}
-  Al-mapM : {ty tv : U}{M : Set → Set}{{m : Monad M}}{P Q : UUSet}
-          → (f : ∀{k v} → P k v → M (Q k v))
+  Al-mapM : {ty tv : Π}{M : Set → Set}{{m : Monad M}}
+            {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
           → Al P ty tv → M (Al Q ty tv)
-  Al-mapM f (AX x) = f x >>= return ∘ AX
-  Al-mapM f (A⊗ al bl)
-    = Al-mapM f al >>= λ al' → Al-mapM f bl >>= return ∘ (A⊗ al')
-  Al-mapM f (Ap1 x al) = Al-mapM f al >>= return ∘ (Ap1 x)
-  Al-mapM f (Ap1ᵒ x al) = Al-mapM f al >>= return ∘ (Ap1ᵒ x)
-  Al-mapM f (Ap2 x al) = Al-mapM f al >>= return ∘ (Ap2 x)
-  Al-mapM f (Ap2ᵒ x al) = Al-mapM f al >>= return ∘ (Ap2ᵒ x)
+  Al-mapM f A0 = return A0
+  Al-mapM f (Ap1 x a) = Al-mapM f a >>= return ∘ (Ap1 x) 
+  Al-mapM f (Ap1ᵒ x a) = Al-mapM f a >>= return ∘ (Ap1ᵒ x)
+  Al-mapM f (AX x a) = f x >>= λ x' → Al-mapM f a >>= return ∘ (AX x') 
 \end{code}
-
-  Producing an alignment is where our options are really open.
-  We could check for permutations, or allow for different
-  types of alignments.
-
-  Obviusly, the more expressive the alignment, the more
-  expensive it's computation.
-
-%<*align-exp-all-paths-def>
-\begin{code}
-  align-exp : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (Al Δ ty tv)
-  align-exp {ty ⊗ ty'} {tv ⊗ tv'} (x1 , x2) (y1 , y2) 
-    =  A⊗ <$> align-exp x1 y1 <*> align-exp x2 y2
-    ++ Ap1  y2 <$> align-exp (x1 , x2) y1
-    ++ Ap2  y1 <$> align-exp (x1 , x2) y2
-    ++ Ap1ᵒ x2 <$> align-exp x1 (y1 , y2)
-    ++ Ap2ᵒ x1 <$> align-exp x2 (y1 , y2)
-\end{code}
-%</align-exp-all-paths-def>
-%<*align-exp-rest-def>
-\begin{code}
-  align-exp {ty ⊗ ty'} {tv} (x1 , x2) y 
-    =  Ap1ᵒ x2 <$> align-exp x1 y
-    ++ Ap2ᵒ x1 <$> align-exp x2 y
-  align-exp {ty} {tv ⊗ tv'} x (y1 , y2) 
-    =  Ap1  y2 <$> align-exp x y1
-    ++ Ap2  y1 <$> align-exp x y2
-  align-exp {ty} {tv} x y = return (AX (x , y))
-\end{code}
-%</align-exp-rest-def>
-
-  The above function is looking through a bunch of redundant paths.
-  Let's look at a concrete scenario:
-
-  Imagine we are aligning a ℕ × ℕ against a ℕ × ℕ.
-
-  align (3 , 4) (5 , 6)
-    = A⊗ (AX (3 , 5)) (AX (4 , 6)) ∷ (i)
-      Ap1 6 (Ap1ᵒ 4 (AX (3 , 5))) ∷ (i)
-      Ap1 6 (Ap2ᵒ 3 (AX (4 , 5))) ∷ (iii)
-      Ap2 5 (Ap1ᵒ 4 (AX (3 , 6))) ∷ (ii)
-      Ap2 5 (Ap2ᵒ 3 (AX (4 , 6))) ∷ (i)
-      Ap1ᵒ 4 (Ap1 6 (AX (3 , 5))) ∷ (i)
-      Ap1ᵒ 4 (Ap2 5 (AX (3 , 6))) ∷ (ii)
-      Ap2ᵒ 3 (Ap1 6 (AX (4 , 5))) ∷ (iii)
-      Ap2ᵒ 3 (Ap2 5 (AX (4 , 6))) ∷ (i)
-      []
-
-  The roman numerals indicate the branches that are equal. Note how many branches are
-  equal to the first one!
-
-  Well, removing the equal patches, we have:
-
-  align (3 , 4) (5 , 6)
-    = A⊗ (AX (3 , 5)) (AX (4 , 6)) ∷ 
-      Ap1 6 (Ap2ᵒ 3 (AX (4 , 5))) ∷
-      Ap2 5 (Ap1ᵒ 4 (AX (3 , 6))) ∷
-      []
-
-\begin{code}
-  kill-p2 : {ty tv : U} → List (Al Δ ty tv) → List (Al Δ ty tv)
-  kill-p2 [] = []
-  kill-p2 (Ap2 _ _ ∷ l) = l
-  kill-p2 (x ∷ l)       = x ∷ kill-p2 l
-
-  kill-p1 : {ty tv : U} → List (Al Δ ty tv) → List (Al Δ ty tv)
-  kill-p1 [] = []
-  kill-p1 (Ap1 _ _ ∷ l) = l
-  kill-p1 (x ∷ l)       = x ∷ kill-p1 l
-\end{code}
-%<*align-all-paths-def>
-\begin{code}
-  align : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → List (Al Δ ty tv)
-  align {ty ⊗ ty'} {tv ⊗ tv'} (x1 , x2) (y1 , y2) 
-    =  A⊗ <$> align x1 y1 <*> align x2 y2
-    ++ (Ap1  y2 ∘ Ap2ᵒ x1) <$> kill-p2 (align x2 y1)
-    ++ (Ap2  y1 ∘ Ap1ᵒ x2) <$> kill-p1 (align x1 y2)
-\end{code}
-%</align-all-paths-def>
-%<*align-rest-def>
-\begin{code}
-  align {ty ⊗ ty'} {tv} (x1 , x2) y 
-    =  Ap1ᵒ x2 <$> align x1 y
-    ++ Ap2ᵒ x1 <$> align x2 y
-  align {ty} {tv ⊗ tv'} x (y1 , y2) 
-    =  Ap1  y2 <$> align x y1
-    ++ Ap2  y1 <$> align x y2
-  align {ty} {tv} x y = return (AX (x , y))
-\end{code}
-%</align-rest-def>
-
-\begin{code}
-  Al-cost-raw : {k : U} → ⟦ k ⟧ A → ℕ → ℕ
-  Al-cost-raw {k} x n
-    -- = n
-    = suc n
-    -- = size1 sized k x + n
-\end{code}
+%</Al-mapM-def>
 %<*Al-cost-def>
 \begin{code}
-  Al-cost : {ty tv : U}{P : UUSet}
-          → (costP : ∀{ty tv} → P ty tv → ℕ)
+  Al-cost : {ty tv : Π}{P : AASet}(doP : {k v : Atom} → P k v → ℕ)
           → Al P ty tv → ℕ
-  Al-cost c (AX xy) = c xy
-  Al-cost c (A⊗ s o) = Al-cost c s + Al-cost c o
-  Al-cost c (Ap1  {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
-  Al-cost c (Ap2  {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
-  Al-cost c (Ap1ᵒ {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
-  Al-cost c (Ap2ᵒ {tw = k} x s) = Al-cost-raw {k} x (Al-cost c s)
+  Al-cost doP A0         = 0
+  Al-cost doP (Ap1 x a)  = 1 + Al-cost doP a
+  Al-cost doP (Ap1ᵒ x a) = 1 + Al-cost doP a
+  Al-cost doP (AX x a)   = doP x + Al-cost doP a
 \end{code}
 %</Al-cost-def>
-
+%<*align-star-def>
 \begin{code}
-  AlΔ-cost : {ty tv : U} → Al Δ ty tv → ℕ
-  AlΔ-cost = Al-cost (λ {ty} {tv} xy → cost-Δ {ty} {tv} xy)
+  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+  align* {[]}     {[]}     m n = return A0
+  align* {[]}     {v ∷ tv} m (n , nn) 
+    = Ap1ᵒ n <$> align* m nn
+  align* {y ∷ ty} {[]}     (m , mm) n 
+    = Ap1 m <$> align* mm n
+  align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
+    =  AX (m , n)   <$> align* mm nn
+    ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
+    ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
+    where
+      is-ap1 : {ty tv : Π} → Al Δₐ ty tv → Bool
+      is-ap1 (Ap1 _ _) = true
+      is-ap1 _         = false
+
+      is-ap1ᵒ : {ty tv : Π} → Al Δₐ ty tv → Bool
+      is-ap1ᵒ (Ap1ᵒ _ _) = true
+      is-ap1ᵒ _          = false 
 \end{code}
-
-  Finally, we can diff values of regular types!
-
-  A Patch then is a skeleton followed by some pattern matching;
-  followed by some injections followed by some alignment.
-
-  Note that we could have made the symmetry of C internal
-  to it's definition. We are still not sure
-  which one to use.
+%</align-star-def>
 
 %<*Patch-def>
 \begin{code}
-  Patch : U → Set
-  Patch ty = S (C (Al Δ)) ty
+  Patch : AASet → U → Set
+  Patch P = S (C (Al P))
 \end{code}
 %</Patch-def>
-
 \begin{code}
-  infixl 20 _<>_ _<>'_
-  _<>_ : {ty : U} → Patch ty → Patch ty → Patch ty
-  s <> o = chooseS (C-cost AlΔ-cost) s o
+  Patch-cost : {ty : U}{P : AASet}(doP : ∀{k v} → P k v → ℕ)
+             → Patch P ty → ℕ
+  Patch-cost doP = S-cost (C-cost (Al-cost doP))
 
-  _<>'_ : {ty : U} → Patch ty → List (Patch ty) → Patch ty
-  s <>' []       = s
-  s <>' (o ∷ os) = (s <> o) <>' os
+  Patch-mapM : {ty : U}{M : Set → Set}{{m : Monad M}}
+               {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
+             → Patch P ty → M (Patch Q ty)
+  Patch-mapM X = S-mapM (C-mapM (Al-mapM X))
+\end{code}
+\begin{code}
+  Patch-cost-Δₐ : {ty : U} → Patch Δₐ ty → ℕ
+  Patch-cost-Δₐ = Patch-cost (λ {k} {v} → cost-Δₐ {k} {v})
 
   Patch* : U → Set
-  Patch* = List ∘ Patch
+  Patch* = List ∘ Patch Δₐ
 
   Patch& : U → Set
-  Patch& ty = List (ℕ × Patch ty)
+  Patch& = List ∘ (ℕ ×_) ∘ Patch Δₐ
 
   addCosts : {ty : U} → Patch* ty → Patch& ty
-  addCosts = map (λ x → S-cost (C-cost AlΔ-cost) x , x)
-\end{code}
+  addCosts = map (λ k → Patch-cost-Δₐ k , k)
 
-  Here is the final algorithm.
-  
-%<*diff1-nondet-def>
-\begin{code}
-  diff1* : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch* ty
-  diff1* x y = S-mapM (C-mapM (uncurry align) ∘ uncurry change) (spine-cp x y)
+  choose : {ty : U} → Patch Δₐ ty → Patch Δₐ ty → Patch Δₐ ty
+  choose c d with Patch-cost-Δₐ c ≤?-ℕ Patch-cost-Δₐ d
+  ...| yes _ = d
+  ...| no  _ = c
+
+  _<>_ : {ty : U} → Patch Δₐ ty → List (Patch Δₐ ty) → Patch Δₐ ty
+  c <> [] = c
+  c <> (d ∷ ds) = (choose c d) <> ds
 \end{code}
-%</diff1-nondet-def>
+%<*diff1-star-def>
+\begin{code}
+  diff1* : {ty : U}(x y : ⟦ ty ⟧) → Patch* ty
+  diff1* x y = S-mapM (C-mapM (uncurry align*) ∘ uncurry change) (spine x y)
+\end{code}
+%</diff1-star-def>
 %<*diff1-def>
 \begin{code}
-  diff1 : {ty : U} → ⟦ ty ⟧ A → ⟦ ty ⟧ A → Patch ty
+  diff1 : {ty : U} → ⟦ ty ⟧ → ⟦ ty ⟧ → Patch Δₐ ty
   diff1 x y with diff1* x y
-  ...| []     = SX (CX (AX (x , y)))
-  ...| s ∷ ss = s <>' ss
+  ...| s ∷ ss = s <> ss
+  ...| []     = impossible
+     where postulate impossible : {ty : U} → Patch Δₐ ty
 \end{code}
 %</diff1-def>

@@ -1,5 +1,5 @@
 \begin{code}
-open import Prelude
+open import Prelude hiding (⊥)
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
@@ -14,6 +14,7 @@ module RegDiff.Diff.Multirec.Domain
   open Applicative {{...}}
 
   open import RegDiff.Generic.Multirec ks
+    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
   open import RegDiff.Generic.Eq ks keqs
   open import RegDiff.Diff.Multirec.Base ks keqs
     renaming (module Internal to MRECInternal)
@@ -23,18 +24,21 @@ module RegDiff.Diff.Multirec.Domain
     open MRECInternal fam
     open import RegDiff.Diff.Regular.Domain ks keqs (Fix fam) WB-FAM
 
-    ⟨⟩ : {k : Famᵢ} → (Fix fam k ⟵ ⟦ T k ⟧ (Fix fam))
+    ⟨⟩ : {k : Famᵢ} → (Fix fam k ⟵ ⟦ T k ⟧)
     ⟨⟩ = fun ⟨_⟩
 
-    Cμ-rel : {P : UUSet} → HasRel P → HasRel (Cμ P)
-    Cμ-rel doP (Cins x) = C-rel (Al-rel doP) x ∙ ⟨⟩
-    Cμ-rel doP (Cdel x) = ⟨⟩ ᵒ ∙ C-rel (Al-rel doP) x
-    Cμ-rel doP (Cmod x) = S-rel (C-rel (Al-rel doP)) x
+    ⟨⟩ₚ : {k : Famᵢ} → (⟦ I k ∷ [] ⟧ₚ ⟵ ⟦ T k ⟧)
+    ⟨⟩ₚ = π₁ ᵒ ∙ ⟨⟩
+
+    ⟨⟩ₐ : {k : Famᵢ} → (⟦ (I k ∷ []) ∷ [] ⟧ ⟵ ⟦ T k ⟧)
+    ⟨⟩ₐ = ι₁ ∙ ⟨⟩ₚ
 
     {-# TERMINATING #-}
     Patchμ-rel : HasRel Patchμ
-    Patchμ-rel (fix p) = ⟨⟩ ∙ Patchμ-rel p ∙ ⟨⟩ ᵒ
-    Patchμ-rel (chng s) = Cμ-rel Patchμ-rel s
-    Patchμ-rel (set {ty} s) = Δ-rel {ty} {ty} s
-    
+    Patchμ-rel (skel p)  = S-rel (C-rel (Al-rel (α-rel Patchμ-rel))) p
+    Patchμ-rel (ins i x) = inj ∙ Al-rel (α-rel Patchμ-rel) x ∙ ⟨⟩ₚ
+    Patchμ-rel (del i x) = ⟨⟩ₚ ᵒ ∙ Al-rel (α-rel Patchμ-rel) x ∙ inj ᵒ
+    Patchμ-rel (fix p)   = ⟨⟩ₐ ∙ Patchμ-rel p ∙ ⟨⟩ₐ ᵒ
+    Patchμ-rel (set xy)  = Δₛ-rel xy
 \end{code}
+    

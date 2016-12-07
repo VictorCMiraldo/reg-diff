@@ -1,74 +1,134 @@
 \begin{code}
 open import Prelude
 open import Prelude.Vector
-\end{code}
-\begin{code}
-module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
-\end{code}
-\begin{code}
+open import Prelude.ListI
+open import RegDiff.Generic.Parms
 
-  open import RegDiff.Generic.Parms
+module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
 
   infixr 25 _⊗_
   infixr 22 _⊕_
 
 \end{code}
-
-  Here we define the universe of regular types over
-  n-variables and the generic functions we need to 
-  perform diffing over them.
-
-  Constants will be handled by the vector passed around
-  as a module parameter.
-
-%<*U-def>
+%<*sop-synonyms-def>
 \begin{code}
-  data Uₙ (n : ℕ) : Set where
-    I    : Fin n           →  Uₙ n
-    K    : Fin ks#         →  Uₙ n
-    u1   :                    Uₙ n
-    _⊕_  : (ty tv : Uₙ n)  →  Uₙ n
-    _⊗_  : (ty tv : Uₙ n)  →  Uₙ n
+  _⊗_ _⊕_ : ∀{a}{A : Set a} → A → List A → List A
+  _⊗_ = _∷_
+  _⊕_ = _∷_
+
+  u1 : ∀{a}{A : Set a} → List A
+  u1 = []
 \end{code}
-%</U-def>
-
-%<*U-denotation>
+%</sop-synonyms-def>
+%<*atom-def>
 \begin{code}
-  ⟦_⟧ : {n : ℕ} → Uₙ n → Parms n → Set
-  ⟦ I x      ⟧ A = A x
-  ⟦ K x      ⟧ A = lookup x ks
-  ⟦ u1       ⟧ A = Unit
-  ⟦ ty ⊕ tv  ⟧ A = ⟦ ty ⟧ A ⊎ ⟦ tv ⟧ A
-  ⟦ ty ⊗ tv  ⟧ A = ⟦ ty ⟧ A × ⟦ tv ⟧ A
+  data Atom (n : ℕ) : Set where
+    I : Fin n    → Atom n
+    K : Fin ks#  → Atom n
 \end{code}
-%</U-denotation>
-
-  Generic map
-
+%</atom-def>
+%<*prod-def>
 \begin{code}
-  gmap : {n : ℕ}{A B : Parms n}(ty : Uₙ n)(f : A ⇉ B)
-       → ⟦ ty ⟧ A → ⟦ ty ⟧ B
-  gmap (I i)     f x       = f x
-  gmap u1        f x       = unit
-  gmap (K k)     f x       = x
-  gmap (ty ⊕ tv) f (i1 x)  = i1 (gmap ty f x)
-  gmap (ty ⊕ tv) f (i2 y)  = i2 (gmap tv f y)
-  gmap (ty ⊗ tv) f (x , y) = gmap ty f x , gmap tv f y
+  π : ℕ → Set
+  π = List ∘ Atom
 \end{code}
-
-
-  And generic size
-
+%</prod-def>
+%<*sum-of-prod-def>
 \begin{code}
-  size1 : {n : ℕ}{A : Parms n}(f : ∀{k} → A k → ℕ)(ty : Uₙ n)
-       → ⟦ ty ⟧ A → ℕ
-  size1 f (I i) x = (f x)
-  size1 f u1 x = 1
-  size1 f (K k) x = 1
-  size1 f (ty ⊕ tv) (i1 x) = 1 + size1 f ty x
-  size1 f (ty ⊕ tv) (i2 y) = 1 + size1 f tv y
-  size1 f (ty ⊗ tv) (x , y) = size1 f ty x + size1 f tv y
+  σπ : ℕ → Set
+  σπ = List ∘ π
+\end{code}
+%</sum-of-prod-def>
+%<*into-sop-def>
+\begin{code}
+  α : {n : ℕ} → Atom n → σπ n
+  α a = (a ∷ []) ∷ []
+\end{code}
+%</into-sop-def>
+%<*sop-denotation-def>
+\begin{code}
+  ⟦_⟧ₐ : {n : ℕ} → Atom n → Parms n → Set
+  ⟦ I x ⟧ₐ     A = A x
+  ⟦ K x ⟧ₐ     A = lookup x ks
 
-  size-const : {n : ℕ}{A : Parms n}(ty : Uₙ n) → ⟦ ty ⟧ A → ℕ
+  ⟦_⟧ₚ : {n : ℕ} → π n → Parms n → Set
+  ⟦ []     ⟧ₚ  A = Unit
+  ⟦ a ∷ as ⟧ₚ  A = ⟦ a ⟧ₐ A × ⟦ as ⟧ₚ A
+
+  ⟦_⟧ : {n : ℕ} → σπ n → Parms n → Set
+  ⟦ []     ⟧   A = ⊥
+  ⟦ p ∷ ps ⟧   A = ⟦ p ⟧ₚ A ⊎ ⟦ ps ⟧ A
+\end{code}
+%</sop-denotation-def>
+\begin{code}
+  injₐ : {n : ℕ}{k : Atom n}{P : Parms n} → ⟦ k ⟧ₐ P → ⟦ α k ⟧ P
+  injₐ k = i1 (k , unit)
+\end{code}
+%<*Constr-def>
+\begin{code}
+  cons# : {n : ℕ} → σπ n → ℕ
+  cons# = length
+
+  Constr : {n : ℕ}(ty : σπ n) → Set
+  Constr ty = Fin (cons# ty)
+\end{code}
+%</Constr-def>
+%<*typeOf-def>
+\begin{code}
+  typeOf : {n : ℕ}(ty : σπ n) → Constr ty → π n
+  typeOf [] ()
+  typeOf (x ∷ ty) fz     = x
+  typeOf (x ∷ ty) (fs c) = typeOf ty c
+\end{code}
+%</typeOf-def>
+%<*injection-def>
+\begin{code}
+  inject : {n : ℕ}{A : Parms n}{ty : σπ n}
+         → (i : Constr ty) → ⟦ typeOf ty i ⟧ₚ A
+         → ⟦ ty ⟧ A
+  inject {ty = []} () cs
+  inject {ty = x ∷ ty} fz cs     = i1 cs
+  inject {ty = x ∷ ty} (fs i) cs = i2 (inject i cs)
+\end{code}
+%</injection-def>
+%<*SOP-view>
+\begin{code}
+  data SOP {n : ℕ}{A : Parms n}{ty : σπ n} : ⟦ ty ⟧ A → Set where
+    strip : (i : Constr ty)(ls : ⟦ typeOf ty i ⟧ₚ A)
+          → SOP (inject i ls)
+\end{code}
+%</SOP-view>
+\begin{code}
+  sop : {n : ℕ}{A : Parms n}{ty : σπ n}
+      → (x : ⟦ ty ⟧ A) → SOP x
+  sop {ty = []} ()
+  sop {ty = x ∷ ty} (i1 k) = strip fz k
+  sop {ty = x ∷ ty} (i2 k) with sop k
+  sop {ty = x ∷ ty} (i2 _) | strip i k' = strip (fs i) k'
+
+  constrOf : {n : ℕ}{A : Parms n}{ty : σπ n}
+           → (x : ⟦ ty ⟧ A) → Constr ty
+  constrOf x with sop x
+  constrOf _ | strip i _ = i
+
+  dataOf   : {n : ℕ}{A : Parms n}{ty : σπ n}
+           → (x : ⟦ ty ⟧ A) → ⟦ typeOf ty (constrOf x) ⟧ₚ A
+  dataOf x with sop x
+  dataOf _ | strip _ k = k
+\end{code}
+\begin{code}
+  size1ₚ : {n : ℕ}{A : Parms n}(f : ∀{k} → A k → ℕ)(ty : π n)
+         → ⟦ ty ⟧ₚ A → ℕ
+  size1ₚ f [] x = 1
+  size1ₚ f (I x ∷ as) (⟦x⟧ , xs) = f ⟦x⟧ + size1ₚ f as xs
+  size1ₚ f (K x ∷ as) (⟦x⟧ , xs) = 1 + size1ₚ f as xs
+
+  size1 : {n : ℕ}{A : Parms n}(f : ∀{k} → A k → ℕ)(ty : σπ n)
+        → ⟦ ty ⟧ A → ℕ
+  size1 f [] ()
+  size1 f (ty ∷ tys) (i1 x) = size1ₚ  f ty x
+  size1 f (ty ∷ tys) (i2 y) = size1   f tys y
+
+  size-const : {n : ℕ}{A : Parms n}(ty : σπ n) → ⟦ ty ⟧ A → ℕ
   size-const = size1 (const 1)
 \end{code}

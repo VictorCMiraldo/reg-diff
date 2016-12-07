@@ -19,6 +19,8 @@ module RegDiff.Diff.Trivial.Base
 
 \begin{code}
   open import RegDiff.Generic.Multirec ks
+    renaming (Atom to Atom'; ⟦_⟧ₐ to interpₐ; ⟦_⟧ₚ to interpₚ;
+              ⟦_⟧ to interpₛ)
   open import RegDiff.Generic.Eq ks keqs
 \end{code}
 
@@ -28,91 +30,113 @@ module RegDiff.Diff.Trivial.Base
 %<*Trivial-defs>
 \begin{code}
   U : Set
-  U = Uₙ parms#
+  U = σπ parms#
+
+  Atom : Set
+  Atom = Atom' parms#
+  
+  Π : Set
+  Π = π parms#
 
   sized : {p : Fin parms#} → A p → ℕ
   sized = parm-size WBA
 
   _≟-A_ : {p : Fin parms#}(x y : A p) → Dec (x ≡ y)
   _≟-A_ = parm-cmp WBA
+\end{code}
+%</Trivial-defs>
+%<*Trivial-aux-defs>
+\begin{code}
+  ⟦_⟧ₐ : Atom → Set
+  ⟦ a ⟧ₐ = interpₐ a A
+
+  ⟦_⟧ₚ : Π → Set
+  ⟦ p ⟧ₚ = interpₚ p A
+
+  ⟦_⟧ : U → Set
+  ⟦ u ⟧ = interpₛ u A
 
   UUSet : Set₁
   UUSet = U → U → Set
+
+  AASet : Set₁
+  AASet = Atom → Atom → Set
+
+  ΠΠSet : Set₁
+  ΠΠSet = Π → Π → Set
+
+  contr : ∀{a b}{A : Set a}{B : Set b}
+        → (A → A → B) → A → B
+  contr p x = p x x
+
+  UU→AA : UUSet → AASet
+  UU→AA P a a' = P (α a) (α a')
+
+  →α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
+  →α k = i1 (k , unit)
 \end{code}
-%</Trivial-defs>
+%</Trivial-aux-defs>
 
   As usual, we say that the diagonal functor
   is the trivial diff.
 
-%<*delta-def>
+  Here we define the diagonal functor modulo denotational
+  semantics. This reduces code duplication as we will
+  need diagonals over Atoms, Products and Sums
+
+%<*delta-polymorphic-def>
 \begin{code}
-  Δ : UUSet
-  Δ ty tv = ⟦ ty ⟧ A × ⟦ tv ⟧ A
+  delta : ∀{a}{A : Set a}(P : A → Set)
+        → A → A → Set
+  delta P a₁ a₂ = P a₁ × P a₂
 \end{code}
-%</delta-def>
+%</delta-polymorphic-def>
 
-  It has a cost function:
-
+%<*cost-delta-polymorphic-def>
 \begin{code}
-  cost-Δ-raw : {ty tv : U} → Δ ty tv → ℕ
-  cost-Δ-raw {ty} {tv} (x , y) 
-    -- = size1 sized ty x + size1 sized tv y
-    -- = 1
-    = 2
-\end{code}
+  cost-delta-raw : ℕ
+  cost-delta-raw = 2
 
-%<*Trivial-cost-def>
-\begin{code}
-  cost-Δ : {ty tv : U} → Δ ty tv → ℕ
-  cost-Δ {ty} {tv}  (x , y) with U-eq ty tv
-  cost-Δ {ty} {.ty} (x , y) | yes refl
-    with dec-eq _≟-A_ ty x y
+  cost-delta : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
+               (eqA : (x y : A) → Dec (x ≡ y))
+               (eqP : (k : A)(x y : P k) → Dec (x ≡ y))
+             → delta P ty tv → ℕ
+  cost-delta {ty = ty} {tv = tv} P eqA eqP (pa1 , pa2) 
+    with eqA ty tv
+  ...| no _ = cost-delta-raw
+  cost-delta {ty = ty} P eqA eqP (pa1 , pa2) 
+     | yes refl with eqP ty pa1 pa2
+  ...| no  _ = cost-delta-raw
   ...| yes _ = 0
-  ...| no  _ = cost-Δ-raw {ty} {ty} (x , y)
-  cost-Δ {ty} {tv}  (x , y) | no _
-    = cost-Δ-raw {ty} {tv} (x ,  y)
 \end{code}
-%</Trivial-cost-def>
+%</cost-delta-polymorphic-def>
 
+%<*delta-a-def>
 \begin{code}
-  delta : {ty tv : U} → ⟦ ty ⟧ A → ⟦ tv ⟧ A → Δ ty tv
-  delta x y = (x , y)
+  Δₐ : AASet
+  Δₐ = delta ⟦_⟧ₐ
+
+  cost-Δₐ : {ty tv : Atom} → Δₐ ty tv → ℕ
+  cost-Δₐ {ty} {tv} = cost-delta {ty = ty} {tv} ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
 \end{code}
+%</delta-a-def>
 
-  And it can be applied in both directions:
-
+%<*delta-p-def>
 \begin{code}
-  record Appliable (Q : UUSet) : Set₁ where
-    constructor apply
-    field
-      goₗ : {ty tv : U}
-          → Q ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      goᵣ : {ty tv : U}
-          → Q ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
+  Δₚ : ΠΠSet
+  Δₚ = delta ⟦_⟧ₚ
 
-  open Appliable public
-
-  Δ-apply : Appliable Δ
-  Δ-apply 
-    = apply (λ {ty} {tv} → doit {ty} {tv}) 
-            (λ { {ty} {tv} (x , y) z → doit {ty = tv} {tv = ty} (y , x) z })
-    where
-      doit : {ty tv : U}
-           → Δ ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      doit {ty} {tv} (x , y) z
-        with dec-eq _≟-A_ ty x z
-      ...| yes _ = just y
-      ...| no  _ = nothing
-
-  Δ-apply-cp : Appliable Δ
-  Δ-apply-cp = apply (λ {ty} {tv} → doit {ty} {tv}) 
-                     (λ { {ty} {tv} (x , y) z → doit {ty = tv} {tv = ty} (y , x) z })
-    where
-      doit : {ty tv : U}
-           → Δ ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-      doit {ty} {tv} (x , y) z with U-eq ty tv
-      ...| no _ = goₗ Δ-apply {ty} {tv} (x , y) z
-      doit {ty} {.ty} (x , y) z | yes refl with dec-eq _≟-A_ ty x y
-      ...| no  _ = goₗ Δ-apply {ty} {ty} (x , y) z
-      ...| yes _ = just z     
+  cost-Δₚ : {ty tv : Π} → Δₚ ty tv → ℕ
+  cost-Δₚ {ty} {tv} = cost-delta {ty = ty} {tv} ⟦_⟧ₚ π-eq (dec-eqₚ _≟-A_)
 \end{code}
+%</delta-a-def>
+
+%<*delta-s-def>
+\begin{code}
+  Δₛ : UUSet
+  Δₛ = delta ⟦_⟧
+
+  cost-Δₛ : {ty tv : U} → Δₛ ty tv → ℕ
+  cost-Δₛ {ty} {tv} = cost-delta {ty = ty} {tv} ⟦_⟧ σπ-eq (dec-eq _≟-A_)
+\end{code}
+%</delta-s-def>
