@@ -2,6 +2,7 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
+open import Prelude.ListI
 
 module Report.code.Examples where
 \end{code}
@@ -11,10 +12,12 @@ module Report.code.Examples where
   module Examples1 where
     open import RegDiff.Generic.Konstants
     open import RegDiff.Generic.Fixpoint konstants keqs public
+      hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
+      public
     open import RegDiff.Generic.Eq konstants keqs public
 
-    LIST-F : Uₙ 1
-    LIST-F = u1 ⊕ (K kℕ) ⊗ I
+    LIST-F : σπ 1
+    LIST-F = u1 ⊕ (K kℕ) ⊗ I ⊗ [] ⊕ []
 
     list : Set
     list = Fix LIST-F
@@ -24,19 +27,23 @@ module Report.code.Examples where
 
     infixr 20 _>_
     _>_ : ℕ → list → list
-    x > xs = ⟨ i2 (x , xs) ⟩
+    x > xs = ⟨ i2 (i1 (x , xs , unit)) ⟩
 
-    import RegDiff.Diff.Fixpoint.Base konstants keqs 
+    cons' nil' : Constr LIST-F
+    nil'   = fz
+    cons'  = fs fz
+
+    import RegDiff.Diff.Multirec.Base konstants keqs 
       as DIFF
-    open DIFF.Internal LIST-F public
+    open DIFF.Internal (LIST-F ∷ []) public
 \end{code}
 %<*Example-list-2>
 \begin{code}
     s0 : Patchμ LIST-F LIST-F
     s0 = diffμ (5 > 8 > 13 > 21 > #) (8 > 13 > 21 > #)
-
+    
     s0-norm : Patchμ LIST-F LIST-F
-    s0-norm = chng (Cdel (Ci2ᵒ (CX (Ap2ᵒ 5 (AX (fix (skel Scp)))))))
+    s0-norm = del cons' (Ap1 5 (AX (fix (skel Scp)) A0))
 \end{code}
 %</Example-list-2>
 %<*Example-list-1>
@@ -51,22 +58,27 @@ module Report.code.Examples where
     s1-normalized : Patchμ LIST-F LIST-F
     s1-normalized 
       = skel
-        (Si2
-         (S⊗ (SX (chng (Cmod (CX (AX (set (3 , 1)))))))
-          (SX
-           (fix
-            (skel
-             (Si2
-              (S⊗ Scp
-               (SX
-                (fix
-                 (skel
-                  (Si2
-                   (S⊗ Scp
-                    (SX
-                     (fix
-                      (chng
-                       (Cins (Ci2 (CX (Ap2 20 (AX (fix (skel Scp))))))))))))))))))))))
+        (Scns cons'
+         (CX fz fz (AX (set (→α 3 , →α 1)) A0) ∷
+          (CX fz fz
+           (AX
+            (fix
+             (skel
+              (Scns cons'
+               (CX fz fz (AX (set (→α 50 , →α 50)) A0) ∷
+                (CX fz fz
+                 (AX
+                  (fix
+                   (skel
+                    (Scns cons'
+                     (CX fz fz (AX (set (→α 4 , →α 4)) A0) ∷
+                      (CX fz fz
+                       (AX (fix (ins cons' (Ap1ᵒ 20 (AX (fix (skel Scp)) A0)))) A0)
+                       ∷ [])))))
+                  A0)
+                 ∷ [])))))
+            A0)
+           ∷ [])))
 
 \end{code}
 %</Example-list-1>
@@ -75,11 +87,15 @@ module Report.code.Examples where
 \begin{code}
   module Examples2 where
     open import RegDiff.Generic.Konstants
-    open import RegDiff.Generic.Fixpoint konstants keqs public
+    open import RegDiff.Generic.Fixpoint konstants keqs 
+      hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
+      public
     open import RegDiff.Generic.Eq konstants keqs public
 
-    2-3-TREE-F : Uₙ 1
-    2-3-TREE-F = u1 ⊕ (K kℕ) ⊗ I ⊗ I ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I
+    2-3-TREE-F : σπ 1
+    2-3-TREE-F  = u1 
+                ⊕ (K kℕ) ⊗ I ⊗ I ⊗ [] 
+                ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I ⊗ [] ⊕ []
 
     2-3-Tree : Set
     2-3-Tree = Fix 2-3-TREE-F
@@ -88,14 +104,19 @@ module Report.code.Examples where
     Leaf = ⟨ i1 unit ⟩
 
     2-Node : ℕ → 2-3-Tree → 2-3-Tree → 2-3-Tree
-    2-Node n l r = ⟨ i2 (i1 (n , l , r)) ⟩
+    2-Node n l r = ⟨ i2 (i1 (n , l , r , unit)) ⟩
 
     3-Node : ℕ → 2-3-Tree → 2-3-Tree → 2-3-Tree → 2-3-Tree
-    3-Node n l m r = ⟨ i2 (i2 (n , l , m , r)) ⟩
+    3-Node n l m r = ⟨ i2 (i2 (i1 (n , l , m , r , unit))) ⟩
 
-    import RegDiff.Diff.Fixpoint.Base konstants keqs 
+    2-node' 3-node' nil' : Constr 2-3-TREE-F
+    nil'     = fz
+    2-node'  = fs fz
+    3-node'  = fs (fs fz)
+
+    import RegDiff.Diff.Multirec.Base konstants keqs 
       as DIFF
-    open DIFF.Internal 2-3-TREE-F public
+    open DIFF.Internal (2-3-TREE-F ∷ []) public
 
     k0 k1 k2 : 2-3-Tree
     k0 = Leaf
@@ -120,32 +141,27 @@ module Report.code.Examples where
     r1-normalized : Patchμ 2-3-TREE-F  2-3-TREE-F
     r1-normalized
       = skel
-        (Si2
-         (SX
-          (chng
-           (Cmod
-            (Ci2
-             (Ci1ᵒ
-              (CX
-               (A⊗ (AX (set (4 , 5)))
-                (A⊗ (AX (fix (skel Scp)))
-                 (Ap2 ⟨ i1 unit ⟩ (AX (fix (skel Scp)))))))))))))
+        (SX
+         (CX 2-node' 3-node'
+          (AX (set (i1 (4 , unit) , i1 (5 , unit)))
+           (AX (fix (skel Scp))
+            (Ap1ᵒ ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0))))))
 \end{code}
 %</Example-2-3-tree-norm1>
 %<*Example-2-3-tree-norm2>
 \begin{code}
     r2-normalized : Patchμ 2-3-TREE-F 2-3-TREE-F
     r2-normalized
-      = chng
-        (Cins
-         (Ci2
-          (Ci2
-           (CX
-            (Ap2 3
-             (Ap1
-              (⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩ ,
-               ⟨ i2 (i2 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩)) ⟩)
-              (AX (fix (skel Scp)))))))))
+      = ins 3-node'
+        (Ap1ᵒ 3
+         (AX (fix (skel Scp))
+          (Ap1ᵒ
+           ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
+           ⟩
+           (Ap1ᵒ
+            ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
+            ⟩
+            A0))))
 \end{code}
 %</Example-2-3-tree-norm2>
 
@@ -153,18 +169,20 @@ module Report.code.Examples where
 \begin{code}
   module Examples3 where
     open import RegDiff.Generic.Konstants
-    open import RegDiff.Generic.Multirec konstants public
+    open import RegDiff.Generic.Multirec konstants
+       hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
+       public
     open import RegDiff.Generic.Eq konstants keqs public
 
     import RegDiff.Diff.Multirec.Base konstants keqs 
       as DIFF
-    import RegDiff.Diff.Multirec.Apply konstants keqs
-      as APPLY
+    -- import RegDiff.Diff.Multirec.Apply konstants keqs
+    --   as APPLY
 
     RTREE-NAT : Fam 2
     RTREE-NAT
-      = u1 ⊕ I (fs fz) ⊗ I fz  
-      ∷ K kℕ ⊗ I fz 
+      = u1 ⊕ I (fs fz) ⊗ I fz ⊗ [] ⊕ []
+      ∷ K kℕ ⊗ I fz ⊗ [] ⊕ []
       ∷ []
 
     list : Set
@@ -180,15 +198,15 @@ module Report.code.Examples where
     # = ⟨ i1 unit ⟩
 
     _>_ : rtree → list → list
-    x > xs = ⟨ i2 (x , xs) ⟩
+    x > xs = ⟨ i2 (i1 (x , xs , unit)) ⟩
 
     infixr 20 _>_
 
     fork : ℕ → list → rtree
-    fork n xs = ⟨ n , xs ⟩
+    fork n xs = ⟨ i1 (n , xs , unit) ⟩
 
     open DIFF.Internal RTREE-NAT public
-    open APPLY.Internal RTREE-NAT public
+    -- open APPLY.Internal RTREE-NAT public
 
     t1 t2 : rtree
     t1 = fork 3 
@@ -211,10 +229,11 @@ module Report.code.Examples where
     r1-expected : Patchμ (T rtreeᵢ) (T rtreeᵢ)
     r1-expected 
       = {!!}
-
+{-
     res : Maybe rtree
     res = Patchμ-apply-famₗ r1-expected t1
 
     good : Patchμ-apply-famₗ r1-expected t1 ≡ Patchμ-apply-famₗ r1-normalized t1
     good = {!res!}
+-}
 \end{code}

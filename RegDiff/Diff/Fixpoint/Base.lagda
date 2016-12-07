@@ -11,10 +11,11 @@ module RegDiff.Diff.Fixpoint.Base
     where
 
   open import RegDiff.Generic.Fixpoint ks keqs
+    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ)
   open import RegDiff.Generic.Eq ks keqs
   import RegDiff.Diff.Multirec.Base ks keqs
     as MREC
 
-  module Internal (T : Uₙ 1) where
+  module Internal (T : σπ 1) where
     open MREC.Internal (T ∷ []) public
 \end{code}
