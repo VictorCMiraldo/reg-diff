@@ -12,7 +12,8 @@ module RegDiff.Diff.Fixpoint.Apply
   open import RegDiff.Generic.Eq ks keqs
   import RegDiff.Diff.Multirec.Apply ks keqs
     as MREC
+\end{code}
 
-  module Internal (T : Uₙ 1) where
+  module Internal (T : ?) where
     open MREC.Internal (T ∷ []) public
 \end{code}

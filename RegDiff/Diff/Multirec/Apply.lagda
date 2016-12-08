@@ -13,6 +13,7 @@ module RegDiff.Diff.Multirec.Apply
   open Applicative {{...}}
 
   open import RegDiff.Generic.Multirec ks
+    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
   open import RegDiff.Generic.Eq ks keqs
   open import RegDiff.Diff.Multirec.Base ks keqs
     renaming (module Internal to MRECInternal)
@@ -26,7 +27,7 @@ module RegDiff.Diff.Multirec.Apply
       public
 \end{code}
 
-\begin{code}
+begin{code}
     Cμ-applyₗ : {ty tv : U}{P : UUSet}
               → (doP : Appliable P)
               → Cμ P ty tv → ⟦ ty ⟧ (Fix fam) → Maybe (⟦ tv ⟧ (Fix fam))
