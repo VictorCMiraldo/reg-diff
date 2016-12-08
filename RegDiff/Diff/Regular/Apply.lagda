@@ -14,6 +14,7 @@ module RegDiff.Diff.Regular.Apply
     where
 
   open import RegDiff.Generic.Multirec ks
+    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
   open import RegDiff.Generic.Eq ks keqs
   open import RegDiff.Diff.Regular.Base ks keqs A WBA
 \end{code}
@@ -21,10 +22,10 @@ module RegDiff.Diff.Regular.Apply
   The application functions in both directions makes it easy
   to see how the two phases of the algorithm play together.
 
-\begin{code}
+begin{code}
   S-apply : {ty : U}{P : UUSet}
-         → (∀{k} → P k k → ⟦ k ⟧ A → Maybe (⟦ k ⟧ A))
-         → S P ty → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
+         → (∀{k} → P k k → ⟦ k ⟧ → Maybe ⟦ k ⟧)
+         → S P ty → ⟦ ty ⟧ A → Maybe ⟦ ty ⟧
   S-apply doP (SX x) el          = doP x el
   S-apply doP Scp x              = just x
   S-apply doP (S⊗ s o) (el , dl) = _,_ <$> S-apply doP s el <*> S-apply doP o dl
@@ -94,7 +95,7 @@ module RegDiff.Diff.Regular.Apply
   Al-Appliable doP = apply (Al-applyₗ doP) (Al-applyᵣ doP)
 \end{code}
 
-\begin{code}
+begin{code}
   private
     patch-appliable : Appliable (C (Al Δ))
     patch-appliable = C-Appliable (Al-Appliable Δ-apply)
