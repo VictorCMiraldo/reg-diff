@@ -130,7 +130,10 @@ University of Utrecht}}
   \maketitle
 
 \section{Our Universe}
-%format SOP = "\F{$\sigma\pi$}"  
+%format SOP  = "\F{$\sigma\pi$}"
+%format Atom = "\F{Atom}"
+%format alpha = "\F{$\alpha$}" 
+%format contr = "\F{contr}"
 
   The universe we are using is a \emph{Sums-of-Products} over
 type variables and constant types. 
@@ -314,11 +317,16 @@ how do they relate to this relational view and give examples here and there!
 %format (SPLIT (a) (b)) = "\langle {" a "} , {" b "} \rangle"
 %format inj1          = "\IC{$\iota_1$}"
 %format inj2          = "\IC{$\iota_2$}"
+%format injI          = "\IC{inj}_i"
+%format injJ          = "\IC{inj}_j"
 %format pi1           = "\IC{$\pi_1$}"
 %format pi2           = "\IC{$\pi_2$}"
 
 
 %format Delta = "\F{$\Delta$}"
+%format DeltaS = "\F{$\Delta_s$}"
+%format DeltaA = "\F{$\Delta_a$}"
+%format DeltaP = "\F{$\Delta_p$}"
 
    The simplest possible way to describe a transformation is to say
 what is the source and what is the destination of such
@@ -375,16 +383,17 @@ Below is how they are defined:
 %format CONS   = "\IC{:\hspace{-.5em}:}"
 %format NIL    = "\IC{[]}"
 
-%format Stimes = "\IC{S$\otimes$}"
-%format Si1    = "\IC{Si1}"
-%format Si2    = "\IC{Si2}"
-%format Scp    = "\IC{Scp}"
-%format SX     = "\IC{SX}"
+%format Scns = "\IC{Scns}"
+%format Scp  = "\IC{Scp}"
+%format SX   = "\IC{SX}"
 
-%format s1 = "s_1"
-%format s2 = "s_2"
+%format s1  = "s_1"
+%format s2  = "s_2"
+%format sN  = "s_n"
+%format ddd = "\cdots"
 
 %format spine-cp = "\F{spine-cp}"
+%format spine    = "\F{spine}"
 %format S        = "\F{S}"
 %format S-map    = "\F{S-map}"
 %format Maybe    = "\F{Maybe}"
@@ -392,140 +401,145 @@ Below is how they are defined:
 %format nothing  = "\IC{nothing}"
 
 
-  We can try to make it better by identifying the longest prefix of
-constructors where $x$ and $y$ agree, before giving up and using |Delta|. 
-Moreover, this becomes much easier if $x$ and $y$ actually have the same type.
+  We can make the trivial diff better by identifying whether or not
+$x$ and $y$ agree on something! In fact, we will aggresively look for copying
+oportunities. We start by checking if $x$ and $y$ are, in fact, equal. If they are,
+we say that the patch that transforms $x$ into $y$ is \emph{copy}. If they are not equal,
+they might have the same \emph{constructor}. If they do, the say that the constructor
+is copied and we put the data side by side (zip). Otherwise, there is nothing
+we can do on this phase and we just return |Delta x y|.
+
+Note that the \emph{spine} forces $x$ and $y$ to be of the same type! 
 In practice, we are only interested in diffing elements of the same language.
 It does not make sense to diff a C source file against a Haskell source file.
 
-Nevertheless, we define an |S| structure to capture the longest common prefix
-of $x$ and $y$:
+Nevertheless, we define an |S| structure to capture this longest common prefix
+of $x$ and $y$; which, for the \emph{SoP} universe is very easy to state.
 
-\Agda{RegDiff/Diff/Regular/Base}{S-def}
+\Agda{RegDiff/Diff/Regular/Base}{Spine-def}
 
-Note that \F{S} makes a functor (actually, a free monad!) on
-$P$, and hence, we can map over it:
+Remember that |contr P x = P x x| and |alpha : Atom n -> SOP n|; Here,
+$\F{ListI}\;P\;l$ is an indexed list where the elements have type $P\;l_i$,
+for every $l_i \in l$. We will treat this type like an ordinary list
+for the remainder of this document.
+
+Note that \F{S} makes a functor (actually, a free monad!) on $P$, 
+and hence, we can map over it:
 
 \Agda{RegDiff/Diff/Regular/Base}{S-map-def}
 
 Computing a spine is easy, first we check whether or not $x$ and
-$y$ are equal. If they are, we are done. If not, we inspect the first
-constructor and traverse it. Then we repeat.
+$y$ are equal. If they are, we are done. If not, we look at $x$ and $y$ as
+true sums of products and check if their constructors are equal, if they are,
+we zip the data together. If they are not, we zip $x$ and $y$ together and give up.
 
 \Agda{RegDiff/Diff/Regular/Base}{spine-def}
 
-The ``application'' relations specified by a spine |s = spine-cp x y|, denoted |REL s| are:
+\Agda{RegDiff/Diff/Regular/Base}{zip-product-def}
+
+The ``application'' relations specified by a spine |s = spine x y|, 
+denoted |REL s| are defined by:
 
 \begin{align*}
-  |REL Scp|             &= \hspace{2.3em} \xymatrix@@C=5em{ A & A \ar[l]_{id}} \\
-  |REL (Stimes s1 s2)|  &= \xymatrix@@C=5em{ A \times B & A \times B \ar[l]_(.45){|(REL s1) * (REL s2)|}} \\
-  |REL (Si1 s)|         &= \xymatrix@@C=5em{ A + B & A + B \ar[l]_(.45){|inj1 . (REL s) . (CONV inj1)|}} \\ 
-  |REL (Si2 s)|         &= \xymatrix@@C=5em{ A + B & A + B \ar[l]_(.45){|inj2 . (REL s) . (CONV inj2)|}} \\    
-  |REL (SX p)|          &= \hspace{2.3em} \xymatrix@@C=5em{ A & A \ar[l]_{|REL p|} }
+  |REL Scp|           &= \hspace{3em} \xymatrix@@C=10em{ A & A \ar[l]_{id}} \\
+  |REL (SX p)|        &= \hspace{3em} \xymatrix@@C=10em{ A & A \ar[l]_{|REL p|} } \\
+  |REL (Scns i [s1 , ddd , sN])|   
+                 &= \xymatrix@@C=10em{ \amalg_k \Pi_j A_{kj} & \amalg_k \Pi_j A_{kj} 
+                                    \ar[l]_{|injI . ((REL s1) * ddd * (REL sN)) . (CONV injI)|}}
 \end{align*}
 
+  where |injI| is the injection, with constructor $i$, into $\amalg_k T_k$. It corresponds
+to the relational lifting of function \F{injection}.
+
   Note that, in the |(SX p)| case, we simply ask for the ``application'' relation
-of |p|.
+of |p|. The algorithm produces a |S DeltaS|, so we have pairs on the leaves of the
+spine. In fact, either we have only one leave or we have $arity\; C_i$ leaves, where
+$C_i$ is the common constructor of $x$ and $y$ in |spine x y|.
 
-\begin{withsalt}
-  Non-cannonicity can be a problem: |REL Scp ==  (REL (Stimes Scp Scp))|
-  Even though the |spine-cp| function will never find the right-hand above, 
-  it feels sub-optimal to allow this.
+  For a running example, let's consider a datatype defined by:
 
-  One possible solution could be to remove |Scp| and handle them through
-  the maybe monad. Instead of |S Delta| we would have |S (Maybe Delta)|,
-  where the \IC{nothing}s represent copy. This ensures that we can only copy on the leaves.
-  Branch \texttt{explicit-cpy} of the repo has this experiment going. It is easier said
-  than done.
-\end{withsalt}
+\Agda{Report/code/Examples}{Example-2-3-TREE-F}
 
-Ignoring the problems and moving forward; note that for any $x$ and
-$y$, a spine |s = spine-cp x y| will NEVER contain a product nor
-a unit on a leaf (we force going through products and copying units).
-Hence, whenever we are traversing $s$ and find a |SX|, we know
-that: (1) the values of the pair are different and (2) we must be at a
-coproduct, a constant type or a type variable. The constant type or
-the type variable are out of our control. But we can refine our
-\emph{description} in case we arrive at a coproduct.
+  We ommit the \IC{fz} for the \F{I} parts, as we only have one type variable.
+We also use \F{$\_\oplus\_$} and \F{$\_\otimes\_$} as aliases for \IC{\_:\hspace{-.5em}:\_} with different
+precedences. As expected, there are three constructors:
 
-\end{document}
+\Agda{Report/code/Examples}{Example-2-3-TREE-F-Constr}
+%format Node2 = "\F{2-node`}"
+%format Node3 = "\F{3-node`}"
+%format Node0 = "\F{nil`}"
+%format unit  = "\IC{unit}"
 
-\subsection{Coproduct Changes}
+  We can then consider a few spines over $\Interp{\F{2-3-TREE-F}}{\F{Unit}}$ to illustrate the algorithm:
+\begin{align*}
+  | spine Node0 (Node3 10 unit unit unit) | 
+      &= | SX (Node0 , Node3 10 unit unit unit) | \\
+  | spine (Node2 10 unit unit) (Node2 15 unit unit) | 
+      &= | Scns Node2 [ (10 , 15) , (unit , unit) , (unit , unit) ] | \\
+  | spine Node0 Node0 | &= | Scp | \\
+\end{align*}
+
+  In the case where the spine is |Scp| or |Scns i| there is nothing left to be done and we have
+the best possible diff. Note that on the |Scns i| case we do \emph{not} allow for rearanging of the
+parameters of the constructor |i|. 
+
+  In the case where the spine is |SX|, we can do a better job! We can record which constructor changed into 
+which and try to reconcile the data from both the best we can. Going one step at a time, let's first
+change one constructor into the other.
+
+  It is important to note that if the output of |spine| is a |SX|, then the constructors
+are \emph{different}.
+
+\subsection{Constructor Changes}
 \label{subsec:changes}
 
-%format i1 = "\IC{i1}"
-%format i2 = "\IC{i2}"
-%format Ci1    = "\IC{Ci1}"
-%format Ci2    = "\IC{Ci2}"
-%format Ci1o   = "\IC{Ci1$^\circ$}"
-%format Ci2o   = "\IC{Ci2$^\circ$}"
 %format CX     = "\IC{CX}"
 
 %format C      = "\F{C}"
 %format change = "\F{change}"
 %format C-map  = "\F{C-map}"
 %format C-mapM = "\F{C-mapM}"
-  Let's imagine we are diffing the following values of a type $\mathbbm{1} + (\mathbbm{N}^2 + \mathbbm{N})\times \mathbbm{N}$:
+  
+  Let's take an example where the spine can not copy anything:
+
 \begin{align*}
-  s & = | spine-cp (inj2 (inj1 (4 , 10) , 5)) (inj2 (inj2 10 , 5)) | \\
-    & = | Si2 (Stimes (SX (inj1 (4 , 10) , inj2 10)) Scp)|
+  |s| &= | spine (Node2 10 unit unit) (Node3 10 unit unit unit) | \\
+      &= | SX (Node2 10 unit unit , Node3 10 unit unit unit) | \\
 \end{align*}
 
-  And now, we want to \F{S-map} over $s$ and refine the |Delta| inside. We want to have information
-about which injections we need to pattern match on and which we need to introduce. 
-We begin with a type (that's also a free monad) that encodes the injections we need to insert
-or pattern-match on:
+  Here, we wish to say that we changed a |Node2| into a |Node3|. But we are then left with a problem
+about what to do with the data inside the |Node2| and |Node3|; this is where the notion of
+alignment will be in the picture. For now, we abstract it away by the means of a parameter, 
+just like we did with the |S|. This time, however, we need something that receives products 
+as inputs.
 
 \Agda{RegDiff/Diff/Regular/Base}{C-def}
 
-Note that \F{C} is also a functor on $P$:
+  Note that |C| also makes up a functor, and hence can be mapped over:
 
 \Agda{RegDiff/Diff/Regular/Base}{C-map-def}
 
-We just need an eager function that will consume ALL coproduct injections from both source
-and destination and record them using |C|:
+  Computing an inhabitant of |C| is trivial:
 
 \Agda{RegDiff/Diff/Regular/Base}{change-def}
 
-Now, we could \F{S-map} \F{change} over $s$:
+  Now that we can compute change of constructors, we can refine our |s| above.
+We can compute |S-map change s| and we will have:
 
-\begin{align*}
-  |S-map change s| 
-    & = | Si2 (Stimes (SX (Ci2 (Ci1o (CX ((4 , 10) , 10))))) Scp)| \\
-    & = |s'|
-\end{align*}
+\[
+  |S-map change s|
+      = | SX (CX Node2 Node3 ((10 , unit , unit) , (10 , unit , unit , unit))) | \]
 
+  The ``application'' relation induced by |C| is trivial:
 
-The whole thing also becomes of a much more expressive type:
+\begin{displaymath}
+\xymatrix{  V  &  T \ar[l]_{|(REL (CX i j p))|} \ar[d]^{|(CONV injI)|}  \\
+            \F{typeOf}\;V\;j \ar[u]^{|injJ|} & \F{typeOf}\;T\;i \ar[l]^{|(REL p)|}
+         }
+\end{displaymath}
 
-| s'= S-map change s : S (C Delta)|
-
-We can read the type as: a common prefix from both terms followed by injections into the target term and
-pattern matching on the source term followed by point-wise changes from source to destination. 
-
-  Note that we can also say, for sure, that we will never have a |SX (Ci1 (Ci1o c))|
-at the S-leaves of $s'$; this would mean that we need to inject the target with |inj1| and
-pattern match the source on |inj1|, but this is a common-prefix! Hence it would be recognized
-by \F{spine-cp} and instead we would have: |Si1 (SX c)|.
-
-\begin{withsalt}
-  Even though the algorithm does not produce |SX (Ci1 (Ci1o c))|, as mentioned
-  above, this is still a valid inhabitant of |S (C Delta)|!
-\end{withsalt}
-
-Just like the values of |S|, we can also define the ``application'' relation induced by the 
-values of |C|:
-
-\begin{align*}
-  |REL (Ci1 c)|  &= \xymatrix@@C=5em{ B + X & A \ar[l]_{|inj1 . (REL c)|}} \\
-  |REL (Ci2 c)|  &= \xymatrix@@C=5em{ X + B & A \ar[l]_{|inj2 . (REL c)|}} \\                                                   
-  |REL (Ci1o c)| &= \hspace{2.3em} \xymatrix@@C=5em{ B & A + X \ar[l]_{|REL c . (CONV inj1)|}} \\
-  |REL (Ci2o c)| &= \hspace{2.3em} \xymatrix@@C=5em{ B & X + A \ar[l]_{|REL c . (CONV inj2)|}} \\   
-  |REL (CX p)|   &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \ar[l]_{|REL p|} }
-\end{align*}
-
-
-Note that up until now, everything was deterministic! This is something we are about to lose.
+Note that up until now, everything was deterministic! This is something we are bound to lose
+when talking about alignment.
 
 \subsection{Aligning Everything}
 \label{subsec:align}
@@ -544,19 +558,13 @@ Note that up until now, everything was deterministic! This is something we are a
 %format a1 = "a_1"
 %format a2 = "a_2"
 
-Following a similar reasoning as from |S| to |C|; the leaves of a |C| produced through
-|change| will NEVER contain a coproduct as the topmost type. Hence, we know that they will contain
-either a product, or a constant type, or a type variable. In the case of a constant type
-or a type variable, there is not much we can do at the moment, but for a product we can 
-refine this a little bit more before using |Delta|\footnote{%
-In fact, splitting the different stages of the algorithm into different types reinforced
-our intuition that the alignment is the source of difficulties. As we shall see, we now need
-to introduce non-determinism.}.
 
 Looking at our running example, we have a leaf |(CX ((4 , 10) , 10))| to take care of.
 Here the source type is $\mathbbm{N}^2$ and the destination is $\mathbbm{N}$. Note that
 the $\mathbbm{N}$ is treated as a constant type here. As we mentioned above, we have a product
 on the source, so we could extract some more information before giving up and using |Delta|!
+
+\end{document}
 
 \subsubsection{A Parenthesis}
 

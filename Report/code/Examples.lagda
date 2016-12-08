@@ -83,7 +83,6 @@ module Report.code.Examples where
 \end{code}
 %</Example-list-1>
 
-%<*Example-2-3-tree-full>
 \begin{code}
   module Examples2 where
     open import RegDiff.Generic.Konstants
@@ -91,12 +90,18 @@ module Report.code.Examples where
       hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
       public
     open import RegDiff.Generic.Eq konstants keqs public
-
+\end{code}
+%<*Example-2-3-TREE-F>
+\begin{code}
     2-3-TREE-F : σπ 1
-    2-3-TREE-F  = u1 
+    2-3-TREE-F  = [] 
                 ⊕ (K kℕ) ⊗ I ⊗ I ⊗ [] 
-                ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I ⊗ [] ⊕ []
-
+                ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I ⊗ [] 
+                ⊕ []
+\end{code}
+%</Example-2-3-TREE-F>
+%<*Example-2-3-TREE-F-Fix>
+\begin{code}
     2-3-Tree : Set
     2-3-Tree = Fix 2-3-TREE-F
 
@@ -108,12 +113,17 @@ module Report.code.Examples where
 
     3-Node : ℕ → 2-3-Tree → 2-3-Tree → 2-3-Tree → 2-3-Tree
     3-Node n l m r = ⟨ i2 (i2 (i1 (n , l , m , r , unit))) ⟩
-
+\end{code}
+%</Example-2-3-TREE-F-Fix>
+%<*Example-2-3-TREE-F-Constr>
+\begin{code}
     2-node' 3-node' nil' : Constr 2-3-TREE-F
     nil'     = fz
     2-node'  = fs fz
     3-node'  = fs (fs fz)
-
+\end{code}
+%</Example-2-3-TREE-F-Constr>
+\begin{code}
     import RegDiff.Diff.Multirec.Base konstants keqs 
       as DIFF
     open DIFF.Internal (2-3-TREE-F ∷ []) public
