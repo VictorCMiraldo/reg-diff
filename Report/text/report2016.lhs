@@ -93,6 +93,8 @@
 \newcommand{\texteta}{$\eta$}
 \newcommand{\textDelta}{$\Delta$}
 \renewcommand{\textbeta}{$\beta$}
+\newcommand{\textalpha}{$\alpha$}
+\newcommand{\textPi}{$\Pi$}
 
 % And some others that actually require the unicode declaration
 \DeclareUnicodeCharacter {10627}{\{\hspace {-.2em}[}
@@ -110,6 +112,7 @@
 \DeclareUnicodeCharacter {8346}{$_p$}
 \DeclareUnicodeCharacter {8345}{$_n$}
 \DeclareUnicodeCharacter {7524}{$_u$}
+\DeclareUnicodeCharacter {8347}{$_s$}
 \DeclareUnicodeCharacter {120028}{$\mathcal{M}$}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,21 +130,28 @@ University of Utrecht}}
   \maketitle
 
 \section{Our Universe}
-  
-  The universe we are using is a variant of Regular types,
-but instead of having only one type variable, we handle $n$
-type variables. The codes are description of regular functors on $n$ variables:
+%format SOP = "\F{$\sigma\pi$}"  
 
-\Agda{RegDiff/Generic/Regular}{U-def}
+  The universe we are using is a \emph{Sums-of-Products} over
+type variables and constant types. 
+
+\Agda{RegDiff/Generic/Regular}{atom-def}
 
   Constructor \IC{I} refers to the $n$-th type variable whereas \IC{K} refers
-to a constant type. Value \textit{ks\#} is passed as a module parameter.
-The denotation is defined as:
+to a constant type. Value \textit{ks\#} is passed as a module parameter. We denote
+products by $\pi$ and sums by $\sigma$, but they are just lists.
+
+\Agda{RegDiff/Generic/Regular}{prod-def}
+
+\Agda{RegDiff/Generic/Regular}{sum-of-prod-def}
+
+Interpreting these codes is very simple. Here, \F{Parms} is a valuation for
+the type variables.
 
 \Agda{RegDiff/Generic/Parms}{Parms-def}
 
 \newcommand{\Interp}[2]{\F{$\llbracket$} #1 \F{$\rrbracket$}_{#2}}
-\Agda{RegDiff/Generic/Regular}{U-denotation}
+\Agda{RegDiff/Generic/Regular}{sop-denotation-def}
 
   Note that here, $\F{Parms}\;n$ really is isomorphic to $n$ types that serve
 as the parameters to the functor $\F{$\llbracket$} F \F{$\rrbracket$}$. When we
@@ -160,6 +170,39 @@ the basic bare bones for diffing elements of an arbitrary programming language.
 In the future, it could be interesting to see what kind of diffing functionality
 indexed functors could provide, as these could have scoping rules and other
 advanced features built into them. 
+
+\subsection{SoP peculiarities}
+
+  One slightly cumbersome problem we have to circumvent is that the codes for 
+type variables and constant types have a different \emph{type} than the
+codes for types. This requires more discipline to organize our code. Nevertheless,
+we may wish to see \F{Atom}s as a trivial \emph{Sum-of-Product}.
+
+\Agda{RegDiff/Generic/Regular}{into-sop-def}
+
+  Instead of having binary injections into coproducts, like we would
+on a \emph{regular-like} universe, we have $n$-ary injections, or, \emph{constructors}.
+We encapsulate the idea of constructors of a |SOP| into a type and write a \emph{view}
+type that allows us to look at an inhabitant of a sum of products as a \emph{constructor}
+and \emph{data}.
+
+  First, we define constructors:
+
+\Agda{RegDiff/Generic/Regular}{Constr-def}
+
+  Now, a constructor of type $C$ expects some arguments to be able to make
+an element of type $C$. This is a product, we call it the \F{typeOf} the constructor.
+
+\Agda{RegDiff/Generic/Regular}{typeOf-def}
+
+  Injecting is fairly simple. 
+
+\Agda{RegDiff/Generic/Regular}{injection-def}
+
+  We finish off with a \emph{view} of $\Interp{ty}{A}$ as a constructor and some
+data. This greatly simplify the algorithms later on.
+
+\Agda{RegDiff/Generic/Regular}{SOP-view}
 
 \subsection{Agda Details}
 
@@ -180,13 +223,15 @@ $\mathbb{N}$ for all $k$.  We call such valuations a
 
 \Agda{RegDiff/Generic/Parms}{WBParms-def}
 
-  I still have no good justification for the \textit{parm-size}
-field. Later on I sketch what I believe is the real meaning of the
-cost function.
+\begin{TODO}
+  The field \emph{parm-size} is not really needed anymore!
+  Remove it!
+\end{TODO}
 
   The following sections discuss functionality that does not depend on
-\emph{parameters to codes}.  We will be passing them as Agda module
-parameters. The first diffing technique we discuss is the trivial
+\emph{parameters to codes}. Hence, we will be passing them as Agda module
+parameters. We also set up a number of synonyms to already fix the aforementioned
+parameter. The first diffing technique we discuss is the trivial
 diff. It's module is declared as follows:
 
 \Agda{RegDiff/Diff/Trivial/Base}{Trivial-module-decl}
@@ -199,9 +244,15 @@ handles type parameters: \textit{parms\#} is how many type-variables our
 codes will have, $A$ is the valuation we are using and $WBA$ is a
 proof that $A$ is \emph{well behaved}.
 
-  We then declare the following synonyms:
+\begin{TODO}
+  Now parameters are setoids, we can drop out the WBA record.
+\end{TODO}
+
+  Below are the synonyms we use for the rest of the code:
 
 \Agda{RegDiff/Diff/Trivial/Base}{Trivial-defs}
+
+\Agda{RegDiff/Diff/Trivial/Base}{Trivial-aux-defs}
 
 \section{Computing and Representing Patches}
 
@@ -271,10 +322,8 @@ how do they relate to this relational view and give examples here and there!
 
    The simplest possible way to describe a transformation is to say
 what is the source and what is the destination of such
-transformation. This can be accomplished by the Diagonal functor just
+transformation. This can be accomplished by the Diagonal functor, |Delta|, just
 fine.
-
-\Agda{RegDiff/Diff/Trivial/Base}{delta-def}
 
   Now, take an element |(x , y) : Delta ty tv|. The ``application''
 relation it defines is trivial: $ \{ (x , y) \} $, or, in PF style:
@@ -310,6 +359,16 @@ as:
 the trivial diff. We will return to this discussion in section \ref{sec:patchesasrelations}
 \end{withsalt}
 
+\subsubsection{Trivial Diff, in Agda}
+
+  We will be using |Delta ty tv| for the three levels of our universe: atoms, products and sums.
+We distinguish between the different |Delta|'s with subscripts $_a$ , $_p$ and $_s$ respectively.
+They only differ in type. The treatment they receive in the code is exactly the same!
+Below is how they are defined:
+
+\Agda{RegDiff/Diff/Trivial/Base}{delta-polymorphic-def}
+
+  Hence, we define $\F{$\Delta_x$} = \F{delta}\;\Interp{\cdot}{\F{x}}$, for $x \in \{ a , p , s \}$.
 
 \subsection{Spines}
 \label{subsec:spines}
@@ -388,6 +447,8 @@ that: (1) the values of the pair are different and (2) we must be at a
 coproduct, a constant type or a type variable. The constant type or
 the type variable are out of our control. But we can refine our
 \emph{description} in case we arrive at a coproduct.
+
+\end{document}
 
 \subsection{Coproduct Changes}
 \label{subsec:changes}
