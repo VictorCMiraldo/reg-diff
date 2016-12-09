@@ -93,7 +93,7 @@ module RegDiff.Diff.Regular.Domain
   Al-rel : {P : AASet}(doP : HasRelₐ P)
          → ∀{ty tv} → Al P ty tv → ⟦ tv ⟧ₚ ⟵ ⟦ ty ⟧ₚ
   Al-rel doP A0          = ⊤
-  Al-rel doP (Ap1  x a)  = Al-rel doP a ∙ π₂ ∙ (≣ₗ {B = Unit} x >< ID)
+  Al-rel doP (Ap1  x a)  = < ≣ᵣ x ∣ Al-rel doP a ᵒ > ᵒ -- Al-rel doP a ∙ π₂ ∙ (≣ₗ {B = Unit} x >< ID)
   Al-rel doP (Ap1ᵒ x a)  = < ≣ᵣ x ∣ Al-rel doP a >
   Al-rel doP (AX   x a)  = doP x >< Al-rel doP a
 \end{code}
