@@ -3,8 +3,68 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.ListI
+open import Prelude.RelCalc.Base
 
 module Report.code.Examples where
+\end{code}
+
+\begin{code}
+  module Examples0 where
+    open import RegDiff.Generic.Konstants
+    open import RegDiff.Generic.Parms
+    open ToyParms
+    open import RegDiff.Generic.Regular konstants public
+      hiding (Atom; ⟦_⟧; ⟦_⟧ₚ; ⟦_⟧ₐ)
+      renaming (inject to inject')
+    open import RegDiff.Generic.Eq konstants keqs public
+
+    open import RegDiff.Diff.Regular.Base konstants keqs PARMS WB-PARMS
+      public
+    open import RegDiff.Diff.Regular.Domain konstants keqs PARMS WB-PARMS
+      public
+
+    Type1 : σπ 3
+\end{code}
+%<*Patches-as-Rels-Type>
+\begin{code}
+    Type1  = K kℕ ⊗ []
+           ⊕ K kℕ ⊗ K kℕ ⊗ []
+           ⊕ []
+\end{code}
+%</Patches-as-Rels-Type>
+%<*Patches-as-Rels-Type-constr>
+\begin{code}
+    C₁ C₂  : Constr Type1
+    C₁     = fz
+    C₂     = fs fz
+\end{code}
+%</Patches-as-Rels-Type-constr>
+\begin{code}
+    inject : (i : Constr Type1) → ⟦ typeOf Type1 i ⟧ₚ → ⟦ Type1 ⟧
+    inject i ps = inject' {A = PARMS} i ps
+\end{code}
+%<*Patches-as-Rels-Type-els>
+\begin{code}
+    x y  : ⟦ Type1 ⟧
+    x    = inject C₂ (4 , 10 , unit)
+    y    = inject C₁ (10 , unit)
+\end{code}
+%</Patches-as-Rels-Type-els>
+\begin{code}
+    ds-exp : Patch* Type1
+    ds-exp = diff1* x y
+\end{code}
+%<*Patches-as-Rels-all-diffs>
+\begin{code}
+    ds : Patch* Type1
+    ds   =  SX (CX C₂ C₁ (AX   (4 , 10)  (Ap1  10         A0))) -- P1
+         ∷  SX (CX C₂ C₁ (Ap1  4         (AX   (10 , 10)  A0))) -- P2 
+         ∷  []
+\end{code}
+%</Patches-as-Rels-all-diffs>
+\begin{code}
+    ctx : EndoRel ⟦ Type1 ⟧
+    ctx = {!map Patch-rel ds!}
 \end{code}
 
 

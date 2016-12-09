@@ -308,17 +308,19 @@ how do they relate to this relational view and give examples here and there!
 
 \subsection{Trivial Diff}
 \label{subsec:trivialdiff}
-%format (REL p)       = p "^\flat"
+%format (REL p)       = "{" p "}^\flat"
 %format (CONST x)     = "\underline{" x "}"
 %format .             = "\cdot"
-%format (CONV x)      = x "^\circ"
+%format (CONV x)      = "{" x "}^\circ"
 %format *             = "\times"
 %format (SINGLR x y)  = "\SingletonRel{" x "}{" y "}"
 %format (SPLIT (a) (b)) = "\langle {" a "} , {" b "} \rangle"
+%format TOP           = "\top"
 %format inj1          = "\IC{$\iota_1$}"
 %format inj2          = "\IC{$\iota_2$}"
 %format injI          = "\IC{inj}_i"
 %format injJ          = "\IC{inj}_j"
+%format (inj c)       = "\IC{inj}_{" c "}"
 %format pi1           = "\IC{$\pi_1$}"
 %format pi2           = "\IC{$\pi_2$}"
 
@@ -526,11 +528,13 @@ as inputs.
   Now that we can compute change of constructors, we can refine our |s| above.
 We can compute |S-map change s| and we will have:
 
-\[
-  |S-map change s|
-      = | SX (CX Node2 Node3 ((10 , unit , unit) , (10 , unit , unit , unit))) | \]
+\begin{align*}
+  c &= |S-map change s| \\
+    &= | SX (CX Node2 Node3 ((10 , unit , unit) , (10 , unit , unit , unit))) |
+\end{align*}
 
-  The ``application'' relation induced by |C| is trivial:
+  The ``application'' relation induced by |C| is trivial. We just need to pattern match,
+change the data of the constructor in whatever way we need, then inject into another type.
 
 \begin{displaymath}
 \xymatrix{  V  &  T \ar[l]_{|(REL (CX i j p))|} \ar[d]^{|(CONV injI)|}  \\
@@ -543,30 +547,18 @@ when talking about alignment.
 
 \subsection{Aligning Everything}
 \label{subsec:align}
-%format Atimes = "\IC{A$\otimes$}"
+%format A0     = "\IC{A0}"
 %format Ap1    = "\IC{Ap1}"
-%format Ap2    = "\IC{Ap2}"
 %format Ap1o   = "\IC{Ap1$^\circ$}"
-%format Ap2o   = "\IC{Ap2$^\circ$}"
 %format AX     = "\IC{AX}"
 
 %format align      = "\F{align}"
-%format align-exp  = "\F{align-exp}"
+%format align*  = "\F{align$^*$}"
 %format Al      = "\F{Al}"
 %format Al-mapM = "\F{Al-mapM}"
 
 %format a1 = "a_1"
 %format a2 = "a_2"
-
-
-Looking at our running example, we have a leaf |(CX ((4 , 10) , 10))| to take care of.
-Here the source type is $\mathbbm{N}^2$ and the destination is $\mathbbm{N}$. Note that
-the $\mathbbm{N}$ is treated as a constant type here. As we mentioned above, we have a product
-on the source, so we could extract some more information before giving up and using |Delta|!
-
-\end{document}
-
-\subsubsection{A Parenthesis}
 
 On the literature for version control system, the \emph{alignment} problem is the problem
 of mapping two strings $l_1$ and $l_2$ in $\mathcal{L}$ into $\mathcal{L} \cup \{ - \}$, for $ \{ - \} \nsubseteq \mathcal{L}$ 
@@ -588,8 +580,8 @@ finding a partial map:
 \[ f : \mathcal{DNA}^5 \rightarrow \mathcal{DNA}^6 \]
 
 such that $f\; (C,G,T,C,G) = (G,A,T,A,G,T)$. There are many ways of defining such
-a map. We would like, however, that our definition have a maximal domain, that is, we require
-impose the least possible amount of restrictions. In this case, we can actually define $a$ 
+a map. We would like, however, that our definition have a maximal domain, that is, we
+impose the least possible amount of restrictions. In this case, we can actually define $f$ 
 with some pattern matching as:
 
 \[
@@ -603,10 +595,24 @@ And it is easy to verify that, in fact, $f\; (C,G,T,C,G) = (G,A,T,A,G,T)$. Moreo
 this is the \emph{maximal} such $f$ that still (provably) assigns the correct destination
 to the correct source.
 
+On our running example, the leaf of |c| has type |DeltaP (typeOf Node2) (typeOf Node3)|, and it's
+value is |((10 , unit , unit) , (10 , unit , unit , unit))|. Note that we are now dealing with
+products of different arity. This step will let us say how to \emph{align} one with the other!
+
+On our example, as long as we align the 10 with the 10, the rest does not matter. One optimal
+alignment could be:
+
+\begin{center}
+\begin{tabular}{cccc}
+   |10| & $-$ & |unit| & |unit|  \\
+   |10| & |unit| & |unit| & |unit|
+\end{tabular}
+\end{center}
+
 \subsubsection{Back to Agda}
 
 We will look at alignments from the ``finding a map between products'' perspective.
-Here is where our design space starts to be huge, and so, we should start making
+Here is where our design space starts to grow, and so, we should start making
 some distinctios:
 \begin{itemize}
   \item We want to allow sharing. This means that the there can be more than one variable
@@ -622,152 +628,107 @@ The following datatype describe such maps:
 
 \Agda{RegDiff/Diff/Regular/Base}{Al-def}
 
-Computing alignments is very expensive, specially if done in the naive way.
-Nevertheless, we present the naive alignment first, and gistinguish it with an \emph{exp} suffix.
-In the case we actually have products on both the source and the destination 
-we have a lot of options (hence the list monad!):
+Note that the indexes of |Al|, although represented as lists are, in fact, products. Well,
+turns out that lists and products are not so different after all. Let us represent the $f$ we
+devised on the $\mathcal{DNA}$ example using |Al|. Recall $f \;(C , x , y , C , z) = (x , A , y , A , z , T)$.
 
-\Agda{RegDiff/Diff/Regular/Base}{align-exp-all-paths-def}
-
-If we only have products on the left or on the right (or none), 
-we have less options:
-
-\Agda{RegDiff/Diff/Regular/Base}{align-exp-rest-def}
-
-Let's come back to our running example! 
-Following the previous trend, we could \F{C-mapM} our alignment function (the |C-mapM| is the monadic
-variant of |C-map|) on $s'$, in order to find all alignments of $(4 , 10)$ and $10$. In this case,
-this is very easy\footnote{%
-It might be hard to build intuition for why we need the |Atimes| constructor.
-On the \texttt{Lab} module of Fixpoint there is an example using 2-3-Trees that motivates the
-importance of that constructor}.
-
-\begin{align*}
-  |C-map align s'| = & | [ Si2 (Stimes (SX (Ci2 (Ci1o (CX (Ap1o 10 (AX (4 , 10))))))) Scp)    | \\
-                     & | , Si2 (Stimes (SX (Ci2 (Ci1o (CX (Ap2o 4  (AX (10 , 10))))))) Scp) ] |
-\end{align*}
-
-If we ommit the |SX| and |CX| constructors this becomes slightly more readable:
-
-\begin{align*}
-  |C-map align s'| = & | [ Si2 (Stimes (Ci2 (Ci1o (Ap1o 10 (AX (4 , 10))))) Scp)    | \\
-                     & | , Si2 (Stimes (Ci2 (Ci1o (Ap2o 4  (AX (10 , 10))))) Scp) ] |
-\end{align*}
-
-  But now we end up having to choose between one of those to be \emph{the} patch. This is where we start to need a cost function.
-Before talking about cost, let's look at the ``application'' relations of |Al|:
-
-\begin{align*}
-  | REL (Atimes a1 a2)| &= \xymatrix@@C=5em{ B \times D & A \times C \ar[l]_{|(REL a1) * (REL a2)|}} \\
-  | REL (Ap1 x a)|      &= \xymatrix@@C=5em{ B \times X & A \ar[l]_{| SPLIT (REL a) (CONST x) |}} \\
-  | REL (Ap2 x a)|      &= \xymatrix@@C=5em{ X \times B & A \ar[l]_{| SPLIT (CONST x) (REL a)|}} \\ 
-  | REL (Ap1o x a)|     &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \times X \ar[l]_{ |pi1 . ((REL a) * (CONV (CONST x)))| }} \\
-  | REL (Ap2o x a)|     &= \hspace{2.3em} \xymatrix@@C=5em{ B & X \times A \ar[l]_{ |pi2 . ((CONV (CONST x)) * (REL a))| }} \\   
-  | REL (AX p))|        &= \hspace{2.3em} \xymatrix@@C=5em{ B & A \ar[l]_{ |REL p| } }
-\end{align*}
-
-Note how |Ap1o| and |Ap2o| force a component of the source to be equal to something (that's equivalent to
-pattern matching on the source) whereas |Ap1| and |Ap2| set a component of the destination to
-be equal to something. Let us represent the $f$ we devised on the $\mathcal{DNA}$ example using |Al|.
-Recall $f \;(C , x , y , C , z) = (x , A , y , A , z , T)$.
-
+\[
 %format bC = "C"
-| f == Ap2o bC (Atimes Scp (Ap2 A (Atimes Scp (Atimes (AX (bC , A)) (Ap1 T Scp))))) |
+| f == Ap1 bC (AX Scp (Ap1o A (AX Scp (AX (bC , A) (AX Scp (Ap1o T A0)))))) |
+\]
 
-\begin{TODO}
+If we rename |Ap1| to \emph{del}; |Ap1o| to \emph{ins} and |AX| to \emph{mod} we see some familiar
+structure arising! Aligning products is the same as computing the diff between heterogeneous lists!
+In fact, the |align| function is defined as:
 
- Yet... for some reason, our simple optimization below is not finding the above
-  alignment... we need to fix it!
+\Agda{RegDiff/Diff/Regular/Base}{align-star-def}
 
- I can see Tarmo's coalgebras for sharing working wonders in computing
- these alignments in linear time.
+We are now doing things in the |List| monad. This is needed because there 
+are many possible alignments between two products. For the moment, we 
+refrain from choosing and compute all of them.
 
-\end{TODO}
+%format filter = "\F{filter}"
+On another note, some of these alignments are simply dumb! We do not want
+to have both |Ap1 x (Ap1o y a)| and |AX (x , y) a|. They are the same alignment.
+The |filter|s are in charge of pruning out those branches from out search-space.
 
-\subsection{A simple optimization}
-
-\begin{withsalt}
-
-  Looking carefully at the \F{align-exp} function above, we are computing
-a lot of unecessary branches, specially in the case for products
-on both sides. Below we compute |align-exp (x , y) (w , z)| and
-put arrows indicating which \F{Al} have an isomorphic underlying
-``application'' relation.
-
-\begin{displaymath}
-\xymatrix@@R=.5em@@C=.05em{%
-  |align-exp (x,y) (w,z)| 
-   &  & |= Atimes (AX (x , w)) (AX (y , z))| & \\
-   &  & |CONS Ap1  z (Ap1o y (AX (x , w)))| & \ar@@/_2em/[u] \\
-   &  & |CONS Ap1  z (Ap2o x (AX (y , w)))| & \\
-   &  & |CONS Ap2  w (Ap1o y (AX (x , z)))| & \\
-   &  & |CONS Ap2  w (Ap2o x (AX (y , z)))| & \ar@@/_2em/[uuuu] \\
-   &  \ar@@/^2em/[uuuu] & |CONS Ap1o y (Ap1  z (AX (x , w)))| & \\
-   &  \ar@@/^2em/[uuuu] & |CONS Ap2o x (Ap1  z (AX (y , w)))| & \\
-   &  \ar@@/^2em/[uuuu] & |CONS Ap1o y (Ap2  w (AX (x , z)))| & \\
-   &  \ar@@/^2em/[uuuu] & |CONS Ap2o x (Ap2  w (AX (y , z)))| & \\
-   & & |CONS NIL|
-}                  
-\end{displaymath}
-
-If we then look at which |Al|ignments do \emph{not} have an arrow out of it, that
-is, the ones that don't have an isomorphic alignment also being computed, we get:
-
+Sticking with our example, we can align the leaves of our |c| by computing the following
+expression, where |C-mapM| is simply the monadic variant of |C-map|.
 \begin{align*}
-  |align (x , y) (w , z)|
-    & |= Atimes (AX (x , w)) (AX (y , z))| \\
-    & |CONS Ap1  z (Ap2o x (AX (y , w)))| \\
-    & |CONS Ap2  w (Ap1o y (AX (x , z)))| \\
-    & |CONS NIL|
+  |a| &= | C-mapM align* c | \\
+      &= | SX (CX Node2 Node3 (AX (10 , 10) (AX (unit , unit) ddd))) | \\
+      & \hspace{1em} | CONS SX (CX Node2 Node3 (Ap1 10 (AX (unit , 10) ddd))) | \\
+      & \hspace{1em} | CONS SX (CX Node2 Node3 (Ap1 10 (Ap1 unit ddd))) | \\
+      & \hspace{1em} | CONS SX (CX Node2 Node3 (Ap1o 10 (AX (10 , unit) ddd))) | \\
+      & \hspace{1em} | ddd | \\
 \end{align*}
 
-\end{withsalt}
-\begin{withsalt}
+Now we have a problem. Which of the patches above should we chose to be \emph{the}
+patch? Recall that we mentioned we wanted to find the alignment with \emph{maximum domain}.
+Something interesting happens if we look at patches from their ``application'' relation, but first,
+we define the ``application'' relations of |Al|:
 
-We hence simplify the alignment function:
+\begin{align*}
+  | REL (AX a1 a2)| &= \xymatrix@@C=7em{ B \times \Pi D & A \times \Pi C \ar[l]_{|(REL a1) * (REL a2)|}} \\
+  | REL (Ap1 x a)|  &= \hspace{2.4em} \xymatrix@@C=7em{ \Pi B & X \times \Pi A \ar[l]_{|(CONV (SPLIT (CONST x) (CONV (REL a))))|}} \\
+  | REL (Ap1o x a)| &= \xymatrix@@C=7em{ X \times \Pi B & \Pi A \ar[l]_{ |SPLIT (CONST x) (REL a)| }} \\ 
+  | REL A0|         &= \hspace{3.1em} \xymatrix@@C=7em{ \mathbbm{1} & \mathbbm{1} \ar[l]_{ \top } }
+\end{align*}
 
-\Agda{RegDiff/Diff/Regular/Base}{align-all-paths-def}
-
-\vspace{-.7em}
-
-\Agda{RegDiff/Diff/Regular/Base}{align-rest-def}
-
-The \F{kill-p2} (resp. \F{kill-p1}) functions above are used to prune the search space
-further. They will ignore every branch that starts with a |Ap2| (resp |Ap1|), which
-will, for sure, have had an isomorphic alignment computed already (in terms of |Atimes|).
-Writing down the ``application'' relations makes this easy to see.
-
-\end{withsalt}
 
 \section{Patches as Relations}
 \label{sec:patchesasrelations}
 
-Here we will be using the semantics for |REL (x , y)| as described in
-the discussion box at Section~\ref{subsec:trivialdiff}.  That is, we
-would like to say that the patch (P2), above, copies the 10, instead
-of saying that 10 changes into 10.  We can postpone this by changing
-the relation semantics of \F{$\Delta$}.  Hence: $(x , x)^\flat` = id$
-and $(x , y)^\flat = \SingletonRel{x}{y}$.
+In order to better illustrate this concept, we need a simpler example first. 
+Let's consider the following type with no type variables:
 
-Nevertheless, if we look at the two patches above as relations, we have:
+\Agda{Report/code/Examples}{Patches-as-Rels-Type}
 
+It clearly has two constructors:
+
+\Agda{Report/code/Examples}{Patches-as-Rels-Type-constr}
+
+Now, let's take two inhabitants of \F{Type1}.
+
+\Agda{Report/code/Examples}{Patches-as-Rels-Type-els}
+
+There are two possible options for $\F{diff}\;x\;y$:
+
+\Agda{Report/code/Examples}{Patches-as-Rels-all-diffs}.
+
+Consider the semantics for |Delta| as described in
+the discussion box at Section~\ref{subsec:trivialdiff}, that is, 
+
+\[ |(REL (x , y)) = | \Big \{ \begin{array}{l l}
+                                     |id| & \text{if } |x == y| \\
+                                     |(CONST y) . (CONV (CONST x))| & \text{otherwise}
+                               \end{array}
+\]
+
+Then it becomes clear that we want to select patch (P2) instead of (P1). 
+In fact, there is a deeper underlying reason for that! Looking at the two 
+patches as relations (after some simplifications), we have:
+
+%format Cns1 = "\IC{C$_1$}"
+%format Cns2 = "\IC{C$_2$}"
 \begin{align*}
-  P1^\flat & = i_2 \cdot (i_2 \cdot < \SingletonRel{10}{4} , \underline{10} >^\circ \cdot i_1^\circ \times id) \cdot i_2^\circ \\
-  P2^\flat & = i_2 \cdot (i_2 \cdot < \underline{4} , id >^\circ \cdot i_1^\circ \times id) \cdot i_2^\circ
+  |(REL P1)| & | = (inj Cns1) . (CONV (SPLIT ((CONST 4) . (CONV (CONST 10))) (CONST 10))) . (CONV (inj Cns2)) | \\
+  |(REL P2)| & | = (inj Cns1) . (CONV (SPLIT (CONST 4) id)) . (CONV (inj Cns2)) |
 \end{align*}
 
-Writing them in a diagram:
+Drawing them in a diagram we have:
 
+\newcommand{\typeOf}[2]{\F{typeOf}_{#1}\;#2}
+\renewcommand{\Interp}[1]{\F{$\llbracket$} #1 \F{$\rrbracket$}}
 \newcommand{\NAT}{\mathbbm{N}}
 \newcommand{\UNIT}{\mathbbm{1}}
 \begin{displaymath}
-\xymatrix{%
- & \NAT \ar[d]_{id} \\ 
- & \NAT \ar[rrd]^(0.3){\pi_1^\circ} & & (\NAT^2 + \NAT) \times \NAT \ar[llu]_{\pi_1} \ar[lld]^(0.2){\pi_2} 
- & \UNIT + (\NAT^2 + \NAT) \times \NAT \ar[l]_{i_2^\circ} \ar@@{-->}@@<-.6ex>[d]_{P2^\flat} \ar@@{-->}@@<.6ex>[d]^{P1^\flat}\\
- \NAT^2 \ar@@<-.6ex>[d]_{<\underline{4} , id>^\circ} \ar@@<.6ex>[d]^{< \SingletonRel{10}{4} , \underline{10} >^\circ} 
- & \NAT^2 + \NAT \ar[l]_{i_1^\circ} & & (\NAT^2 + \NAT) \times \NAT \ar[r]_{i_2} & \UNIT + (\NAT^2 + \NAT) \times \NAT  \\
- \NAT \ar[r]_{i_2} & \NAT^2 + \NAT \ar[rru]_{\pi_2^\circ}
+\xymatrix@@C=5em{%
+  { \typeOf{\F{Type1}}{|Cns2|} \equiv \NAT \times \NAT }
+       \ar@@<-.6ex>[d]_{<\underline{4} , id>^\circ} \ar@@<.6ex>[d]^{< \SingletonRel{10}{4} , \underline{10} >^\circ} 
+     & \Interp{\F{Type1}} \ar[l]_(0.4){|(CONV (inj Cns2))|}  \ar@@{-->}@@<-.6ex>[d]_{P2^\flat} \ar@@{-->}@@<.6ex>[d]^{P1^\flat} \\
+  { \typeOf{\F{Type1}}{|Cns1|} \equiv \NAT } \ar[r]_(0.6){|(inj Cns1)|} 
+     & \Interp{\F{Type1}}
 }
 \end{displaymath}
 
@@ -831,40 +792,85 @@ Nevertheless, it is clear which patch we should choose! We should
 always choose the patch that gives rise to the biggest relation, as
 this is applicable to much more elements.
 
-This suggests an interesting justification for the cost function. For
-some reason, looks like we won the lottery with our cost functions.
-We are always choosing the patch that gives rise to the maximal
-relation. I still don't clearly understand why or how, but it works.
-
-\begin{TODO}
-
-Below are our cost functions:
-
-we should actually be able to choose patches without cost functions...
-discuss this up! Use the |align| optimization example...
-
-ADD VALUES, FORGET ABOUT THOSE RAW FUNCTIONS!
-
-\Agda{RegDiff/Diff/Trivial/Base}{Trivial-cost-def}
+Hence, our \emph{cost} functions will count how many elements of the domain
+and range of the ``application'' relation of a patch are \emph{fixed}. Note that
+the |S| and |C| parts of the algorithm are completely deterministic, hence they
+should \emph{not} contribute to cost:
 
 \Agda{RegDiff/Diff/Regular/Base}{S-cost-def}
 
-\Agda{RegDiff/Diff/Regular/Base}{C-cost-def}
+\Agda{RegDiff/Diff/Regular/Base}{C-cost}
+
+An |Al|ignment might fix one element on the source, using |Ap1| or one
+element on the destination, using |Ap1o|. 
 
 \Agda{RegDiff/Diff/Regular/Base}{Al-cost-def}
 
-\end{TODO}
+Last but not least, a |Delta| will either fix 2 elements: one
+in the source that becomes one in the destination; or none, when
+we just copy the source.
+
+\Agda{RegDiff/Diff/Trivial/Base}{cost-delta-polymorphic-def}
+
+According to these definitions, the cost of (P1) above is 3, where
+the cost of (P2) is 1.
 
 \subsection{Patches for Regular Types}
 
 Now that we have \emph{spines}, \emph{changes} and \emph{alignments}
 figured out, we can define a patch as:
 
+%format Patch = "\F{Patch}"
+%format List  = "\F{List}"
 \Agda{RegDiff/Diff/Regular/Base}{Patch-def}
 
 Computing inhabitants of such type is done with:
 
-\Agda{RegDiff/Diff/Regular/Base}{diff1-nondet-def}
+\Agda{RegDiff/Diff/Regular/Base}{diff1-star-def}
+
+where \F{Patch$^*$} is defined as |List (Patch DeltaA)|.
+
+\subsection{Conjectures About the \F{cost} function}
+
+  Here we conjecture a few lemmas about the interplay of the
+cost function and the ``application'' relation. Let |P, Q| and |R|
+be patches.
+
+%format ==>   = "\Rightarrow"
+%format cost  = "\F{cost}"
+%format <@ = "\subseteq"
+%format Ex = "\exists"
+\begin{enumerate}[i)]
+  \item If |P| has a lower cost than |Q|, then the domain and range of the ``application'' relation
+        of |P| contains the ``application'' relation of |Q|.
+
+        \[ | cost P < cost Q ==> (REL Q) <@ (REL P) . TOP . (REL P) | \]
+
+        \begin{withsalt}
+          This is not as simple as 
+            \[ | cost P < cost Q ==> (REL Q) <@ (REL P) | \]
+          Take two |Deltas|, |px = (10 , 50)| and |py = (30 , 30)|.
+          Trivially, |cost py = 0| and |cost px = 2|. 
+          Now, |(REL px) = (SINGLR 10 50)| and |(REL py) = id|.
+          It is not true that |(SINGLR 10 50) <@ id|!
+
+          If we state, however: Let |P , Q| in |diff* x y|; 
+               | cost P < cost Q ==> (REL Q) <@ (REL P) |
+          Seems more likely. As the above counter example would not
+          work anymore. |diff* 10 50 = (10 , 50) CONS NIL|.
+               
+        \end{withsalt}
+        
+  \item If |P| and |Q| have equal cost, it means that there is at least
+        one place where |P| and |Q| are doing \emph{the same thing}, hence
+        there is a patch that copies this \emph{same thing} and costs
+        strictly less.
+ 
+        \[ | cost P == cost Q ==> Ex R . cost R < cost P | \]
+\end{enumerate}
+
+
+\end{document}
 
 \section{Mutually Recursive Types}
 
