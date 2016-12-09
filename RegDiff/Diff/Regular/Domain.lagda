@@ -40,9 +40,8 @@ module RegDiff.Diff.Regular.Domain
   ≣ᵣ : ∀{a}{A B : Set a} → B → (B ⟵ A)
   ≣ᵣ b = fun (const b)
 
-  abstract
-    singl : {A B : Set} → A → B → (B ⟵ A)
-    singl x y = _∙_ {B = Unit} (≣ᵣ y) (≣ₗ x)
+  singl : {A B : Set} → A → B → (B ⟵ A)
+  singl x y = _∙_ {B = Unit} (≣ᵣ y) (≣ₗ x)
 
   inj : ∀{ty i} → ⟦ ty ⟧ ⟵ ⟦ typeOf ty i ⟧ₚ
   inj {ty} {i} = fun (inject i)
@@ -102,4 +101,9 @@ module RegDiff.Diff.Regular.Domain
   C-rel : {P : ΠΠSet}(doP : HasRelₚ P)
         → ∀{ty tv} → C P ty tv → ⟦ tv ⟧ ⟵ ⟦ ty ⟧
   C-rel doP (CX i j k) = inj ∙ doP k ∙ inj ᵒ
+\end{code}
+
+\begin{code}
+  Patch-rel : {ty : U} → Patch Δₐ ty → EndoRel ⟦ ty ⟧
+  Patch-rel = S-rel (C-rel (Al-rel (λ {ty} {tv} → Δₐ-rel {ty} {tv})))
 \end{code}
