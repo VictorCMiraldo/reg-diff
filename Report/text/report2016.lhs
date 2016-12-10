@@ -869,9 +869,6 @@ be patches.
         \[ | cost P == cost Q ==> Ex R . cost R < cost P | \]
 \end{enumerate}
 
-
-\end{document}
-
 \section{Mutually Recursive Types}
 
 Now that we have a clear picture of regular types, 
@@ -885,28 +882,27 @@ each reference $n$ type variables:
 
 \Agda{RegDiff/Generic/Multirec}{Fix-def}
 
-Another auxiliary definition we use here is the indexed coproduct, which let's us \emph{extend}
-some indexed type.
+Another auxiliary definition we use here is the indexed coproduct,
+which let's us \emph{extend} some indexed type.
 
 \Agda{RegDiff/Diff/Multirec/Base}{UUSet-coprod}
 
-Now, we already have the ingredients for common prefixes, coproducts and
-products. We now need to handle type variables. Before we proceed with the nasty
+Now, we already have the ingredients for detecting and representing common constructors
+or full copies, with |S|, constructor changes, with |C| and alignments with |Al|.
+We just need to handle type variables to tie the knot. Before we proceed with the nasty
 definitions, we still need two last synonyms:
 
 \Agda{RegDiff/Diff/Multirec/Base}{Fami-def}
 
-Here $\F{T}\;k$ represents the $k$-th type of the family, and \F{Fam$_i$} represents
-the indexes of our family. 
+Here $\F{T}\;k$ represents the $k$-th type of the family, and \F{Fam$_i$} acts a the
+the types in the family.  
 
-Remember that we have \F{S}pines, to handle the common prefixes; \F{C}hanges to
-handle different coproduct injections on source and destination and \F{Al}ignments to
-make sure we exploit product structure. We kept mentioning that we could not do anything
-on the leaves that were type variables or constant types. Well, constant types
-we still can't, and we have to stick to \F{$\Delta$}, but now we need to handle
-the type-variables since they are used to tie the recursion knot.
+We start defining a patch for fixed poins by allowing normal patches
+to perform changes on the first layer.
 
-A patch for a fixed point might not follow the precise order of
+\Agda{RegDiff/Diff/Multirec/Base}{Patchmu-skel-def}
+
+However, a patch for a fixed point might not only follow the precise order of
 operations (\F{S}, then \F{C}, then \F{Al}) that regular types
 enjoyed. For instance, imagine we are transforming the following
 lists:
@@ -925,59 +921,105 @@ is homogeneous) might not be the best start! In fact, the best start
 is to say that the first $5$ is deleted, then the spine can kick in
 and say that everything else is copied!
 
-Here is the definition:
+Deleting and inserting can be seen as alignments between a type variable and
+the type we wish to delete or insert. For instance, deleting |5|, which is actually |5 CONS _|, consists in deleting the |_ CONS _| constructor and aligning
+the $\mathbbm{N} \times \IC{I}\;k$ with with a type variable $\IC{I}\;k$.
+Insertions are analogous.
 
-\Agda{RegDiff/Diff/Multirec/Base}{Patchmu-def}
+\AgdaI{RegDiff/Diff/Multirec/Base}{Patchmu-ins-del-def}{-.7em}
 
-The \IC{fix} constructor ties the know between type-variables and
-their lookup in the recursive family, which is isomorphic. The
-\IC{set} constructor specifies that we are setting something. Note that
-we require the source and destination types to be equal here!
+%format UUtoAA = "\F{UU$\rightarrow$}\F{AA}"
+%format Patchmu = "\F{Patch$\mu$}"
+Note, however, that we use |UUtoAA Patchmu| to populate the leaves of
+|Patch| and |Al|. That's because their parameter is of type |Atom -> Atom -> Set|,
+but |Patchmu| has type |U -> U -> Set|. Nevertheless, when these leaves are just two
+type variables, we want to keep using |Patchmu| to record their differences.
+When these leaves are constant types, we give up and set their values with a delta. 
 
+\AgdaI{RegDiff/Diff/Multirec/Base}{Patchmu-fix-set-def}{-.7em}
+
+Associating costs are trivial. We just piggy back on the previous cost definitions.
+I am still very puzzled for how this works.
+
+\Agda{RegDiff/Diff/Multirec/Base}{Patchmu-cost}
+
+Nevertheless, the heart of the algorithm is the same as
+any patching algorithm out there. Things can be modified, inserted or
+deleted:
+
+\Agda{RegDiff/Diff/Multirec/Base}{diff-mu-non-det}
+
+Modifying must happen at the same type only, otherwise we force an
+insertion or deletion. If we are, in fact, on the same type, we can get
+the patch for that layer and continue diffing atoms.
+
+\Agda{RegDiff/Diff/Multirec/Base}{diffmu-mod}
+
+Atoms are easy to diff. If reach two type variables, we tie the knot and keep patching.
+If we reach two constants, we set one into the other. Any other situation is forbiden.
+
+\Agda{RegDiff/Diff/Multirec/Base}{diffmu-atoms}
+
+Insertions and deletions are very simple:
+
+\Agda{RegDiff/Diff/Multirec/Base}{diffmu-ins}
+
+\Agda{RegDiff/Diff/Multirec/Base}{diffmu-del}
+
+We just need to pay attention not to insert or delete some constructor
+without arguments; This is done on the auxiliar alignment function:
+
+\Agda{RegDiff/Diff/Multirec/Base}{alignmu-nonempty-def}
+
+Which ignores empty products. If we are not aligning empty products,
+we can just piggyback on the previous alignment function we had:
+
+\Agda{RegDiff/Diff/Multirec/Base}{alignmu-def}
+
+Now we just need to choose the patch with the least cost
+for the \emph{deterministic} version. 
+
+\Agda{RegDiff/Diff/Multirec/Base}{diffmu-det}
+
+%format diffmustar = "\F{diffmu$^*$}"
+%format NAT  = "\F{$\mathbbm{N}$}"
+%format inject = "\F{inject}"
+%format BOOL  = "\F{Bool}"
+%format true = "\IC{true}"
+%format K    = "\IC{K}"
+%format fz   = "\IC{fz}"
+%format fs   = "\IC{fs}"
 \begin{withsalt}
-  Experimenting with this, I found out that set is only used for constant types
-(as expected!). A proof of this would be great.
+  If we define a family of two types, say |K NAT CONS K BOOL CONS NIL|. Now take
+  |x = inject fz 10| and |y = inject (fs fz) true|. 
+
+  \vspace{1em}
+
+  Here, |diffmustar x y = NIL|. It is easy to see why. We can't modify because
+  we havetwo different types. We can't insert or delete because \emph{both}
+  inhabitants were constructed with constructors that have no recursive arguments.
+
+  \vspace{1em}
+
+  In a real scenario, though, this will never happen. Mainly because we are only
+  interested in diffing things of the same type. Sure, the types might change 
+  during the algorithm, but they start the same; hence at least a modify is always possible.
+
+  \vspace{1em}
+
+  On another note; The aforementioned type family is not really a type family, but a
+  single type: $\mathbbm{N} + \mathbbm{B}$.
 \end{withsalt}
-
-\F{C$\mu$} type extends the previous \F{C} with the usual edit operations
-everyone talks about: modify, delete or insert!
-
-\Agda{RegDiff/Diff/Multirec/Base}{Patchmu-aux-def}
-
-Note how insertions (resp. deletions) happen by \emph{changing and aligning} a type-variable into a type
-(resp. a type into a type-variable). Note also that \IC{fix}, \IC{Cins} and \IC{Cdel} are heterogeneous 
-on the \F{Fam$_i$} indexes! This is very important for mutually recursive families.
-
-The modifications, therefore, happen when we can take a spine before changing and aligning
-something.
-
-Computing a \F{Patch$\mu$} is done by piggybacking on the functions for computing \F{S}, \F{C} and \F{Al}
-separately, then mapping over them with some refinement functions:
-
-\Agda{RegDiff/Diff/Multirec/Base}{diffmu-non-det}
-
-The refinement function is easy. We just need to make sure we have
-equal source and destination types before we \IC{set} something; otherwise
-we simply prune that branch out. This makes the code much more efficient as
-we are not trying to \IC{set} an integer into a list.
-
-\Agda{RegDiff/Diff/Multirec/Base}{diffmu-refinements}
 
 Obviously, we can also define the ``application'' relation for fixed points, and that
 is done in \texttt{RegDiff/Diff/Multirec/Domain}. I believe it is more worthwhile to
 look at some example patches and their ``application'' relation instead of the general
 case, though. Let's begin with the lists we just discussed:
 
-\begin{TODO}
-  recompile the examples
-\end{TODO}
-
-\end{document}
-
 \Agda{Report/code/Examples}{Example-list-2}
 
 Here, \F{LIST-F} is defined as $\IC{u1} \IC{$\oplus$} \mathbbm{N} \IC{$\otimes$} \IC{I}$, the usual
-list functor. The ``application'' relation for the above patch is:
+list functor. The ``application'' relation for the above patch is (isomorphic to):
 
 \begin{displaymath}
 \xymatrix{
@@ -994,9 +1036,9 @@ in the respective \texttt{Lab.agda} modules. Here are a few examples of list pat
 
 \Agda{Report/code/Examples}{Example-list-1}
 
-Previously we also mentioned that \emph{2-3-Trees} were a good motivation for the \IC{A$\otimes$} 
-constructor. Here is the actual example (the full code follows to illustrate how modules are imported
-and used):
+Previously we had \emph{2-3-Trees} as an example. Here are some patches over them:
+
+\Agda{Report/code/Examples}{Example-2-3-TREE-F-inhabitants}
 
 \Agda{Report/code/Examples}{Example-2-3-tree-full}
 
@@ -1011,5 +1053,17 @@ the \F{3-node}.
 \Agda{Report/code/Examples}{Example-2-3-tree-norm1}
 
 \Agda{Report/code/Examples}{Example-2-3-tree-norm2}
+
+\section{Comparing to the Rose Tree approach}
+
+\begin{withsalt}
+
+\begin{itemize}
+  \item By using a list of edit operations, they lose the alignments.
+
+  \item They allow for sharing of data even when the same constructor is used.
+\end{itemize}
+
+\end{withsalt}
 
 \end{document}

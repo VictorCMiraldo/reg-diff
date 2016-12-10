@@ -183,6 +183,7 @@ module Report.code.Examples where
     3-node'  = fs (fs fz)
 \end{code}
 %</Example-2-3-TREE-F-Constr>
+%<*Example-2-3-TREE-F-inhabitants>
 \begin{code}
     import RegDiff.Diff.Multirec.Base konstants keqs 
       as DIFF
@@ -198,6 +199,7 @@ module Report.code.Examples where
     t1 = 2-Node 4 k1 k2
     t2 = 3-Node 5 k1 Leaf k2
 \end{code}
+%</Example-2-3-TREE-F-inhabitants>
 %</Example-2-3-tree-full>
 %<*Example-2-3-patches>
 \begin{code}
