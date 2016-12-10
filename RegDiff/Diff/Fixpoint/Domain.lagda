@@ -16,6 +16,6 @@ module RegDiff.Diff.Fixpoint.Domain
   import RegDiff.Diff.Multirec.Domain ks keqs
     as MREC
 
-  module Internal (T : Uₙ 1) where
+  module Internal (T : σπ 1) where
     open MREC.Internal (T ∷ []) public
 \end{code}
