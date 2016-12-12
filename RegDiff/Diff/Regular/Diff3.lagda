@@ -32,4 +32,6 @@ module RegDiff.Diff.Regular.Diff3
     pcns : {ty : U}(i : Constr ty)(rs ss : ListI (contr P ∘ α) (typeOf ty i))
          → foldrᵢ (λ h r → uncurry plp h × r) Unit (zipWithᵢ _,_ rs ss)
          → PLₛ P plp {ty = ty} (Scns i rs) (Scns i ss)
+
+  
 \end{code}
