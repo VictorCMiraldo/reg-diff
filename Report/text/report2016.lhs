@@ -25,8 +25,12 @@
 
 \newcommand{\warnme}[1]{%
 {\color{red} \textbf{$[$} #1 \textbf{$]$}}}
+
 \newcommand{\pe}[1]{%
 {\color{blue} \textbf{$[$} #1 \textbf{$]$}}}
+
+\newcommand{\victor}[1]{%
+{\color{green!40!black} \textbf{$[$} #1 \textbf{$]$}}}
 
 \newtcolorbox{withsalt}%
              {colback=blue!5!white%
@@ -39,6 +43,7 @@
              ,colframe=green!75!black%
              ,fonttitle=\bfseries%
              ,title={TODO}}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Agda related stuff
@@ -178,10 +183,11 @@ advanced features built into them.
 
 \subsection{SoP peculiarities}
 
-\pe{ I don't understand this sentence: }  One slightly cumbersome problem we have to circumvent is that the codes for 
-type variables and constant types have a different \emph{type} than the
-codes for types. This requires more discipline to organize our code. Nevertheless,
-we may wish to see \F{Atom}s as a trivial \emph{Sum-of-Product}.
+One slightly cumbersome problem we have to circumvent is that the codes for 
+type variables and constant types are modeled by \F{Atom}s; whereas the
+codes for types are modelled by |SOP|. This requires more discipline to organize our code,
+since we have to separate, on the type level, functions that handle one or the other.
+Nevertheless, we may wish to see \F{Atom}s as a trivial \emph{Sum-of-Product}.
 
 \Agda{RegDiff/Generic/Regular}{into-sop-def}
 
@@ -271,9 +277,20 @@ $y$ must specify a few parts:
   \item such that $apply_p\;x \equiv \IC{just}\;y$.
 \end{enumerate}
 
-Well, $apply_p$ can be seen as a functional relation ($R$ is functional iff $img\;R\subseteq id$ \pe{so\ldots it's a partial function! :) I'm probably guilty of suggesting relations instead of partial functions but, if we never make use of full-blown relations, then it's wiser to call a cat a cat. Besides, if we go to partial function, we could try to see how much of the Kleisli category we are making use of.)})
-from $A$ to $B$. We call this the ``application'' relation of the patch, and we will denote it
-by $p^\flat \subseteq A \times B$.
+Well, $apply_p$ can be seen as a functional relation ($R$ is
+functional iff $img\;R\subseteq id$ \pe{so\ldots it's a partial
+function! :) I'm probably guilty of suggesting relations instead of
+partial functions but, if we never make use of full-blown relations,
+then it's wiser to call a cat a cat. Besides, if we go to partial
+function, we could try to see how much of the Kleisli category we are
+making use of.)}
+\victor{I agree... relations might be an overkill. I don't understand
+what you mean by ``how much of the kleisli category we use''. If I'm not mistaken,
+we use all of it! The products we get for free (Maybe monad is commutative),
+and the kleisli construction preserves coproducts}. 
+)  from $A$ to $B$. We call this the ``application''
+relation of the patch, and we will denote it by $p^\flat \subseteq A
+\times B$.
 
 \begin{withsalt}
   There is still a lot that could be said about this. I feel like $p^\flat$ should
@@ -311,6 +328,10 @@ y$ iif $x = y$ on the monadic types. Then, the suitable notion of
 "equivalence" is a Galois connection, probably antitone in our case :
 $p >> p^{-1} \leq id$ and $p^{-1} >> p \leq id$.}
 
+\victor{I like the idea! I do not see the Galois connection arising, however. Which sets
+are we galois-connecting with which functors?
+This looks, however, exactly what I was looking for!}
+
 \pe{And, indeed, when you define the interpretation of patches as
 relations throughout the report, your intuition seems really to be
 about such pairs of partial maps. Rather that give tricky relations,
@@ -318,6 +339,13 @@ it may be simpler to just go with pairs of somewhat invertible partial
 functions. The story about the ordering of patches carries over to
 this case: this amounts to lifting $\leq$ above pointwise to
 functions.}
+
+\victor{I'm not sure I see this lifting happening. Let $leq_f$ be such lifted
+relation. We would then say that
+a patch $p$ is better than a patch $q$, that is, $q \leq p$ iff
+$\forall x . q\;x \leq p\;x$. Which basically translates to $p$ is defined, at least,
+for every $x$ that $q$ is also defined. Which implies a bigger domain.
+It makes sense! yes!}
 
 \pe{Aside from this technicality, I find the whole framework
 aesthetically unpleasing: we are specifying the function ``apply''
@@ -338,6 +366,10 @@ specification of "patch" becomes: for every 1-cell $x : 1 \to A$ and
 $y : 1 \to B$ there exists a 1-cell $p : A \to B$ and a 2-cell
 $\mathsf{apply} : x \Rightarrow y$. Take this with a pinch of salt: it
 is more "wishful thinking" than "sound categorical reasoning".}
+
+\victor{I like the sketch, let me know where this goes! By the way,
+not sure we need to carry around the pair of partial functions. The inverse
+diff is uniquely determined by the diff!}
 
 \end{withsalt} 
 
@@ -375,7 +407,7 @@ transformation. This can be accomplished by the Diagonal functor, |Delta|, just
 fine.
 
   Now, take an element |(x , y) : Delta ty tv|. The ``application''
-relation it defines is trivial: $ \{ (x , y) \} $, or, in PF style  \pe{what is this PF?}:
+relation it defines is trivial: $ \{ (x , y) \} $, or, in point-free style:
 
 \newcommand{\SingletonRel}[2]{\underline{#2} \cdot \underline{#1}^\circ}
 \begin{displaymath}
@@ -490,6 +522,8 @@ we zip the data together. If they are not, we zip $x$ and $y$ together and give 
 since the data is well-typed, they \textbf{have to} have the same
 arity and this is \textbf{not} an alignment problem. In an untyped
 setting, we would have to be paranoid and find a matching sequence.}
+\victor{Very true! In fact, this is how we force looking for
+the \emph{largest common prefix} in the fixpoint case}.
 
 \Agda{RegDiff/Diff/Regular/Base}{spine-def}
 
@@ -685,10 +719,18 @@ lists of objects. Performance-wise, this means that we should have the
 same asymptotic complexity and that we may have a chance to be more
 efficient in practice.}
 
+\victor{Absolutely! I'm currently looking at some Dynamorphism techniques
+to write this in Agda. Worst case scenario, in Haskell, we stick to memoization}.
+
 \pe{Talking about performance, the theory says that, once the changes
 have been computed, we could solve all the resulting alignment
 problems in parallel. How easy could you implement this in your
 Haskell proto? Any noticeable speed-up/slow-down?}
+
+\victor{I'm not aware of such theory. From what I know, computing an optimal
+alignment and an optimal diff is the same thing (for untyped trees). I don't understand
+what you mean by computing the alignment AFTER the changes have been computed.
+In our algorithm, at least, this happens at the same time}.
 
 The following datatype describe such maps:
 
@@ -721,6 +763,11 @@ The |filter|s are in charge of pruning out those branches from the search space.
 that you could probably enforce the absence of 'ap1' or 'ap1o' at the
 type level and dispense from generating these cases in the first
 place.}
+
+\victor{We could use a table type, as Lempsink did in ``Type-safe diff for families of types''.
+This is very cumbersome though. My plan is to use dynamorphisms to structure
+the recursion like it should be. The filters are there just to make the agda
+prototype compute faster.}
 
 Sticking with our example, we can align the leaves of our |c| by computing the following
 expression, where |C-mapM| is simply the monadic variant of |C-map|.
