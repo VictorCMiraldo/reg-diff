@@ -38,6 +38,7 @@ module RegDiff.Diff.Regular.Diff3
           → (rs ss : P (typeOf ty i) (typeOf tv j))
           → plp rs ss
           → PLc P plp {ty} {tv} (CX i j rs) (CX i j ss)
-          
-  
+
+  data PLa (P : AASet)(plp : Parallel P) : {ty tv : Π} → Al P ty tv → Al P ty tv → Set where
+    pa0  : PLa P plp A0 A0
 \end{code}
