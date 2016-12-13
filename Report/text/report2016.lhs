@@ -25,6 +25,8 @@
 
 \newcommand{\warnme}[1]{%
 {\color{red} \textbf{$[$} #1 \textbf{$]$}}}
+\newcommand{\pe}[1]{%
+{\color{blue} \textbf{$[$} #1 \textbf{$]$}}}
 
 \newtcolorbox{withsalt}%
              {colback=blue!5!white%
@@ -176,7 +178,7 @@ advanced features built into them.
 
 \subsection{SoP peculiarities}
 
-  One slightly cumbersome problem we have to circumvent is that the codes for 
+\pe{ I don't understand this sentence: }  One slightly cumbersome problem we have to circumvent is that the codes for 
 type variables and constant types have a different \emph{type} than the
 codes for types. This requires more discipline to organize our code. Nevertheless,
 we may wish to see \F{Atom}s as a trivial \emph{Sum-of-Product}.
@@ -269,7 +271,7 @@ $y$ must specify a few parts:
   \item such that $apply_p\;x \equiv \IC{just}\;y$.
 \end{enumerate}
 
-Well, $apply_p$ can be seen as a functional relation ($R$ is functional iff $img\;R\subseteq id$)
+Well, $apply_p$ can be seen as a functional relation ($R$ is functional iff $img\;R\subseteq id$ \pe{so\ldots it's a partial function! :) I'm probably guilty of suggesting relations instead of partial functions but, if we never make use of full-blown relations, then it's wiser to call a cat a cat. Besides, if we go to partial function, we could try to see how much of the Kleisli category we are making use of.)})
 from $A$ to $B$. We call this the ``application'' relation of the patch, and we will denote it
 by $p^\flat \subseteq A \times B$.
 
@@ -300,6 +302,43 @@ also be invertible in the sense that:
         If $p^\flat$ is functional and entire, it is a function (and hence, total!). 
         And that is not true.
 \end{enumerate}
+
+\pe{This is something we noticed in our ICFP'16 paper: if you ask for
+pointwise invertibility of partial functions, you end up asking for
+total functions. In fact, you want to define an order
+$\mathsf{nothing} \leq \_$ and $\mathsf{just}\: x \leq \mathsf{just}\:
+y$ iif $x = y$ on the monadic types. Then, the suitable notion of
+"equivalence" is a Galois connection, probably antitone in our case :
+$p >> p^{-1} \leq id$ and $p^{-1} >> p \leq id$.}
+
+\pe{And, indeed, when you define the interpretation of patches as
+relations throughout the report, your intuition seems really to be
+about such pairs of partial maps. Rather that give tricky relations,
+it may be simpler to just go with pairs of somewhat invertible partial
+functions. The story about the ordering of patches carries over to
+this case: this amounts to lifting $\leq$ above pointwise to
+functions.}
+
+\pe{Aside from this technicality, I find the whole framework
+aesthetically unpleasing: we are specifying the function ``apply''
+over a patch computed over two elements and their relative
+coherence. It feels like their is some structure we are not exploiting
+at these different levels.}
+
+\pe{Inspired by Tabareau's "Aspect-oriented programming: a language
+for 2-categories", I'm toying with (but not proposing for adoption,
+this is still very sketchy!)  the following idea: we define a
+2-category where 0-cells are types, 1-cells are antitone Galois
+connections (pairs of partial functions) (ie. diff and inverse diff)
+between types and 2-cells are residuals. There is a terminal object
+"unit": it is a 0-cell 1 such that for all type A, there exists a
+(trivial) 1-cell $\mathsf{skip} : A \to 1$ and a unique 2-cell
+$1_{\mathsf{skip}} : \mathsf{skip} \Rightarrow \mathsf{skip}$. The
+specification of "patch" becomes: for every 1-cell $x : 1 \to A$ and
+$y : 1 \to B$ there exists a 1-cell $p : A \to B$ and a 2-cell
+$\mathsf{apply} : x \Rightarrow y$. Take this with a pinch of salt: it
+is more "wishful thinking" than "sound categorical reasoning".}
+
 \end{withsalt} 
 
    Now, let us discuss some code and build some intuition for what is
@@ -336,7 +375,7 @@ transformation. This can be accomplished by the Diagonal functor, |Delta|, just
 fine.
 
   Now, take an element |(x , y) : Delta ty tv|. The ``application''
-relation it defines is trivial: $ \{ (x , y) \} $, or, in PF style:
+relation it defines is trivial: $ \{ (x , y) \} $, or, in PF style  \pe{what is this PF?}:
 
 \newcommand{\SingletonRel}[2]{\underline{#2} \cdot \underline{#1}^\circ}
 \begin{displaymath}
@@ -407,13 +446,25 @@ Below is how they are defined:
 $x$ and $y$ agree on something! In fact, we will aggresively look for copying
 oportunities. We start by checking if $x$ and $y$ are, in fact, equal. If they are,
 we say that the patch that transforms $x$ into $y$ is \emph{copy}. If they are not equal,
-they might have the same \emph{constructor}. If they do, the say that the constructor
+they might have the same \emph{constructor}. If they do, we say that the constructor
 is copied and we put the data side by side (zip). Otherwise, there is nothing
 we can do on this phase and we just return |Delta x y|.
 
 Note that the \emph{spine} forces $x$ and $y$ to be of the same type! 
 In practice, we are only interested in diffing elements of the same language.
-It does not make sense to diff a C source file against a Haskell source file.
+It does not make sense to diff a C source file against a Haskell source file. 
+
+\pe{Even in a single language, it would not make sense to *even try*
+to match terms of different types. This would only contribute to a
+combinatorial explosion while yielding potentially ill-typed
+transformations. This is one of those places where we could argue for
+improved efficiency of the type-directed approach (if it actually pays out in
+practice)}
+
+\pe{Very intesting: by going to a sum-of-product presentation, you've
+stratified the positive (sums) and negative (product) types. Which,
+indeed, immensely simplifies the computation of the spine: we may have
+choices in sums and must go right across products (through ListI).}
 
 Nevertheless, we define an |S| structure to capture this longest common prefix
 of $x$ and $y$; which, for the \emph{SoP} universe is very easy to state.
@@ -434,6 +485,11 @@ Computing a spine is easy, first we check whether or not $x$ and
 $y$ are equal. If they are, we are done. If not, we look at $x$ and $y$ as
 true sums of products and check if their constructors are equal, if they are,
 we zip the data together. If they are not, we zip $x$ and $y$ together and give up.
+
+\pe{Note that zipping here is accelerating the diffing computation:
+since the data is well-typed, they \textbf{have to} have the same
+arity and this is \textbf{not} an alignment problem. In an untyped
+setting, we would have to be paranoid and find a matching sequence.}
 
 \Agda{RegDiff/Diff/Regular/Base}{spine-def}
 
@@ -624,6 +680,16 @@ some distinctios:
         on the left-hand-side of $f$ must appear \emph{exactly} once on the right-hand-side.
 \end{itemize}
 
+\pe{Fascinating! We are back to the world of good ol' diff: matching
+lists of objects. Performance-wise, this means that we should have the
+same asymptotic complexity and that we may have a chance to be more
+efficient in practice.}
+
+\pe{Talking about performance, the theory says that, once the changes
+have been computed, we could solve all the resulting alignment
+problems in parallel. How easy could you implement this in your
+Haskell proto? Any noticeable speed-up/slow-down?}
+
 The following datatype describe such maps:
 
 \Agda{RegDiff/Diff/Regular/Base}{Al-def}
@@ -650,7 +716,11 @@ refrain from choosing and compute all of them.
 %format filter = "\F{filter}"
 On another note, some of these alignments are simply dumb! We do not want
 to have both |Ap1 x (Ap1o y a)| and |AX (x , y) a|. They are the same alignment.
-The |filter|s are in charge of pruning out those branches from out search-space.
+The |filter|s are in charge of pruning out those branches from the search space. 
+\pe{this strikes me as a rather wasteful. I'm under the impression
+that you could probably enforce the absence of 'ap1' or 'ap1o' at the
+type level and dispense from generating these cases in the first
+place.}
 
 Sticking with our example, we can align the leaves of our |c| by computing the following
 expression, where |C-mapM| is simply the monadic variant of |C-map|.
