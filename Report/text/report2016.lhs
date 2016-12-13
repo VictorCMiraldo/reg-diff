@@ -260,7 +260,7 @@ proof that $A$ is \emph{well behaved}.
 \section{Computing and Representing Patches}
 
   Intuitively, a \textit{Patch} is some description of a
-transformation. Setting the stage, let $A$ and $B$ be a types, $x : A$
+transformation. Setting the stage, let $A$ and $B$ be types, $x : A$
 and $y : B$ elements of such types.  A \emph{patch} between $x$ and
 $y$ must specify a few parts:
 
@@ -664,7 +664,7 @@ expression, where |C-mapM| is simply the monadic variant of |C-map|.
 \end{align*}
 
 Now we have a problem. Which of the patches above should we chose to be \emph{the}
-patch? Recall that we mentioned we wanted to find the alignment with \emph{maximum domain}.
+patch? Recall that we mentioned that we wanted to find the alignment with \emph{maximum domain}.
 Something interesting happens if we look at patches from their ``application'' relation, but first,
 we define the ``application'' relations of |Al|:
 
@@ -897,7 +897,7 @@ definitions, we still need two last synonyms:
 Here $\F{T}\;k$ represents the $k$-th type of the family, and \F{Fam$_i$} acts a the
 the types in the family.  
 
-We start defining a patch for fixed poins by allowing normal patches
+We start defining a patch for fixed points by allowing normal patches
 to perform changes on the first layer.
 
 \Agda{RegDiff/Diff/Multirec/Base}{Patchmu-skel-def}
