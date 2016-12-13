@@ -24,14 +24,20 @@ module RegDiff.Diff.Regular.Diff3
   Parallel {A} P = {a b : A} → P a b → P a b → Set
 
 
-  data PLₛ (P : UUSet)(plp : Parallel P) : {ty : U} → S P ty → S P ty → Set where
-    pcpₗ : {ty : U}{s : S P ty} → PLₛ P plp Scp s
-    pcpᵣ : {ty : U}{s : S P ty} → PLₛ P plp s Scp
-    px   : {ty : U}(r s : P ty ty)
-         → plp r s → PLₛ P plp (SX r) (SX s)
-    pcns : {ty : U}(i : Constr ty)(rs ss : ListI (contr P ∘ α) (typeOf ty i))
-         → foldrᵢ (λ h r → uncurry plp h × r) Unit (zipWithᵢ _,_ rs ss)
-         → PLₛ P plp {ty = ty} (Scns i rs) (Scns i ss)
+  data PLs (P : UUSet)(plp : Parallel P) : {ty : U} → S P ty → S P ty → Set where
+    pscpₗ : {ty : U}{s : S P ty} → PLs P plp Scp s
+    pscpᵣ : {ty : U}{s : S P ty} → PLs P plp s Scp
+    psx   : {ty : U}(r s : P ty ty)
+          → plp r s → PLs P plp (SX r) (SX s)
+    pscns : {ty : U}(i : Constr ty)(rs ss : ListI (contr P ∘ α) (typeOf ty i))
+          → foldrᵢ (λ h r → uncurry plp h × r) Unit (zipWithᵢ _,_ rs ss)
+          → PLs P plp {ty} (Scns i rs) (Scns i ss)
 
+  data PLc (P : ΠΠSet)(plp : Parallel P) : {ty tv : U} → C P ty tv → C P ty tv → Set where 
+    pcx   : {ty tv : U}(i : Constr ty)(j : Constr tv)
+          → (rs ss : P (typeOf ty i) (typeOf tv j))
+          → plp rs ss
+          → PLc P plp {ty} {tv} (CX i j rs) (CX i j ss)
+          
   
 \end{code}
