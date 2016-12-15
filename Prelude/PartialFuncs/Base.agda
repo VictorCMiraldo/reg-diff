@@ -34,6 +34,16 @@ module Prelude.PartialFuncs.Base where
   _∙_ : ∀{a}{A B C : Set a} → B ↦ C → A ↦ B → A ↦ C 
   g ∙ f = (_>>= g) ∘ f
 
+  id♯ : ∀{a}{A : Set a} → A ↦ A
+  id♯ = return
+
+  const♯ : ∀{a b}{A : Set a}{B : Set b}
+        → B → A ↦ B
+  const♯ b = return ∘ const b
+
+  ! : ∀{a}{A : Set a} → A ↦ Unit
+  ! _ = just unit
+
 {-
   ########################
          PRODUCTS
@@ -69,6 +79,12 @@ module Prelude.PartialFuncs.Base where
   ...| just fx | nothing = unit
   ...| nothing | just gx = unit
   ...| just fx | just gx = refl
+
+  
+  _><_ : ∀{a}{A B C D : Set a}
+       → (f : A ↦ C)(g : B ↦ D)
+       → (A × B) ↦ (C × D)
+  f >< g = split♯ (f ∙ π₁) (g ∙ π₂)
 
 {-
   ########################

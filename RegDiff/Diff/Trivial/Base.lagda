@@ -72,6 +72,13 @@ module RegDiff.Diff.Trivial.Base
   UU→AA : UUSet → AASet
   UU→AA P a a' = P (α a) (α a')
 
+  to-α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
+  to-α k = i1 (k , unit)
+
+  from-α : {a : Atom} → ⟦ α a ⟧ → ⟦ a ⟧ₐ
+  from-α (i1 (k , unit)) = k
+  from-α (i2 ())
+
   →α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
   →α k = i1 (k , unit)
 \end{code}
