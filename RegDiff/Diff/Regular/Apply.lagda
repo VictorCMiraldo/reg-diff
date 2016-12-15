@@ -123,6 +123,11 @@ module RegDiff.Diff.Regular.Apply
   C-app doP (CX i j k) = to-inj ∙ doP k ∙ from-inj
 \end{code}
 \begin{code}
-  Patch-app : {ty : U} → Patch Δₐ ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
-  Patch-app = S-app (C-app (Al-app (λ {ty} {tv} → Δₐ-apply {ty} {tv})))
+  Patch-app : {ty : U}{P : AASet}(doP : HasAppₐ P) 
+            → Patch P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
+  Patch-app doP = S-app (C-app (Al-app doP))
+\end{code}
+\begin{code}
+  PatchΔ-app : {ty : U} → Patch Δₐ ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
+  PatchΔ-app = Patch-app (λ {ty} {tv} → Δₐ-apply {ty} {tv})
 \end{code}
