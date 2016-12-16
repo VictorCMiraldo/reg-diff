@@ -11,8 +11,8 @@ open import RegDiff.Generic.Parms
 %<*Trivial-module-decl>
 \begin{code}
 module RegDiff.Diff.Trivial.Base
-       {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
-       {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
+       {ks#    : ℕ}(ks : Vec Set ks#)(keqs  : VecI Eq ks)
+       {parms# : ℕ}(A : Parms parms#)(_≟-A_ : ParmEq A)
     where
 \end{code}
 %</Trivial-module-decl>
@@ -37,12 +37,6 @@ module RegDiff.Diff.Trivial.Base
   
   Π : Set
   Π = π parms#
-
-  sized : {p : Fin parms#} → A p → ℕ
-  sized = parm-size WBA
-
-  _≟-A_ : {p : Fin parms#}(x y : A p) → Dec (x ≡ y)
-  _≟-A_ = parm-cmp WBA
 \end{code}
 %</Trivial-defs>
 %<*Trivial-aux-defs>

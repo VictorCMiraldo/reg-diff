@@ -22,16 +22,12 @@ module RegDiff.Generic.Parms where
 
 %<*WBParms-def>
 \begin{code}
-  record WBParms {n : ℕ}(A : Parms n) : Set where
-    constructor wb-parms
-    field 
-      parm-size : ∀{k} → A k → ℕ
-      parm-cmp  : ∀{k}(x y : A k) → Dec (x ≡ y)
+  ParmEq : {n : ℕ}(A : Parms n) → Set
+  ParmEq A = ∀{k}(x y : A k) → Dec (x ≡ y)
 \end{code}
 %</WBParms-def>
 
 \begin{code}
-  open WBParms public
 
 {-
   Here we provide some toy parameters
@@ -78,15 +74,9 @@ module RegDiff.Generic.Parms where
     PARMS (fs (fs fz)) = Heavy
     PARMS (fs (fs (fs ())))
 
-    WB-PARMS : WBParms PARMS
+    WB-PARMS : ParmEq PARMS
     WB-PARMS 
-      = wb-parms 
-        (λ { {fz}         p → 1 
-           ; {fs fz}      p → 1
-           ; {fs (fs fz)} (weighted k) → k
-           ; {fs (fs (fs ()))} _
-           }) 
-        (λ { {fz}         → _≟-ℕ_
+      = (λ { {fz}         → _≟-ℕ_
            ; {fs fz}      → rgb-eq
            ; {fs (fs fz)} → heavy-eq
            ; {fs (fs (fs ()))} _
