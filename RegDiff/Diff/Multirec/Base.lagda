@@ -26,10 +26,6 @@ module RegDiff.Diff.Multirec.Base
   (P +ᵤ Q) ty tv = (P ty tv) ⊎ (Q ty tv)
 \end{code}
 %</UUSet-coprod>
-\begin{code}
-  WB-FAM : {n : ℕ}{fam : Fam n} → WBParms (Fix fam)
-  WB-FAM = wb-parms Fam-size _≟_
-\end{code}
 
   The idea is almost the same as for fixpoints,
   but now, we parametrize over a family of datatypes.
@@ -39,7 +35,7 @@ module RegDiff.Diff.Multirec.Base
 \end{code}
 
 \begin{code}
-    open import RegDiff.Diff.Regular.Base ks keqs (Fix fam) WB-FAM
+    open import RegDiff.Diff.Regular.Base ks keqs (Fix fam) _≟_
       public
 \end{code}
 

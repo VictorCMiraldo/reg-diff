@@ -24,7 +24,7 @@ module RegDiff.Diff.Multirec.Apply
   module Internal {fam# : ℕ}(fam : Fam fam#) where
 
     open MRECInternal fam
-    open import RegDiff.Diff.Regular.Apply ks keqs (Fix fam) WB-FAM
+    open import RegDiff.Diff.Regular.Apply ks keqs (Fix fam) _≟_
       public
 \end{code}
 \begin{code}

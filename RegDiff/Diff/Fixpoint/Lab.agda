@@ -58,7 +58,7 @@ module RegDiff.Diff.Fixpoint.Lab where
     l0 l0' l1 l2 l3 l4 : list
     l0 = (1 > #)
     l0' = (1 > 5 > #)
-    l1 = (5 > 3 > #)
+    l1 = (1 > 7 > #)
     l2 = (3 > 50 > 4 > #)
     l3 = (1 > 50 > 4 > 20 > #)
     l4 = (5 > 1 > #)
@@ -69,8 +69,33 @@ module RegDiff.Diff.Fixpoint.Lab where
     s2 : Patchμ (T fz) (T fz)
     s2 = diffμ l4 l0 -- 6
 
-    s3 : Patchμ (T fz) (T fz)
-    s3 = {!!}
+    s3 s30 s31 s32 : Patchμ (T fz) (T fz)
+    s3 = {!diffμ l0 l1!}
+
+    s30 = skel
+      (Scns (fs fz)
+       (CX fz fz (AX (set (i1 (1 , unit) , i1 (1 , unit))) A0) ∷
+        (CX fz fz
+         (AX (fix (ins (fs fz) (Ap1ᵒ 5 (AX (fix (skel Scp)) A0)))) A0)
+         ∷ [])))
+
+    s32 = skel
+      (Scns (fs fz)
+       (CX fz fz (AX (set (i1 (1 , unit) , i1 (1 , unit))) A0) ∷
+        (CX fz fz
+         (AX
+          (fix
+           (skel
+            (Scns (fs fz)
+             (CX fz fz (AX (set (i1 (5 , unit) , i1 (7 , unit))) A0) ∷
+              (CX fz fz (AX (fix (skel Scp)) A0) ∷ [])))))
+          A0)
+         ∷ [])))
+
+    s31 = skel
+       (Scns (fs fz)
+        (CX fz fz (AX (set (i1 (1 , unit) , i1 (2 , unit))) A0) ∷
+         (CX fz fz (AX (fix (skel Scp)) A0) ∷ [])))
 {-
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public

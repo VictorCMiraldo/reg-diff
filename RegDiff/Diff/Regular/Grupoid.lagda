@@ -84,5 +84,40 @@ module RegDiff.Diff.Regular.Grupoid
 \end{code}
 \begin{code}
   S-cmp : {P : UUSet}(doP : HasCmp P){ty : U} → S P ty → S P ty → Maybe (S P ty)
-  S-cmp s s' = {!!}
+  S-cmp doP Scp s'         = just s'
+  S-cmp doP s Scp          = just s
+  S-cmp doP (SX p) (SX p') = SX <$> doP p p'
+  S-cmp doP (Scns i ps) (Scns j qs)
+    with i ≟-Fin j
+  ...| no  _    = nothing
+  S-cmp doP (Scns _ ps) (Scns j qs) 
+     | yes refl = Scns j <$> zipWithMᵢ doP ps qs 
+  S-cmp doP (SX p) (Scns i ps') = nothing
+  S-cmp doP (Scns i ps) (SX p)  = nothing
+\end{code}
+\begin{code}
+  C-cmp : {P : ΠΠSet}(doP : HasCmp P) → HasCmp (C P)
+  C-cmp doP (CX j k ps) (CX i j' qs)
+    with j ≟-Fin j'
+  ...| no _ = nothing
+  C-cmp doP (CX j k ps) (CX i _ qs)
+     | yes refl = CX i k <$> doP ps qs
+\end{code}
+\begin{code}
+  Al-cmp : {P : AASet}(doP : HasCmp P) → HasCmp (Al P)
+  Al-cmp doP A0 b = just b
+  Al-cmp doP a A0 = just a
+  Al-cmp doP a (Ap1 y b)  = Ap1 y <$> Al-cmp doP a b
+  Al-cmp doP (Ap1ᵒ x a) b = Ap1ᵒ x <$> Al-cmp doP a b
+  Al-cmp doP (Ap1 x a) (Ap1ᵒ y b) = Al-cmp doP a b
+  Al-cmp doP (AX x a) (AX y b) = AX <$> doP x y <*> Al-cmp doP a b
+
+  {-
+    We could still do better at these cases!
+    Ideally, we can invert and apply P instead of
+    only composing P.
+  -}
+  Al-cmp doP (AX x a) (Ap1ᵒ y b) = nothing
+  Al-cmp doP (Ap1 x a) (AX y b) = nothing
+
 \end{code}
