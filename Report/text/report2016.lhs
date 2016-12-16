@@ -288,6 +288,7 @@ making use of.)}
 what you mean by ``how much of the kleisli category we use''. If I'm not mistaken,
 we use all of it! The products we get for free (Maybe monad is commutative),
 and the kleisli construction preserves coproducts}. 
+\pe{I think that this answers my question.}
 )  from $A$ to $B$. We call this the ``application''
 relation of the patch, and we will denote it by $p^\flat \subseteq A
 \times B$.
@@ -332,6 +333,12 @@ $p >> p^{-1} \leq id$ and $p^{-1} >> p \leq id$.}
 are we galois-connecting with which functors?
 This looks, however, exactly what I was looking for!}
 
+\pe{Let $f : A \rightharpoonup B$ and $g : B \rightharpoonup A$. We
+have $f >> g : B \rightharpoonup B$ and $g >> f : A \rightharpoonup A$
+by Kleisli composition. We say that $f$ and $g$ form an antitone
+Galois connection if $\forall a : \textsf{Maybe}\: A, (g >> f)(a) \leq a$
+and $\forall b : \textsf{Maybe}\: B, (f >> g)(b) \leq b$.}
+
 \pe{And, indeed, when you define the interpretation of patches as
 relations throughout the report, your intuition seems really to be
 about such pairs of partial maps. Rather that give tricky relations,
@@ -346,6 +353,7 @@ a patch $p$ is better than a patch $q$, that is, $q \leq p$ iff
 $\forall x . q\;x \leq p\;x$. Which basically translates to $p$ is defined, at least,
 for every $x$ that $q$ is also defined. Which implies a bigger domain.
 It makes sense! yes!}
+\pe{yes, that's what I meant: sorry, I should have been more explicit.}
 
 \pe{Aside from this technicality, I find the whole framework
 aesthetically unpleasing: we are specifying the function ``apply''
@@ -370,6 +378,13 @@ is more "wishful thinking" than "sound categorical reasoning".}
 \victor{I like the sketch, let me know where this goes! By the way,
 not sure we need to carry around the pair of partial functions. The inverse
 diff is uniquely determined by the diff!}
+
+\pe{re ``inverse diff uniquely determined by the diff'': I don't think
+that this is true. You could for example provide an inverse diff that
+fails all the time: it would satisfy our spec above. However, given a
+diff code, you can always compute \emph{one} specific inverse. (Which,
+btw, should have some sort of universal property that we ought to
+characterize!)}
 
 \end{withsalt} 
 
@@ -730,7 +745,23 @@ Haskell proto? Any noticeable speed-up/slow-down?}
 \victor{I'm not aware of such theory. From what I know, computing an optimal
 alignment and an optimal diff is the same thing (for untyped trees). I don't understand
 what you mean by computing the alignment AFTER the changes have been computed.
-In our algorithm, at least, this happens at the same time}.
+In our algorithm, at least, this happens at the same time.}.
+
+\pe{re ``theory'': the positive type/negative type distinction I keep
+referring to and which drives my intuition is used to structure proof
+search in linear logic. There, the product would be called an
+\emph{asynchronous} connective while the sum would be called a
+\emph{synchronous} connective. Quoting ``Focusing and Polarization in
+Intuitionistic Logic'', ``the search for a focused proof can
+capitalize on this classification by applying [..]  all invertible
+rules [related to an asynchronous connective] in any order (without
+the need for backtracking) and by applying a chain of non-invertible
+rules [related to a synchronous connective] that focus on a given
+formula and its positive subformulas.''. So my gut tells me that your
+diff computation is structured in two (repeating) phases: one that
+generates the spine & change, yielding several \textbf{independant}
+alignment problems which could be solved concurrently. Is that
+clearer?}
 
 The following datatype describe such maps:
 
