@@ -361,6 +361,9 @@ over a patch computed over two elements and their relative
 coherence. It feels like their is some structure we are not exploiting
 at these different levels.}
 
+\end{withsalt}
+\begin{withsalt}
+
 \pe{Inspired by Tabareau's "Aspect-oriented programming: a language
 for 2-categories", I'm toying with (but not proposing for adoption,
 this is still very sketchy!)  the following idea: we define a
@@ -759,7 +762,7 @@ the need for backtracking) and by applying a chain of non-invertible
 rules [related to a synchronous connective] that focus on a given
 formula and its positive subformulas.''. So my gut tells me that your
 diff computation is structured in two (repeating) phases: one that
-generates the spine & change, yielding several \textbf{independant}
+generates the spine \& change, yielding several \textbf{independant}
 alignment problems which could be solved concurrently. Is that
 clearer?}
 
