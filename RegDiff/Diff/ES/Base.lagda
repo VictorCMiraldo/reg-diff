@@ -23,12 +23,9 @@ module RegDiff.Diff.ES.Base
   _+ᵤ_ : {n : ℕ} → (σπ n → σπ n → Set) → (σπ n → σπ n → Set) → (σπ n → σπ n → Set)
   (P +ᵤ Q) ty tv = (P ty tv) ⊎ (Q ty tv)
 
-  WB-FAM : {n : ℕ}{fam : Fam n} → WBParms (Fix fam)
-  WB-FAM = wb-parms Fam-size _≟_
-
   module Internal {fam# : ℕ}(fam : Fam fam#) where
 
-    open import RegDiff.Diff.Regular.Base ks keqs (Fix fam) WB-FAM
+    open import RegDiff.Diff.Regular.Base ks keqs (Fix fam) _≟_
       public
 
     Famᵢ : Set
