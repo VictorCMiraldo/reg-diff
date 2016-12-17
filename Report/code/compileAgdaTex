@@ -34,17 +34,24 @@ if [[ -z $LIBsrc ]]; then
 fi
 
 HERE=$(pwd)
+
+# Start logfile
+LOG=$HERE/compileAgdaTex.log
+date > $LOG
+
+# Keep a flag around!
+STATUS=0
+
+# Start compiling
 LIBPATH=$(dirname $LIBfile)/$LIBsrc
 cd $LIBPATH
 for i in $(find . -name "*.lagda"); do
   agda --allow-unsolved-metas --latex-dir=$HERE/$DST --latex $i
+  
+  #Whenever we fail, log that file but keep going!
   if (( $? != 0 )); then
-    echo ""
-    echo "#####"
-    echo "Agda exited with code: $?"
-    echo "when compiling: "
-    echo "$i"
-    break
+    STATUS=$?
+    echo -e "$i :\n\t $STATUS\n" >> $LOG
   fi
 done
 cd $HERE
