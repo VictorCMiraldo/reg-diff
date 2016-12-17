@@ -228,16 +228,10 @@ each type variable.
 
   In the following sections, we will be dealing with values of
 $\Interp{ty}{A}$ for some class of valuations $A$, though.  We need to
-have decidable equality for $A\;k$ and some mapping from $A\;k$ to
-$\mathbb{N}$ for all $k$.  We call such valuations a
+have decidable equality for $A\;k$.
 \emph{well-behaved parameter}:
 
 \Agda{RegDiff/Generic/Parms}{WBParms-def}
-
-\begin{TODO}
-  The field \emph{parm-size} is not really needed anymore!
-  Remove it!
-\end{TODO}
 
   The following sections discuss functionality that does not depend on
 \emph{parameters to codes}. Hence, we will be passing them as Agda module
@@ -252,12 +246,8 @@ handles constant types: \textit{ks\#} is how many constant types we
 have, $ks$ is the vector of such types and $keqs$ is an indexed vector
 with a proof of decidable equality over such types. The second line
 handles type parameters: \textit{parms\#} is how many type-variables our
-codes will have, $A$ is the valuation we are using and $WBA$ is a
-proof that $A$ is \emph{well behaved}.
-
-\begin{TODO}
-  Now parameters are setoids, we can drop out the WBA record.
-\end{TODO}
+codes will have, $A$ is the valuation we are using. The last parameter is
+a family of decidable equality for A.
 
   Below are the synonyms we use for the rest of the code:
 
@@ -266,6 +256,32 @@ proof that $A$ is \emph{well behaved}.
 \Agda{RegDiff/Diff/Trivial/Base}{Trivial-aux-defs}
 
 \section{Computing and Representing Patches}
+\newcommand{\PARTIAL}{\mathbf{Par}}
+%format Maybe    = "\F{Maybe}"
+%format just     = "\IC{just}"
+%format nothing  = "\IC{nothing}"
+%format forall   = "\forall"
+
+%format apply    = "\F{apply}"
+
+%format (REL p)       = "{" p "}^\flat"
+%format (INV p)       = "\overline{" p "}"
+%format (CONST x)     = "\underline{" x "}"
+%format .             = "\bullet"
+%format (CONV x)      = "{" x "}^\circ"
+%format *             = "\times"
+%format (SINGLR x y)  = "\SingletonRel{" x "}{" y "}"
+%format (SPLIT (a) (b)) = "\langle {" a "} , {" b "} \rangle"
+%format TOP           = "\top"
+%format inj1          = "\IC{$\iota_1$}"
+%format inj2          = "\IC{$\iota_2$}"
+%format injI          = "\IC{inj}_i"
+%format matchI        = "\IC{match}_i"
+%format injJ          = "\IC{inj}_j"
+%format (inj c)       = "\IC{inj}_{" c "}"
+%format pi1           = "\IC{$\pi_1$}"
+%format pi2           = "\IC{$\pi_2$}"
+
 
   Intuitively, a \textit{Patch} is some description of a
 transformation. Setting the stage, let $A$ and $B$ be types, $x : A$
@@ -273,95 +289,59 @@ and $y : B$ elements of such types.  A \emph{patch} between $x$ and
 $y$ must specify a few parts:
 
 \begin{enumerate}[i)]
-  \item An $apply_p : A \rightarrow Maybe\;B$ function, 
-  \item such that $apply_p\;x \equiv \IC{just}\;y$.
+  \item An |apply : A -> Maybe B| function, 
+  \item such that |apply x == just y|.
 \end{enumerate}
 
-Well, $apply_p$ can be seen as a functional relation ($R$ is
-functional iff $img\;R\subseteq id$ \pe{so\ldots it's a partial
-function! :) I'm probably guilty of suggesting relations instead of
-partial functions but, if we never make use of full-blown relations,
-then it's wiser to call a cat a cat. Besides, if we go to partial
-function, we could try to see how much of the Kleisli category we are
-making use of.)}
-\victor{I agree... relations might be an overkill. I don't understand
-what you mean by ``how much of the kleisli category we use''. If I'm not mistaken,
-we use all of it! The products we get for free (Maybe monad is commutative),
-and the kleisli construction preserves coproducts}. 
-\pe{I think that this answers my question.}
-)  from $A$ to $B$. We call this the ``application''
-relation of the patch, and we will denote it by $p^\flat \subseteq A
-\times B$.
+Well, |apply| is clearly a partial function, and hence, can be seen
+as an arrow in the category $\PARTIAL$ of sets and partial functions (that is,
+the Kleisli category of |Maybe|!). We will denote the application function of
+|p| by |REL p|. 
 
-\begin{withsalt}
-  There is still a lot that could be said about this. I feel like $p^\flat$ should
-also be invertible in the sense that:
-\begin{enumerate}[i)]
-  \item Let $(\text{inv}\;p)$ denote the inverse patch of $p$, which is a patch from $B$ to
-        $A$.
-  \item Then, $p^\flat \cdot (\text{inv}\;p)^\flat \subseteq id$ 
-          and $(\text{inv}\;p)^\flat \cdot p^\flat \subseteq id$,
-        Assuming $(\text{inv}\;p)^\flat$ is also functional, we can use
-        the maybe monad to represent these relations in $\mathbf{Set}$.
-        Writing the first equation on a diagram in $\mathbf{Set}$,
-        using the $apply$ functions:
+It is intuitive that if we can apply a patch |p| to and element |a|,
+resulting in |just a'|, there should exist a patch |(INV p)| that
+\emph{undo} those changes! That is, when |(INV p)| is applied to |a'|
+it must result in |just a|.  We can not ask for pointwise
+invertibility of |(REL p)|. This is be the same as asking |(REL p)| to
+be total\footnote{To prove this, look at |(REL p)| as a functional
+relation: $img\;R \subseteq id$. Then require that |(REL (INV p))| be
+of the form $R^\circ$. If $R^\circ$ also needs to be function we have
+that $R$ needs to be entire. If $R$ is entire and functional, it is a
+function.}.
+
+We can, however, get away if we require that |(REL (INV p)) . (REL p)|
+be \emph{less than} the identity function, in the sense that if |a|
+belongs in the domain of |(REL p)|, then |(REL (INV p)) ( (REL p) a ) == a|, 
+where |.| denotes Kleisli composition.
+
+%format PREC = "\preceq"
+Take the cannonical partial order on |Maybe A|, which puts |nothing| as the 
+lower bound:
+\begin{align*}
+  |nothing| & |PREC y| \\
+  |just x| &  |PREC just y| \text{ iff } |x == y|
+\end{align*}
+
+Then require the following diagrams, in $\PARTIAL$, to commute up to |PREC|:
+
 \begin{displaymath}
-\xymatrix@@C=5em{ B \ar[r]^{apply_{(\text{inv}\;p)}} \ar[drr]_{\iota_1}
-         & A + 1 \ar[r]^{apply_p + id} & (B + 1) + 1 \ar[d]_{\mu} \\
-         & & B + 1}
+\xymatrix@@C=4em@@R=4em{
+  A \ar[r]^{|(REL p)|} \ar@@{=}[dr]^{\succeq}_{id} & B
+   \ar[d]||{|REL (INV p)|} \ar@@{=}[dr]_(.4){\preceq}^{id} & \\
+     & A \ar[r]^{|(REL p)|} & B \\
+}
 \end{displaymath}
-  \item This is hard to play ball with. We want to say, in a way, that
-        $x\;(p^\flat)\;y$ iff $y\;((\text{inv}\;p)^\flat)\;x$.
-        That is, $(\text{inv}\;p)$ is the actual inverse of $p$.
-        Using relations, one could then say that $(\text{inv}\;p)^\flat$ is the
-        converse of $(p^\flat)$. That is: $(\text{inv}\;p)^\flat \equiv (p^\flat)^\circ$.
-        But, if $(\text{inv}\;p)^\flat$ is functional, so is $(p^\flat)^\circ$.
-        This is the same as saying that $p^\flat$ is entire!
-        If $p^\flat$ is functional and entire, it is a function (and hence, total!). 
-        And that is not true.
-\end{enumerate}
 
-\pe{This is something we noticed in our ICFP'16 paper: if you ask for
-pointwise invertibility of partial functions, you end up asking for
-total functions. In fact, you want to define an order
-$\mathsf{nothing} \leq \_$ and $\mathsf{just}\: x \leq \mathsf{just}\:
-y$ iif $x = y$ on the monadic types. Then, the suitable notion of
-"equivalence" is a Galois connection, probably antitone in our case :
-$p >> p^{-1} \leq id$ and $p^{-1} >> p \leq id$.}
+We lift |PREC| pointwise to functions, that is define |f PREC g| by
+|forall x; f x PREC g x|, then the diagrams above require
+|(REL (INV p)) . (REL p) PREC id| iff |(REL p)
+. (REL (INV p)) PREC id|. Which is precisely what an Antitone Galois Connection is! 
 
-\victor{I like the idea! I do not see the Galois connection arising, however. Which sets
-are we galois-connecting with which functors?
-This looks, however, exactly what I was looking for!}
+Hence, we want |(REL p)| and |(REL (INV p))|
+to form a (antitone) Galois Connection with respect to |PREC|.
 
-\pe{Let $f : A \rightharpoonup B$ and $g : B \rightharpoonup A$. We
-have $f >> g : B \rightharpoonup B$ and $g >> f : A \rightharpoonup A$
-by Kleisli composition. We say that $f$ and $g$ form an antitone
-Galois connection if $\forall a : \textsf{Maybe}\: A, (g >> f)(a) \leq a$
-and $\forall b : \textsf{Maybe}\: B, (f >> g)(b) \leq b$.}
 
-\pe{And, indeed, when you define the interpretation of patches as
-relations throughout the report, your intuition seems really to be
-about such pairs of partial maps. Rather that give tricky relations,
-it may be simpler to just go with pairs of somewhat invertible partial
-functions. The story about the ordering of patches carries over to
-this case: this amounts to lifting $\leq$ above pointwise to
-functions.}
 
-\victor{I'm not sure I see this lifting happening. Let $leq_f$ be such lifted
-relation. We would then say that
-a patch $p$ is better than a patch $q$, that is, $q \leq p$ iff
-$\forall x . q\;x \leq p\;x$. Which basically translates to $p$ is defined, at least,
-for every $x$ that $q$ is also defined. Which implies a bigger domain.
-It makes sense! yes!}
-\pe{yes, that's what I meant: sorry, I should have been more explicit.}
-
-\pe{Aside from this technicality, I find the whole framework
-aesthetically unpleasing: we are specifying the function ``apply''
-over a patch computed over two elements and their relative
-coherence. It feels like their is some structure we are not exploiting
-at these different levels.}
-
-\end{withsalt}
 \begin{withsalt}
 
 \pe{Inspired by Tabareau's "Aspect-oriented programming: a language
@@ -397,65 +377,55 @@ how do they relate to this relational view and give examples here and there!
 
 \subsection{Trivial Diff}
 \label{subsec:trivialdiff}
-%format (REL p)       = "{" p "}^\flat"
-%format (CONST x)     = "\underline{" x "}"
-%format .             = "\cdot"
-%format (CONV x)      = "{" x "}^\circ"
-%format *             = "\times"
-%format (SINGLR x y)  = "\SingletonRel{" x "}{" y "}"
-%format (SPLIT (a) (b)) = "\langle {" a "} , {" b "} \rangle"
-%format TOP           = "\top"
-%format inj1          = "\IC{$\iota_1$}"
-%format inj2          = "\IC{$\iota_2$}"
-%format injI          = "\IC{inj}_i"
-%format injJ          = "\IC{inj}_j"
-%format (inj c)       = "\IC{inj}_{" c "}"
-%format pi1           = "\IC{$\pi_1$}"
-%format pi2           = "\IC{$\pi_2$}"
-
-
 %format Delta = "\F{$\Delta$}"
 %format DeltaS = "\F{$\Delta_s$}"
 %format DeltaA = "\F{$\Delta_a$}"
 %format DeltaP = "\F{$\Delta_p$}"
+%format GUARD s f = "{" f "}\hspace{-.3em}\mid_{" s "}"
+
+
 
    The simplest possible way to describe a transformation is to say
 what is the source and what is the destination of such
 transformation. This can be accomplished by the Diagonal functor, |Delta|, just
 fine.
 
-  Now, take an element |(x , y) : Delta ty tv|. The ``application''
-relation it defines is trivial: $ \{ (x , y) \} $, or, in point-free style:
+  Now, take an element |(x , y) : Delta ty tv|. The application is intuitive!
+We are expecting to transform |x| into |y|. Before formalizing this, we need
+two simple partial functions. Let |GUARD S f| be the domain restriction of |f| to |S|:
 
-\newcommand{\SingletonRel}[2]{\underline{#2} \cdot \underline{#1}^\circ}
-\begin{displaymath}
-\xymatrix{
-  \Interp{ty}{A} \ar@@/^2.0pc/[rr]^{\SingletonRel{x}{y}} 
-  & K \ar[l]^{\underline{x}} \ar[r]_{\underline{y}} & \Interp{tv}{A} 
-}
-\end{displaymath}
-
-  Where, for any $A , B \in Set$ and $x : A$, $\underline{x} \subseteq A \times B$ 
-represents the \emph{everywhere} $x$ relation, defined by
 \[
- \underline{x} = \{ (x , b) \mid b \in B \}
+  |(GUARD S f) a| = \big \{ 
+     \begin{array}{ll}
+        f\; a   &, \text{if } a \in S \\
+        \bot    &, \text{otherwise}
+     \end{array}
 \]
 
-  This is a horrible patch however: We can't calculate with it because
-we don't know \emph{anything} about \emph{how} $x$ changed into $y$. Note, however,
-that | REL (x , y) == (SINGLR x y) | is trivially functional.
+We write |GUARD x f| instead of |GUARD {x} f| whenever the type of |x|
+is clear. Let |CONST y| denote the \emph{constant $y$} (total) function lifted
+to $\PARTIAL$. We then define:
+
+\[ |(REL (x , y))| = |GUARD x (CONST y)| \]
 
 \begin{withsalt}
-  In the code, we actually define the ``application'' relation of |Delta|
-as:
+  In the code, we actually define the application of |Delta| as
 
 \begin{align*}
   |REL (x , x)| &= |id| \\
-  |REL (x , y)| &= |SINGLR x y|
+  |REL (x , y)| &= |GUARD x (CONST y)|
 \end{align*}
 
-  This suggests that copies might be better off being handled by
-the trivial diff. We will return to this discussion in section \ref{sec:patchesasrelations}
+  This is because we want the patch between $x$ and $y$ to be the patch $p$ that
+maximizes the domain of |(REL p)| maintaining |(REL p) x == just y|. 
+
+%{
+%format pJ = "p_j"
+%format pI = "p_i"
+
+  In fact, let $p_0 , \cdots , p_k$ be all the possible patches between $x$ and $y$.
+We want to systematically choose the $p_i$ such that: |(REL pJ) PREC (REL pI)| for $j \leq k$.
+%}
 \end{withsalt}
 
 \subsubsection{Trivial Diff, in Agda}
@@ -487,9 +457,6 @@ Below is how they are defined:
 %format spine    = "\F{spine}"
 %format S        = "\F{S}"
 %format S-map    = "\F{S-map}"
-%format Maybe    = "\F{Maybe}"
-%format just     = "\IC{just}"
-%format nothing  = "\IC{nothing}"
 
 
   We can make the trivial diff better by identifying whether or not
@@ -503,18 +470,6 @@ we can do on this phase and we just return |Delta x y|.
 Note that the \emph{spine} forces $x$ and $y$ to be of the same type! 
 In practice, we are only interested in diffing elements of the same language.
 It does not make sense to diff a C source file against a Haskell source file. 
-
-\pe{Even in a single language, it would not make sense to *even try*
-to match terms of different types. This would only contribute to a
-combinatorial explosion while yielding potentially ill-typed
-transformations. This is one of those places where we could argue for
-improved efficiency of the type-directed approach (if it actually pays out in
-practice)}
-
-\pe{Very intesting: by going to a sum-of-product presentation, you've
-stratified the positive (sums) and negative (product) types. Which,
-indeed, immensely simplifies the computation of the spine: we may have
-choices in sums and must go right across products (through ListI).}
 
 Nevertheless, we define an |S| structure to capture this longest common prefix
 of $x$ and $y$; which, for the \emph{SoP} universe is very easy to state.
@@ -536,32 +491,39 @@ $y$ are equal. If they are, we are done. If not, we look at $x$ and $y$ as
 true sums of products and check if their constructors are equal, if they are,
 we zip the data together. If they are not, we zip $x$ and $y$ together and give up.
 
-\pe{Note that zipping here is accelerating the diffing computation:
-since the data is well-typed, they \textbf{have to} have the same
-arity and this is \textbf{not} an alignment problem. In an untyped
-setting, we would have to be paranoid and find a matching sequence.}
-\victor{Very true! In fact, this is how we force looking for
-the \emph{largest common prefix} in the fixpoint case}.
-
 \Agda{RegDiff/Diff/Regular/Base}{spine-def}
 
 \Agda{RegDiff/Diff/Regular/Base}{zip-product-def}
 
-The ``application'' relations specified by a spine |s = spine x y|, 
-denoted |REL s| are defined by:
+The application functions specified by a spine |s = spine x y|, 
+denoted |REL s| are defined, in $\PARTIAL$, by:
 
 \begin{align*}
   |REL Scp|           &= \hspace{3em} \xymatrix@@C=10em{ A & A \ar[l]_{id}} \\
   |REL (SX p)|        &= \hspace{3em} \xymatrix@@C=10em{ A & A \ar[l]_{|REL p|} } \\
   |REL (Scns i [s1 , ddd , sN])|   
                  &= \xymatrix@@C=10em{ \amalg_k \Pi_j A_{kj} & \amalg_k \Pi_j A_{kj} 
-                                    \ar[l]_{|injI . ((REL s1) * ddd * (REL sN)) . (CONV injI)|}}
+                                    \ar[l]_{|injI . ((REL s1) * ddd * (REL sN)) . matchI|}}
 \end{align*}
 
-  where |injI| is the injection, with constructor $i$, into $\amalg_k T_k$. It corresponds
-to the relational lifting of function \F{injection}.
+  where |injI| is the injection, with constructor $i$, into $\amalg_k T_k$. It corresponds to the function \F{injection}; whereas |matchI| is the inverse: pattern matching
+on constructor $i$.
 
-  Note that, in the |(SX p)| case, we simply ask for the ``application'' relation
+  Here we need to clarify some aspects of $\PARTIAL$. Since it is the Kleisli Category
+of the |Maybe| monad, we get coproducts for free. Products are problematic though. In
+general, the Kleisli construction does not preserve products, as the order in which
+side effects happen matters. 
+
+%format != = "\not\equiv"
+  For $\PARTIAL$ though, we can get away if we relax the universsal property. 
+We will never have |pi1 . (SPLIT f g) == f| and |pi2 . (SPLIT f g) == g| since
+the domain of |(SPLIT f g)| is $dom\;f \cap dom\;g$. Take 
+|(pi2 . (SPLIT id (GUARD 3 id))) 5 == nothing != id 5|.
+
+  Nevertheless, we have that |pi1 . (SPLIT f g) PREC f| and |pi2 . (SPLIT f g) PREC g|!
+The proof is not very complicated once we know that |Maybe| is a commutative monad.
+
+  Note that, in the |(SX p)| case, we simply ask for the application function
 of |p|. The algorithm produces a |S DeltaS|, so we have pairs on the leaves of the
 spine. In fact, either we have only one leave or we have $arity\; C_i$ leaves, where
 $C_i$ is the common constructor of $x$ and $y$ in |spine x y|.
@@ -599,6 +561,11 @@ change one constructor into the other.
 
   It is important to note that if the output of |spine| is a |SX|, then the constructors
 are \emph{different}.
+
+\begin{TODO}
+  I'm here on the task of changing ``application'' relations to ``application'' partial
+  functions
+\end{TODO}
 
 \subsection{Constructor Changes}
 \label{subsec:changes}
@@ -869,6 +836,7 @@ patches as relations (after some simplifications), we have:
 
 Drawing them in a diagram we have:
 
+\newcommand{\SingletonRel}[2]{lalala}
 \newcommand{\typeOf}[2]{\F{typeOf}_{#1}\;#2}
 \renewcommand{\Interp}[1]{\F{$\llbracket$} #1 \F{$\rrbracket$}}
 \newcommand{\NAT}{\mathbbm{N}}
