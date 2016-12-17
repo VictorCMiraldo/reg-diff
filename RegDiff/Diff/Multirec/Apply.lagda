@@ -3,6 +3,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
+open import Prelude.PartialFuncs.Base
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Multirec.Apply
@@ -23,60 +24,28 @@ module RegDiff.Diff.Multirec.Apply
   module Internal {fam# : ℕ}(fam : Fam fam#) where
 
     open MRECInternal fam
-    open import RegDiff.Diff.Regular.Apply ks keqs (Fix fam) WB-FAM
+    open import RegDiff.Diff.Regular.Apply ks keqs (Fix fam) _≟_
       public
 \end{code}
+\begin{code}
+    ⟨⟩ₚ : {k : Famᵢ} → ⟦ T k ⟧ ↦ ⟦ I k ∷ [] ⟧ₚ
+    ⟨⟩ₚ  k = just (⟨ k ⟩ , unit) 
 
-begin{code}
-    Cμ-applyₗ : {ty tv : U}{P : UUSet}
-              → (doP : Appliable P)
-              → Cμ P ty tv → ⟦ ty ⟧ (Fix fam) → Maybe (⟦ tv ⟧ (Fix fam))
-    Cμ-applyₗ doP (Cins x) el 
-      = C-applyₗ (Al-Appliable doP) x ⟨ el ⟩
-    Cμ-applyₗ doP (Cdel x) el 
-      = unmu <$> C-applyₗ (Al-Appliable doP) x el
-    Cμ-applyₗ doP (Cmod x) el 
-      = S-apply (goₗ (C-Appliable (Al-Appliable doP))) x el
+    ⟨⟩ₚᵒ : {k : Famᵢ} → ⟦ I k ∷ [] ⟧ₚ ↦ ⟦ T k ⟧
+    ⟨⟩ₚᵒ (⟨ k ⟩ , unit) = just k
 
-    Cμ-applyᵣ : {ty tv : U}{P : UUSet}
-              → (doP : Appliable P)
-              → Cμ P ty tv → ⟦ tv ⟧ (Fix fam) → Maybe (⟦ ty ⟧ (Fix fam))
-    Cμ-applyᵣ doP (Cins x) el 
-      = unmu <$> C-applyᵣ (Al-Appliable doP) x el 
-    Cμ-applyᵣ doP (Cdel x) el 
-      = C-applyᵣ (Al-Appliable doP) x ⟨ el ⟩
-    Cμ-applyᵣ doP (Cmod x) el 
-      = S-apply (goᵣ (C-Appliable (Al-Appliable doP))) x el
+    ⟨⟩ₐ  : {k : Famᵢ} → ⟦ T k ⟧ ↦ ⟦ (I k ∷ []) ∷ [] ⟧
+    ⟨⟩ₐ k = just (i1 (⟨ k ⟩ , unit))
 
-    Cμ-Appliable : {P : UUSet} → Appliable P → Appliable (Cμ P)
-    Cμ-Appliable doP = apply (Cμ-applyₗ doP) (Cμ-applyᵣ doP)
+    ⟨⟩ₐᵒ : {k : Famᵢ} → ⟦ (I k ∷ []) ∷ [] ⟧ ↦ ⟦ T k ⟧
+    ⟨⟩ₐᵒ (i2 ())
+    ⟨⟩ₐᵒ (i1 (⟨ k ⟩ , unit)) = just k
 
-
-    mutual
-      {-# TERMINATING #-}
-      Patchμ-applyₗ  : {ty tv : U} 
-                     → Patchμ ty tv → ⟦ ty ⟧ (Fix fam) → Maybe (⟦ tv ⟧ (Fix fam))
-      Patchμ-applyₗ (chng c)  x    = Cμ-applyₗ Patchμ-Appliable c x
-      Patchμ-applyₗ (fix p) ⟨ x ⟩  = ⟨_⟩ <$> Patchμ-applyₗ p x
-      Patchμ-applyₗ {ty} {.ty} (set p) x = goₗ Δ-apply {ty = ty} {ty} p x
-
-      {-# TERMINATING #-}
-      Patchμ-applyᵣ  : {ty tv : U} 
-                     → Patchμ ty tv → ⟦ tv ⟧ (Fix fam) → Maybe (⟦ ty ⟧ (Fix fam))
-      Patchμ-applyᵣ (chng c)  x    = Cμ-applyᵣ Patchμ-Appliable c x
-      Patchμ-applyᵣ (fix p) ⟨ x ⟩  = ⟨_⟩ <$> Patchμ-applyᵣ p x
-      Patchμ-applyᵣ {ty} {.ty} (set p) x = goᵣ Δ-apply {ty = ty} {ty} p x
-
-      Patchμ-Appliable : Appliable Patchμ
-      Patchμ-Appliable = apply Patchμ-applyₗ Patchμ-applyᵣ
-
-    Patchμ-apply-famₗ
-      : {k k' : Famᵢ} 
-      → Patchμ (T k) (T k') → Fix fam k → Maybe (Fix fam k')
-    Patchμ-apply-famₗ p ⟨ x ⟩ = ⟨_⟩ <$> Patchμ-applyₗ p x
-
-    Patchμ-apply-famᵣ
-      : {k k' : Famᵢ} 
-      → Patchμ (T k) (T k') → Fix fam k' → Maybe (Fix fam k)
-    Patchμ-apply-famᵣ p ⟨ x ⟩ = ⟨_⟩ <$> Patchμ-applyᵣ p x
+    {-# TERMINATING #-}
+    Patchμ-app : HasApp Patchμ
+    Patchμ-app (skel p)  = Patch-app (α-app Patchμ-app) p
+    Patchμ-app (ins i x) = to-inj ∙ Al-app (α-app Patchμ-app) x ∙ ⟨⟩ₚ
+    Patchμ-app (del i x) = ⟨⟩ₚᵒ ∙ Al-app (α-app Patchμ-app) x ∙ from-inj
+    Patchμ-app (fix p)   = ⟨⟩ₐ ∙ Patchμ-app p ∙ ⟨⟩ₐᵒ
+    Patchμ-app (set xy)  = Δₛ-apply xy
 \end{code}

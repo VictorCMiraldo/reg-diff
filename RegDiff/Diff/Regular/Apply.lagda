@@ -5,104 +5,129 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
+open import Prelude.ListI
 open import Prelude.Monad
+open import Prelude.PartialFuncs.Base
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Apply
        {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
-       {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
+       {parms# : ℕ}(A : Parms parms#)(_≟-A_ : ParmEq A)
     where
 
   open import RegDiff.Generic.Multirec ks
     hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
   open import RegDiff.Generic.Eq ks keqs
-  open import RegDiff.Diff.Regular.Base ks keqs A WBA
+  open import RegDiff.Diff.Regular.Base ks keqs A _≟-A_
 \end{code}
 
   The application functions in both directions makes it easy
   to see how the two phases of the algorithm play together.
 
-begin{code}
-  S-apply : {ty : U}{P : UUSet}
-         → (∀{k} → P k k → ⟦ k ⟧ → Maybe ⟦ k ⟧)
-         → S P ty → ⟦ ty ⟧ A → Maybe ⟦ ty ⟧
-  S-apply doP (SX x) el          = doP x el
-  S-apply doP Scp x              = just x
-  S-apply doP (S⊗ s o) (el , dl) = _,_ <$> S-apply doP s el <*> S-apply doP o dl
-  S-apply doP (Si1 s) (i1 el)    = i1 <$> S-apply doP s el
-  S-apply doP (Si1 s) (i2 el)    = nothing
-  S-apply doP (Si2 s) (i1 el)    = nothing
-  S-apply doP (Si2 s) (i2 el)    = i2 <$> S-apply doP s el
-
-  C-applyₗ : {ty tv : U}{P : UUSet}
-           → (doP : Appliable P)
-           → C P ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-  C-applyₗ doP (CX x) el  = goₗ doP x el
-  C-applyₗ doP (Ci1 c) el = i1 <$> C-applyₗ doP c el
-  C-applyₗ doP (Ci2 c) el = i2 <$> C-applyₗ doP c el
-  C-applyₗ doP (Ci1ᵒ c) (i1 el) = C-applyₗ doP c el
-  C-applyₗ doP (Ci1ᵒ c) (i2 el) = nothing
-  C-applyₗ doP (Ci2ᵒ c) (i1 el) = nothing
-  C-applyₗ doP (Ci2ᵒ c) (i2 el) = C-applyₗ doP c el
-
-  C-applyᵣ : {ty tv : U}{P : UUSet}
-           → (doP : Appliable P)
-           → C P ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
-  C-applyᵣ doP (CX x) el  = goᵣ doP x el
-  C-applyᵣ doP (Ci1 c) (i1 el) = C-applyᵣ doP c el
-  C-applyᵣ doP (Ci1 c) (i2 el) = nothing
-  C-applyᵣ doP (Ci2 c) (i1 el) = nothing
-  C-applyᵣ doP (Ci2 c) (i2 el) = C-applyᵣ doP c el
-  C-applyᵣ doP (Ci1ᵒ c) el = i1 <$> C-applyᵣ doP c el
-  C-applyᵣ doP (Ci2ᵒ c) el = i2 <$> C-applyᵣ doP c el
-
-  C-Appliable : {P : UUSet} → Appliable P → Appliable (C P)
-  C-Appliable doP = apply (C-applyₗ doP) (C-applyᵣ doP)
-
-  Al-applyₗ : {ty tv : U}{P : UUSet}
-            → (doP : Appliable P)
-            → Al P ty tv → ⟦ ty ⟧ A → Maybe (⟦ tv ⟧ A)
-  Al-applyₗ doP (AX x) el = goₗ doP x el
-  Al-applyₗ doP (A⊗ a a') (el , dl) = _,_ <$> Al-applyₗ doP a el <*> Al-applyₗ doP a' dl
-  Al-applyₗ doP (Ap1 x a) el = (_, x) <$> Al-applyₗ doP a el
-  Al-applyₗ doP (Ap1ᵒ {tw = tw} x a) (el , x') 
-    with dec-eq _≟-A_ tw x x'
-  ...| yes h = Al-applyₗ doP a el  
-  ...| no  h = nothing
-  Al-applyₗ doP (Ap2 x a) el = (x ,_) <$> Al-applyₗ doP a el
-  Al-applyₗ doP (Ap2ᵒ {tw = tw} x a) (x' , el) 
-    with dec-eq _≟-A_ tw x x'
-  ...| yes h = Al-applyₗ doP a el  
-  ...| no  h = nothing
-
-  Al-applyᵣ : {ty tv : U}{P : UUSet}
-            → (doP : Appliable P)
-            → Al P ty tv → ⟦ tv ⟧ A → Maybe (⟦ ty ⟧ A)
-  Al-applyᵣ doP (AX x) el = goᵣ doP x el
-  Al-applyᵣ doP (A⊗ a a') (el , dl) = _,_ <$> Al-applyᵣ doP a el <*> Al-applyᵣ doP a' dl
-  Al-applyᵣ doP (Ap1ᵒ x a) el = (_, x) <$> Al-applyᵣ doP a el
-  Al-applyᵣ doP (Ap1 {tw = tw} x a) (el , x') 
-    with dec-eq _≟-A_ tw x x'
-  ...| yes h = Al-applyᵣ doP a el  
-  ...| no  h = nothing
-  Al-applyᵣ doP (Ap2ᵒ x a) el = (x ,_) <$> Al-applyᵣ doP a el
-  Al-applyᵣ doP (Ap2 {tw = tw} x a) (x' , el) 
-    with dec-eq _≟-A_ tw x x'
-  ...| yes h = Al-applyᵣ doP a el  
-  ...| no  h = nothing
-
-  Al-Appliable : {P : UUSet} → Appliable P → Appliable (Al P)
-  Al-Appliable doP = apply (Al-applyₗ doP) (Al-applyᵣ doP)
+\begin{code}
+  HasApp : UUSet → Set
+  HasApp Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ ↦ ⟦ tv ⟧
 \end{code}
 
-begin{code}
-  private
-    patch-appliable : Appliable (C (Al Δ))
-    patch-appliable = C-Appliable (Al-Appliable Δ-apply)
+\begin{code}
+  HasAppₐ : AASet → Set
+  HasAppₐ Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ₐ ↦ ⟦ tv ⟧ₐ
+\end{code}
 
-  Patch-applyₗ : {ty : U} → Patch ty → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
-  Patch-applyₗ = S-apply (goₗ patch-appliable)
+\begin{code}
+  HasAppₚ : ΠΠSet → Set
+  HasAppₚ Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ
+\end{code}
+\begin{code}
+  from-inj : {ty : U}{i : Constr ty} → ⟦ ty ⟧ ↦ ⟦ typeOf ty i ⟧ₚ
+  from-inj x with sop x
+  from-inj {ty} {i} _ | strip cx dx 
+    with cx ≟-Fin i
+  ...| no _ = nothing
+  from-inj _ | strip cx dx
+     | yes refl = just dx
 
-  Patch-applyᵣ : {ty : U} → Patch ty → ⟦ ty ⟧ A → Maybe (⟦ ty ⟧ A)
-  Patch-applyᵣ = S-apply (goᵣ patch-appliable)
+  to-inj : {ty : U}{i : Constr ty} → ⟦ typeOf ty i ⟧ₚ ↦ ⟦ ty ⟧
+  to-inj {ty} {i} = return ∘ inject i
+\end{code}
+\begin{code}
+  singl   : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
+            (eqP : (k : A)(x y : P k) → Dec (x ≡ y))
+          → P ty → P tv → (P ty ↦ P tv)
+  singl {ty = ty} P eqP pa pb x
+    with eqP ty pa x
+  ...| yes _ = just pb
+  ...| no  _ = nothing
+\end{code}
+\begin{code}
+  Δ-apply : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
+            (eqA : (x y : A) → Dec (x ≡ y))
+            (eqP : (k : A)(x y : P k) → Dec (x ≡ y))
+          → delta P ty tv → (P ty ↦ P tv)
+  Δ-apply {ty = ty} {tv = tv} P eqA eqP (pa1 , pa2)
+    with eqA ty tv
+  ...| no _ = singl P eqP pa1 pa2
+  Δ-apply {ty = ty} P eqA eqP (pa1 , pa2) 
+     | yes refl with eqP ty pa1 pa2
+  ...| no  _ = singl P eqP pa1 pa2
+  ...| yes _ = id♯
+\end{code}
+\begin{code}
+  Δₐ-apply : {ty tv : Atom} → Δₐ ty tv → (⟦ ty ⟧ₐ ↦ ⟦ tv ⟧ₐ)
+  Δₐ-apply {ty} {tv} = Δ-apply {ty = ty} {tv} ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
+
+  Δₚ-apply : {ty tv : Π} → Δₚ ty tv → (⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ)
+  Δₚ-apply {ty} {tv} = Δ-apply {ty = ty} {tv} ⟦_⟧ₚ π-eq (dec-eqₚ _≟-A_)
+
+  Δₛ-apply : {ty tv : U} → Δₛ ty tv → (⟦ ty ⟧ ↦ ⟦ tv ⟧)
+  Δₛ-apply {ty} {tv} = Δ-apply {ty = ty} {tv} ⟦_⟧ σπ-eq (dec-eq _≟-A_)
+\end{code}
+\begin{code}
+  α-app : {a b : Atom}{P : UUSet}
+        → (doP : HasApp P)
+        → P (α a) (α b)
+        → ⟦ a ⟧ₐ ↦ ⟦ b ⟧ₐ
+  α-app {a} {b} doP wit = (return ∘ from-α {b}) ∙ doP wit ∘ to-α {a}
+
+  S-app-prod : {P : UUSet}
+             → (doP : HasApp P){l : List Atom}
+             → ListI ((contr P) ∘ α) l
+             → ⟦ l ⟧ₚ ↦ ⟦ l ⟧ₚ
+  S-app-prod doP {[]}     []       = !
+  S-app-prod doP {x ∷ xs} (l ∷ ls) = α-app doP l >< S-app-prod doP ls
+\end{code}
+\begin{code}
+  S-app : {ty : U}{P : UUSet}(doP : HasApp P) → S P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
+  S-app doP Scp          = id♯
+  S-app doP (Scns i sx)  = to-inj {i = i} ∙ S-app-prod doP sx ∙ from-inj
+  S-app doP (SX p)       = doP p
+\end{code}
+\begin{code}
+  guard♯ : {a : Atom}{ty : Π}
+         → ⟦ a ⟧ₐ → ⟦ a ∷ ty ⟧ₚ ↦ ⟦ ty ⟧ₚ
+  guard♯ {a} x (y , ys) 
+    with dec-eqₐ _≟-A_ a x y
+  ...| no  _ = nothing
+  ...| yes _ = just ys
+
+  Al-app : {P : AASet}(doP : HasAppₐ P)
+         → ∀{ty tv} → Al P ty tv → ⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ
+  Al-app doP A0          = !
+  Al-app doP (Ap1 {a = ta} x a)  = Al-app doP a ∙ guard♯ {a = ta} x
+  Al-app doP (Ap1ᵒ x a)  = split♯ (const♯ x) (Al-app doP a)
+  Al-app doP (AX   x a)  = doP x >< Al-app doP a
+\end{code}
+\begin{code}
+  C-app : {P : ΠΠSet}(doP : HasAppₚ P)
+        → ∀{ty tv} → C P ty tv → ⟦ ty ⟧ ↦ ⟦ tv ⟧
+  C-app doP (CX i j k) = to-inj ∙ doP k ∙ from-inj
+\end{code}
+\begin{code}
+  Patch-app : {ty : U}{P : AASet}(doP : HasAppₐ P) 
+            → Patch P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
+  Patch-app doP = S-app (C-app (Al-app doP))
+\end{code}
+\begin{code}
+  PatchΔ-app : {ty : U} → Patch Δₐ ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
+  PatchΔ-app = Patch-app (λ {ty} {tv} → Δₐ-apply {ty} {tv})
 \end{code}

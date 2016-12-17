@@ -22,7 +22,7 @@ module RegDiff.Diff.Multirec.Domain
   module Internal {fam# : ℕ}(fam : Fam fam#) where
 
     open MRECInternal fam
-    open import RegDiff.Diff.Regular.Domain ks keqs (Fix fam) WB-FAM
+    open import RegDiff.Diff.Regular.Domain ks keqs (Fix fam) _≟_
 
     ⟨⟩ : {k : Famᵢ} → (Fix fam k ⟵ ⟦ T k ⟧)
     ⟨⟩ = fun ⟨_⟩

@@ -9,13 +9,13 @@ open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Domain
        {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
-       {parms# : ℕ}(A : Parms parms#)(WBA  : WBParms A)
+       {parms# : ℕ}(A : Parms parms#)(_≟-A_ : ParmEq A)
     where
 
   open import RegDiff.Generic.Multirec ks
     hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
   open import RegDiff.Generic.Eq ks keqs
-  open import RegDiff.Diff.Regular.Base ks keqs A WBA
+  open import RegDiff.Diff.Regular.Base ks keqs A _≟-A_
 \end{code}
 
 \begin{code}

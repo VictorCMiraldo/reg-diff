@@ -26,3 +26,14 @@ module Prelude.ListI where
         → ListI P l → M (ListI Q l)
   mapMᵢ f []       = return []
   mapMᵢ f (i ∷ li) = f i >>= (λ qi → mapMᵢ f li >>= return ∘ (qi ∷_))
+
+  zipWithᵢ : ∀{a b}{A : Set a}{P Q : A → Set b}{l : List A}
+           → (f : ∀{k} → P k → P k → Q k) → (m n : ListI P l) → ListI Q l
+  zipWithᵢ f []       []       = []
+  zipWithᵢ f (m ∷ ms) (n ∷ ns) = f m n ∷ zipWithᵢ f ms ns
+
+  zipWithMᵢ : ∀{a b}{A : Set a}{M : Set b → Set b}{{m : Monad M}}
+               {P Q : A → Set b}{l : List A}
+           → (f : ∀{k} → P k → P k → M (Q k)) → (m n : ListI P l) → M (ListI Q l)
+  zipWithMᵢ f []       []       = return []
+  zipWithMᵢ f (m ∷ ms) (n ∷ ns) = f m n >>= λ fmn → zipWithMᵢ f ms ns >>= return ∘ (fmn ∷_)
