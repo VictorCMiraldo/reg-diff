@@ -75,10 +75,8 @@ module RegDiff.Generic.Parms where
     PARMS (fs (fs (fs ())))
 
     WB-PARMS : ParmEq PARMS
-    WB-PARMS 
-      = (λ { {fz}         → _≟-ℕ_
-           ; {fs fz}      → rgb-eq
-           ; {fs (fs fz)} → heavy-eq
-           ; {fs (fs (fs ()))} _
-           }) 
+    WB-PARMS {fz} = _≟-ℕ_
+    WB-PARMS {fs fz} = rgb-eq
+    WB-PARMS {fs (fs fz)} = heavy-eq
+    WB-PARMS {fs (fs (fs ()))}
 \end{code}
