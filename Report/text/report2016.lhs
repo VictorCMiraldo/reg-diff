@@ -381,7 +381,7 @@ how do they relate to this relational view and give examples here and there!
 %format DeltaS = "\F{$\Delta_s$}"
 %format DeltaA = "\F{$\Delta_a$}"
 %format DeltaP = "\F{$\Delta_p$}"
-%format GUARD s f = "{" f "}\hspace{-.3em}\mid_{" s "}"
+%format GUARD s f = "{" f "}\hspace{-.1em}\mid_{" s "}"
 
 
 
@@ -451,9 +451,10 @@ Below is how they are defined:
 %format s1  = "s_1"
 %format s2  = "s_2"
 %format sN  = "s_n"
+%format sI  = "s_i"
 %format ddd = "\cdots"
 
-%format spine-cp = "\F{spine-cp}"
+%format spine-cns = "\F{spine-cns}"
 %format spine    = "\F{spine}"
 %format S        = "\F{S}"
 %format S-map    = "\F{S-map}"
@@ -493,35 +494,32 @@ we zip the data together. If they are not, we zip $x$ and $y$ together and give 
 
 \Agda{RegDiff/Diff/Regular/Base}{spine-def}
 
+Note that when both arguments to |spine-cns| have the same constructor (they
+already have the same type) we can safely zip their arguments! This speeds
+up the process, as this is \emph{not} an alignment problem. Besides some
+more complicated types, the zip function is as usual:
+
 \Agda{RegDiff/Diff/Regular/Base}{zip-product-def}
 
 The application functions specified by a spine |s = spine x y|, 
 denoted |REL s| are defined, in $\PARTIAL$, by:
 
 \begin{align*}
-  |REL Scp|           &= \hspace{3em} \xymatrix@@C=10em{ A & A \ar[l]_{id}} \\
-  |REL (SX p)|        &= \hspace{3em} \xymatrix@@C=10em{ A & A \ar[l]_{|REL p|} } \\
+  |REL Scp|           &= \hspace{3.3em} \xymatrix@@C=12.5em{ A & A \ar[l]_{id}} \\
+  |REL (SX p)|        &= \hspace{3.3em} \xymatrix@@C=12.5em{ A & A \ar[l]_{|REL p|} } \\
   |REL (Scns i [s1 , ddd , sN])|   
-                 &= \xymatrix@@C=10em{ \amalg_k \Pi_j A_{kj} & \amalg_k \Pi_j A_{kj} 
+                 &= \xymatrix@@C=13em{ \amalg_k \Pi_j A_{kj} & \amalg_k \Pi_j A_{kj} 
                                     \ar[l]_{|injI . ((REL s1) * ddd * (REL sN)) . matchI|}}
 \end{align*}
 
   where |injI| is the injection, with constructor $i$, into $\amalg_k T_k$. It corresponds to the function \F{injection}; whereas |matchI| is the inverse: pattern matching
 on constructor $i$.
 
-  Here we need to clarify some aspects of $\PARTIAL$. Since it is the Kleisli Category
-of the |Maybe| monad, we get coproducts for free. Products are problematic though. In
-general, the Kleisli construction does not preserve products, as the order in which
-side effects happen matters. 
-
-%format != = "\not\equiv"
-  For $\PARTIAL$ though, we can get away if we relax the universsal property. 
-We will never have |pi1 . (SPLIT f g) == f| and |pi2 . (SPLIT f g) == g| since
-the domain of |(SPLIT f g)| is $dom\;f \cap dom\;g$. Take 
-|(pi2 . (SPLIT id (GUARD 3 id))) 5 == nothing != id 5|.
-
-  Nevertheless, we have that |pi1 . (SPLIT f g) PREC f| and |pi2 . (SPLIT f g) PREC g|!
-The proof is not very complicated once we know that |Maybe| is a commutative monad.
+  Appendix \ref{appendix:productskleisli} clarifies some aspects about products and coproducts
+on $\PARTIAL$. Long story short, we have that |pi1 . (SPLIT f g) PREC f| and |pi2 . (SPLIT f g) PREC g|!
+The proof is not very complicated once we know that |Maybe| is a commutative monad. Semantically
+speaking, |((REL s1) * ddd * (REL sN))| is only defined on an input $(x_1 , \cdot , x_n)$ iff 
+every |(REL sI)| is defined on $x_i$, which meets one intuition.
 
   Note that, in the |(SX p)| case, we simply ask for the application function
 of |p|. The algorithm produces a |S DeltaS|, so we have pairs on the leaves of the
@@ -561,11 +559,6 @@ change one constructor into the other.
 
   It is important to note that if the output of |spine| is a |SX|, then the constructors
 are \emph{different}.
-
-\begin{TODO}
-  I'm here on the task of changing ``application'' relations to ``application'' partial
-  functions
-\end{TODO}
 
 \subsection{Constructor Changes}
 \label{subsec:changes}
@@ -608,11 +601,11 @@ We can compute |S-map change s| and we will have:
     &= | SX (CX Node2 Node3 ((10 , unit , unit) , (10 , unit , unit , unit))) |
 \end{align*}
 
-  The ``application'' relation induced by |C| is trivial. We just need to pattern match,
+  The application induced by |C| is trivial. We just need to pattern match,
 change the data of the constructor in whatever way we need, then inject into another type.
 
 \begin{displaymath}
-\xymatrix{  V  &  T \ar[l]_{|(REL (CX i j p))|} \ar[d]^{|(CONV injI)|}  \\
+\xymatrix{  V  &  T \ar[l]_{|(REL (CX i j p))|} \ar[d]^{|matchI|}  \\
             \F{typeOf}\;V\;j \ar[u]^{|injJ|} & \F{typeOf}\;T\;i \ar[l]^{|(REL p)|}
          }
 \end{displaymath}
@@ -699,39 +692,30 @@ some distinctios:
         on the left-hand-side of $f$ must appear \emph{exactly} once on the right-hand-side.
 \end{itemize}
 
-\pe{Fascinating! We are back to the world of good ol' diff: matching
-lists of objects. Performance-wise, this means that we should have the
-same asymptotic complexity and that we may have a chance to be more
-efficient in practice.}
-
-\victor{Absolutely! I'm currently looking at some Dynamorphism techniques
-to write this in Agda. Worst case scenario, in Haskell, we stick to memoization}.
-
-\pe{Talking about performance, the theory says that, once the changes
-have been computed, we could solve all the resulting alignment
-problems in parallel. How easy could you implement this in your
-Haskell proto? Any noticeable speed-up/slow-down?}
-
-\victor{I'm not aware of such theory. From what I know, computing an optimal
-alignment and an optimal diff is the same thing (for untyped trees). I don't understand
-what you mean by computing the alignment AFTER the changes have been computed.
-In our algorithm, at least, this happens at the same time.}.
-
-\pe{re ``theory'': the positive type/negative type distinction I keep
-referring to and which drives my intuition is used to structure proof
-search in linear logic. There, the product would be called an
-\emph{asynchronous} connective while the sum would be called a
-\emph{synchronous} connective. Quoting ``Focusing and Polarization in
-Intuitionistic Logic'', ``the search for a focused proof can
-capitalize on this classification by applying [..]  all invertible
-rules [related to an asynchronous connective] in any order (without
-the need for backtracking) and by applying a chain of non-invertible
-rules [related to a synchronous connective] that focus on a given
-formula and its positive subformulas.''. So my gut tells me that your
-diff computation is structured in two (repeating) phases: one that
-generates the spine \& change, yielding several \textbf{independant}
-alignment problems which could be solved concurrently. Is that
-clearer?}
+\begin{withsalt}
+  As Pierre points out: 
+  \begin{quote}
+    The positive type/negative type distinction I keep
+    referring to and which drives my intuition is used to structure proof
+    search in linear logic. There, the product would be called an
+    \emph{asynchronous} connective while the sum would be called a
+    \emph{synchronous} connective. Quoting ``Focusing and Polarization in
+    Intuitionistic Logic'', ``the search for a focused proof can
+    capitalize on this classification by applying [..]  all invertible
+    rules [related to an asynchronous connective] in any order (without
+    the need for backtracking) and by applying a chain of non-invertible
+    rules [related to a synchronous connective] that focus on a given
+    formula and its positive subformulas.''. So my gut tells me that your
+    diff computation is structured in two (repeating) phases: one that
+    generates the spine \& change, yielding several \textbf{independant}
+    alignment problems which could be solved concurrently.
+  \end{quote}
+\end{withsalt}
+\begin{withsalt}
+  Which is, in fact true! The spine \& change is deterministic and
+  the alignment problems we have to solve are independent. I believe
+  we could exploit some paralallelism. It will be far from trivial though.
+\end{withsalt}
 
 The following datatype describe such maps:
 
@@ -760,15 +744,11 @@ refrain from choosing and compute all of them.
 On another note, some of these alignments are simply dumb! We do not want
 to have both |Ap1 x (Ap1o y a)| and |AX (x , y) a|. They are the same alignment.
 The |filter|s are in charge of pruning out those branches from the search space. 
-\pe{this strikes me as a rather wasteful. I'm under the impression
-that you could probably enforce the absence of 'ap1' or 'ap1o' at the
-type level and dispense from generating these cases in the first
-place.}
 
-\victor{We could use a table type, as Lempsink did in ``Type-safe diff for families of types''.
-This is very cumbersome though. My plan is to use dynamorphisms to structure
-the recursion like it should be. The filters are there just to make the agda
-prototype compute faster.}
+\begin{withsalt}
+  We need a better way to optimize this. Preferably one that we can also use
+to optimize the mutually recursive variant.
+\end{withsalt}
 
 Sticking with our example, we can align the leaves of our |c| by computing the following
 expression, where |C-mapM| is simply the monadic variant of |C-map|.
@@ -788,11 +768,15 @@ we define the ``application'' relations of |Al|:
 
 \begin{align*}
   | REL (AX a1 a2)| &= \xymatrix@@C=7em{ B \times \Pi D & A \times \Pi C \ar[l]_{|(REL a1) * (REL a2)|}} \\
-  | REL (Ap1 x a)|  &= \hspace{2.4em} \xymatrix@@C=7em{ \Pi B & X \times \Pi A \ar[l]_{|(CONV (SPLIT (CONST x) (CONV (REL a))))|}} \\
+  | REL (Ap1 x a)|  &= \hspace{2.4em} \xymatrix@@C=7em{ \Pi B & X \times \Pi A \ar[l]_{|pi2 . (GUARD x ! * (REL a))|}} \\
   | REL (Ap1o x a)| &= \xymatrix@@C=7em{ X \times \Pi B & \Pi A \ar[l]_{ |SPLIT (CONST x) (REL a)| }} \\ 
   | REL A0|         &= \hspace{3.1em} \xymatrix@@C=7em{ \mathbbm{1} & \mathbbm{1} \ar[l]_{ \top } }
 \end{align*}
 
+\begin{TODO}
+  The next section needs to be completely reestructured.
+  I'm here!
+\end{TODO}
 
 \section{Patches as Relations}
 \label{sec:patchesasrelations}
@@ -1184,5 +1168,58 @@ the \F{3-node}.
 \end{itemize}
 
 \end{withsalt}
+
+\appendix
+\section{Products in the Kleisli Category}
+\label{appendix:productskleisli}
+
+\newcommand{\CAT}[1]{\mathbf{#1}}
+\newcommand{\Kleisli}[1]{\mathbf{Kl}(#1)}
+\newcommand{\KleiFunct}[1]{{#1}^\flat}
+  Given a monad $M : \CAT{C} \rightarrow \CAT{C}$, let $\Kleisli{M}$
+be the Kleisli Category of $M$, we denote by $\KleiFunct{\square} :
+\CAT{C} \rightarrow \Kleisli{M}$ the \emph{identity on objects}
+inclusion functor into the Kleisli of $M$; it's action on arrows is
+defined as $\KleiFunct{f} = \eta \cdot f$. We will denote composition
+in $\CAT{C}$ by $\cdot$ whereas composition in $\Kleisli{M}$ will be
+denoted $\bullet$.
+
+  Coproducts carry trivially as $\KleiFunct{\cdot}$ is a left
+adjoint\footnote{ We can define a functor $U : \Kleisli{M} \rightarrow
+\CAT{C}$ as $U\;A = M\;A$ and $U\;f = \mu \cdot M\;f$. We have that
+$\KleiFunct{\square} \dashv U$.  In fact, this is the initial
+adjunction that constructs the monad $M$, $U \cdot \KleiFunct{\square}
+= M$! In fact, $U (\KleiFunct{A}) = M\;A$ and $U (\KleiFunct{f}) =
+M\;f$. There is a final such adjunction giving rise to the
+Eilenberg-Moore construction.  } and, hence, preserve
+colimits. Products are not so straight forward.
+
+\newcommand{\lstr}{\tau_l} \newcommand{\rstr}{\tau_r} We can define a
+notion of \emph{almost products} if $M$ is commutative, that is, there
+exists a left and right strength such that $\lstr \bullet \rstr \equiv
+\rstr \bullet \lstr$.  We denote $\lstr \bullet \rstr$ by $\delta$.
+
+
+If $A \times B$ is a product in $\CAT{C}$ and $M$ is commutative,
+$\KleiFunct{A\times B}$ will be the \emph{almost product} in
+$\Kleisli{M}$ where $\KleiFunct{\langle f , g \rangle} = \delta \cdot
+\langle f , g \rangle$.  Although we have that it is the unique arrow
+into the product, it does not satisfy the $\beta$-elimination laws,
+that is, $\KleiFunct{(\pi_i \cdot \langle f_1 , f_2 \rangle)}
+\not\equiv \KleiFunct{f_i}$. This is because side-effects cannot be
+undone.
+
+Nevertheless, for $M = $|Maybe|, we have that $\KleiFunct{(\pi_i \cdot
+\langle f_1 , f_2 \rangle)} \preceq \KleiFunct{f_i}$, and this
+suffices for pretty much all that we need.
+
+We define the product of two arrows the usual way:
+
+\[ \KleiFunct{(f \times g)} 
+  = \KleiFunct{ \langle f \cdot \pi_1 , g \cdot \pi_2 \rangle }
+\]
+
+  
+
 
 \end{document}
