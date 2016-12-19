@@ -279,6 +279,7 @@ a family of decidable equality for A.
 %format matchI        = "\IC{match}_i"
 %format injJ          = "\IC{inj}_j"
 %format (inj c)       = "\IC{inj}_{" c "}"
+%format (match c)     = "\IC{match}_{" c "}"
 %format pi1           = "\IC{$\pi_1$}"
 %format pi2           = "\IC{$\pi_2$}"
 
@@ -763,14 +764,14 @@ expression, where |C-mapM| is simply the monadic variant of |C-map|.
 
 Now we have a problem. Which of the patches above should we chose to be \emph{the}
 patch? Recall that we mentioned that we wanted to find the alignment with \emph{maximum domain}.
-Something interesting happens if we look at patches from their ``application'' relation, but first,
-we define the ``application'' relations of |Al|:
+Something interesting happens if we look at patches from their application function, but first,
+we define the application of |Al|:
 
 \begin{align*}
   | REL (AX a1 a2)| &= \xymatrix@@C=7em{ B \times \Pi D & A \times \Pi C \ar[l]_{|(REL a1) * (REL a2)|}} \\
   | REL (Ap1 x a)|  &= \hspace{2.4em} \xymatrix@@C=7em{ \Pi B & X \times \Pi A \ar[l]_{|pi2 . (GUARD x ! * (REL a))|}} \\
   | REL (Ap1o x a)| &= \xymatrix@@C=7em{ X \times \Pi B & \Pi A \ar[l]_{ |SPLIT (CONST x) (REL a)| }} \\ 
-  | REL A0|         &= \hspace{3.1em} \xymatrix@@C=7em{ \mathbbm{1} & \mathbbm{1} \ar[l]_{ \top } }
+  | REL A0|         &= \hspace{3.1em} \xymatrix@@C=7em{ \mathbbm{1} & \mathbbm{1} \ar[l]_{ ! } }
 \end{align*}
 
 \begin{TODO}
@@ -778,7 +779,7 @@ we define the ``application'' relations of |Al|:
   I'm here!
 \end{TODO}
 
-\section{Patches as Relations}
+\section{Patches as Partial Functions}
 \label{sec:patchesasrelations}
 
 In order to better illustrate this concept, we need a simpler example first. 
@@ -801,24 +802,31 @@ There are two possible options for $\F{diff}\;x\;y$:
 Consider the semantics for |Delta| as described in
 the discussion box at Section~\ref{subsec:trivialdiff}, that is, 
 
-\[ |(REL (x , y)) = | \Big \{ \begin{array}{l l}
-                                     |id| & \text{if } |x == y| \\
-                                     |(CONST y) . (CONV (CONST x))| & \text{otherwise}
-                               \end{array}
-\]
+\begin{align*}
+  |REL (x , x)| &= |id| \\
+  |REL (x , y)| &= |GUARD x (CONST y)|
+\end{align*}
 
 Then it becomes clear that we want to select patch (P2) instead of (P1). 
-In fact, there is a deeper underlying reason for that! Looking at the two 
-patches as relations (after some simplifications), we have:
+In fact, there is a deeper underlying reason for that! Let's calculate
+the application function of (P1):
 
 %format Cns1 = "\IC{C$_1$}"
 %format Cns2 = "\IC{C$_2$}"
+%format (DESCR (f) (d)) = "\underbrace{" f "}_{" d "}"
+%format alpha1 = "\alpha_1"
+%format alpha2 = "\alpha_2"
 \begin{align*}
-  |(REL P1)| & | = (inj Cns1) . (CONV (SPLIT ((CONST 4) . (CONV (CONST 10))) (CONST 10))) . (CONV (inj Cns2)) | \\
-  |(REL P2)| & | = (inj Cns1) . (CONV (SPLIT (CONST 4) id)) . (CONV (inj Cns2)) |
+  |(REL P1)| &=  |(inj Cns1) . ((REL (4 , 10)) * (pi2 . (GUARD 10 ! * !))) . (match Cns2) | \\
+             &=  |(inj Cns1) . (DESCR (GUARD 4 (CONST 10) * (pi2 . (GUARD 10 ! * !))) alpha1) . (match Cns2) |
+\end{align*}
+  And for (P2), we have:
+\begin{align*}
+  |(REL P2)| &= | (inj Cns1) . pi2 . (GUARD 4 ! * ((REL (10 , 10)) * !)) . (match Cns2) | \\
+             &= | (inj Cns1) . (DESCR (pi2 . (GUARD 4 ! * (id * !))) alpha2) . (match Cns2) | 
 \end{align*}
 
-Drawing them in a diagram we have:
+Drawing them as a diagram, in $\PARTIAL$, we have:
 
 \newcommand{\SingletonRel}[2]{lalala}
 \newcommand{\typeOf}[2]{\F{typeOf}_{#1}\;#2}
@@ -828,16 +836,26 @@ Drawing them in a diagram we have:
 \begin{displaymath}
 \xymatrix@@C=5em{%
   { \typeOf{\F{Type1}}{|Cns2|} \equiv \NAT \times \NAT }
-       \ar@@<-.6ex>[d]_{<\underline{4} , id>^\circ} \ar@@<.6ex>[d]^{< \SingletonRel{10}{4} , \underline{10} >^\circ} 
+       \ar@@<-.6ex>[d]_{|alpha2|} \ar@@<.6ex>[d]^{|alpha1|} 
      & \Interp{\F{Type1}} \ar[l]_(0.4){|(CONV (inj Cns2))|}  \ar@@{-->}@@<-.6ex>[d]_{P2^\flat} \ar@@{-->}@@<.6ex>[d]^{P1^\flat} \\
   { \typeOf{\F{Type1}}{|Cns1|} \equiv \NAT } \ar[r]_(0.6){|(inj Cns1)|} 
      & \Interp{\F{Type1}}
 }
 \end{displaymath}
 
-Here, we have something curious going on... We have that $P1^\flat \subseteq P2^\flat$.
-To see this is not very hard. First, composition and converses are monotonous with respect
-to $\subseteq$. We are left to check that:
+Here, we have something curious going on... We have that |(REL P1) PREC (REL P2)|.
+To see this is not very hard. First note that pre and post Kleisli composition is monotonous with respect
+to |PREC|, hence we just need to prove |alpha1 PREC alpha2|, that is:
+
+\[
+  | GUARD 4 (CONST 10) * (pi2 . (GUARD 10 ! * !)) PREC pi2 . (GUARD 4 ! * (id * !)) |
+\]
+
+Well, |alpha1| has only one element in it's domain, and it is |(4 , 10 , unit)|. Hence,
+we just need to check that |alpha2| is defined for |(4 , 10 , unit)|. this is trivial to do.
+In fact, we can see that |alpha2| is defined for elements of the form |(4 , x , unit)|, $\forall x \in \mathbbm{N}$.
+
+
 
 \newcommand{\subrel}{\;\subseteq\;}
 \newcommand{\JustBy}[2]{& \hspace{-2em} #1 \{ \text{ #2 } \} \\}

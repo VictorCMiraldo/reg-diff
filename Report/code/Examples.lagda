@@ -4,8 +4,12 @@ open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.ListI
 open import Prelude.RelCalc.Base
+open import Prelude.PartialFuncs.Base
+open import Prelude.Monad
 
 module Report.code.Examples where
+
+  open Monad {{...}}
 \end{code}
 
 \begin{code}
@@ -20,7 +24,7 @@ module Report.code.Examples where
 
     open import RegDiff.Diff.Regular.Base konstants keqs PARMS WB-PARMS
       public
-    open import RegDiff.Diff.Regular.Domain konstants keqs PARMS WB-PARMS
+    open import RegDiff.Diff.Regular.Apply konstants keqs PARMS WB-PARMS
       public
 
     Type1 : σπ 3
@@ -51,6 +55,10 @@ module Report.code.Examples where
 \end{code}
 %</Patches-as-Rels-Type-els>
 \begin{code}
+    z : ⟦ Type1 ⟧
+    z  = inject C₂ (4 , 5 , unit)
+\end{code}
+\begin{code}
     ds-exp : Patch* Type1
     ds-exp = diff1* x y
 \end{code}
@@ -63,8 +71,13 @@ module Report.code.Examples where
 \end{code}
 %</Patches-as-Rels-all-diffs>
 \begin{code}
-    ctx : EndoRel ⟦ Type1 ⟧
-    ctx = {!map Patch-rel ds!}
+    P1 P2 : Patch Δₐ Type1
+    P1 = SX (CX C₂ C₁ (AX   (4 , 10)  (Ap1  10         A0)))
+    P2 = SX (CX C₂ C₁ (Ap1  4         (AX   (10 , 10)  A0)))
+\end{code}
+\begin{code}
+    ctx : ⟦ Type1 ⟧ ↦ ⟦ Type1 ⟧
+    ctx = {!PatchΔ-app P1 x!}
 \end{code}
 
 
