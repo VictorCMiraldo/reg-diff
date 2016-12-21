@@ -130,3 +130,5 @@ module Prelude.PartialFuncs.Base where
   ...| false with f x
   ...| nothing = refl 
   ...| just _  = refl
+
+  
