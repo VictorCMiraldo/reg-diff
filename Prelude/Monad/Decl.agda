@@ -43,6 +43,11 @@ module Prelude.Monad.Decl where
         → (A → B) → M A → M B
   f <$> x = x >>= return ∘ f
 
+  infixr 9 _∙_
+  _∙_ : ∀{a}{M : Set a → Set a}{{_ : Monad M}}{A B C : Set a}
+      → (B → M C) → (A → M B) → A → M C
+  (f ∙ g) x = g x >>= f
+
 
   record Applicative {a}(M : Set a → Set a) : Set (ls a) where
     constructor applicative

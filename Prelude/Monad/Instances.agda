@@ -36,6 +36,13 @@ module Prelude.Monad.Instances where
   Maybe-<*> (just f) nothing  = nothing
   Maybe-<*> nothing  nothing  = nothing
 
+  Maybe-δ  : ∀{a b}{A : Set a}{B : Set b}
+           → Maybe A × Maybe B → Maybe (A × B)
+  Maybe-δ (just x  , just y)   = just (x , y)
+  Maybe-δ (nothing , just _)   = nothing
+  Maybe-δ (just _  , nothing)  = nothing
+  Maybe-δ (nothing , nothing)  = nothing
+
   instance
     MonadMaybe : ∀{a} → Monad {a} Maybe
     MonadMaybe {a} 
