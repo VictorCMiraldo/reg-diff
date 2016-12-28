@@ -5,6 +5,7 @@ open import Prelude.Vector
 open import Prelude.Monad
 open import Prelude.ListI
 open import RegDiff.Generic.Parms
+open import Prelude.PartialFuncs.Base
 
 module RegDiff.Diff.Regular.Grupoid
        {ks#    : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
@@ -54,8 +55,8 @@ module RegDiff.Diff.Regular.Grupoid
   Patch-inv doP = S-inv (C-inv (Al-inv doP))
 \end{code}
 \begin{code}
-  PatchΔₐ-inv : {P : AASet}(doP : HasInv P){ty : U} → Patch Δₐ ty → Patch Δₐ ty
-  PatchΔₐ-inv doP = Patch-inv (λ {ty} {tv} → Δₐ-inv {ty} {tv})
+  PatchΔ-inv : {ty : U} → Patch Δₐ ty → Patch Δₐ ty
+  PatchΔ-inv = Patch-inv (λ {ty} {tv} → Δₐ-inv {ty} {tv})
 \end{code}
 
 
@@ -119,5 +120,34 @@ module RegDiff.Diff.Regular.Grupoid
   -}
   Al-cmp doP (AX x a) (Ap1ᵒ y b) = nothing
   Al-cmp doP (Ap1 x a) (AX y b) = nothing
+\end{code}
+\begin{code}
+  Patch-cmp : {P : AASet}(doP : HasCmp P){ty : U}
+            → Patch P ty → Patch P ty → Maybe (Patch P ty)
+  Patch-cmp doP = S-cmp (C-cmp (Al-cmp doP))
+\end{code}
+\begin{code}
+  PatchΔ-cmp : {ty : U} → Patch Δₐ ty → Patch Δₐ ty → Maybe (Patch Δₐ ty)
+  PatchΔ-cmp = Patch-cmp (λ {ty} {tv} {tw} → Δₐ-cmp {ty} {tv} {tw})
+\end{code}
+
+  Ideally, we want to prove the following:
+
+  Which will involve some serious Agda!
+
+begin{code}
+  S-inv-lemma₁ : {P : UUSet}(appP : HasApp P)(invP : HasInv P)
+               → {ty : U}(s : S P ty)
+               → (S-app appP s ∙ S-app appP (S-inv invP s)) ≼* (id ♭)
+  S-inv-lemma₁ appP invP Scp = ≼-refl
+  S-inv-lemma₁ appP invP (SX x) = {!s!}
+  S-inv-lemma₁ appP invP (Scns i sx) = {!!}
+
+  PatchΔ-inv-lemma₁
+    : {ty : U}(p : Patch Δₐ ty)
+    → (PatchΔ-app p ∙ PatchΔ-app (PatchΔ-inv p)) ≼* (id ♭)
+  PatchΔ-inv-lemma₁ p = {!!}
+
+  
 
 \end{code}

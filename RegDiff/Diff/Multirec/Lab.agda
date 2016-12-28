@@ -54,20 +54,22 @@ module RegDiff.Diff.Multirec.Lab where
     public
   open DOMAIN.Internal RTREE-NAT public
 -}
-  w1 w3 w2 : rtree
+  w1 w3 w2 w4 : rtree
 
   w1 = fork 3 #
 
   w3 = fork 1 (fork 3 # % #)
 
   w2 = fork 4 (fork 1 # % #)
+  
+  w4 = fork 2 (fork 3 # % #)
 
 
   w1w3 w1w3-norm : Patchμ (T (fs fz)) (T (fs fz))
   w1w3 = diffμ w1 w3
 
   w1w3-norm 
-    = {!!}
+    = {!diffμ w3 w4!}
 
   t1 t3 : rtree
 

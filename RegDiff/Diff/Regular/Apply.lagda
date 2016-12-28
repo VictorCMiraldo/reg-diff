@@ -70,7 +70,7 @@ module RegDiff.Diff.Regular.Apply
   Δ-apply {ty = ty} P eqA eqP (pa1 , pa2) 
      | yes refl with eqP ty pa1 pa2
   ...| no  _ = singl P eqP pa1 pa2
-  ...| yes _ = id♯
+  ...| yes _ = id ♭
 \end{code}
 \begin{code}
   Δₐ-apply : {ty tv : Atom} → Δₐ ty tv → (⟦ ty ⟧ₐ ↦ ⟦ tv ⟧ₐ)
@@ -98,7 +98,7 @@ module RegDiff.Diff.Regular.Apply
 \end{code}
 \begin{code}
   S-app : {ty : U}{P : UUSet}(doP : HasApp P) → S P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
-  S-app doP Scp          = id♯
+  S-app doP Scp          = id ♭
   S-app doP (Scns i sx)  = to-inj {i = i} ∙ S-app-prod doP sx ∙ from-inj
   S-app doP (SX p)       = doP p
 \end{code}
@@ -114,7 +114,7 @@ module RegDiff.Diff.Regular.Apply
          → ∀{ty tv} → Al P ty tv → ⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ
   Al-app doP A0          = !
   Al-app doP (Ap1 {a = ta} x a)  = Al-app doP a ∙ guard♯ {a = ta} x
-  Al-app doP (Ap1ᵒ x a)  = split♯ (const♯ x) (Al-app doP a)
+  Al-app doP (Ap1ᵒ x a)  = split♯ ((const x) ♭) (Al-app doP a)
   Al-app doP (AX   x a)  = doP x >< Al-app doP a
 \end{code}
 \begin{code}

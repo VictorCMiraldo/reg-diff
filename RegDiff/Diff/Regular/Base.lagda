@@ -178,6 +178,15 @@ module RegDiff.Diff.Regular.Base
   Al-cost doP (AX x a)   = doP x + Al-cost doP a
 \end{code}
 %</Al-cost-def>
+\begin{code}
+  is-ap1 : {ty tv : Π} → Al Δₐ ty tv → Bool
+  is-ap1 (Ap1 _ _) = true
+  is-ap1 _         = false
+
+  is-ap1ᵒ : {ty tv : Π} → Al Δₐ ty tv → Bool
+  is-ap1ᵒ (Ap1ᵒ _ _) = true
+  is-ap1ᵒ _          = false 
+\end{code}
 %<*align-star-def>
 \begin{code}
   align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
@@ -190,14 +199,6 @@ module RegDiff.Diff.Regular.Base
     =  AX (m , n)   <$> align* mm nn
     ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
     ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
-    where
-      is-ap1 : {ty tv : Π} → Al Δₐ ty tv → Bool
-      is-ap1 (Ap1 _ _) = true
-      is-ap1 _         = false
-
-      is-ap1ᵒ : {ty tv : Π} → Al Δₐ ty tv → Bool
-      is-ap1ᵒ (Ap1ᵒ _ _) = true
-      is-ap1ᵒ _          = false 
 \end{code}
 %</align-star-def>
 

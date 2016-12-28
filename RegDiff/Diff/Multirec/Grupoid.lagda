@@ -36,13 +36,32 @@ module RegDiff.Diff.Multirec.Grupoid
     Patchμ-inv (fix p)     = fix (Patchμ-inv p)
     Patchμ-inv (set xy)    = set (Δₛ-inv xy)
 
+    knot : {P : UUSet}(doP : HasCmp P) → HasCmp (UU→AA P)
+    knot doP = doP
+\end{code}
+    
+begin{code}
+  Alμ : Π → Π → Set
+  Alμ = Al (UU→AA Patchμ)
+
+  Al-zip : {k : Famᵢ}{ty : Π} 
+         → Alμ (I k ∷ []) ty
+         → Patchμ tv (T k)
+         → Alμ (I k ∷
+  Al-zip al = {!!}
+\end{code}
+
+
+\begin{code}
+    {-# TERMINATING #-}
     Patchμ-cmp : HasCmp Patchμ
-    Patchμ-cmp (skel p)      = {!!}
-    Patchμ-cmp (ins {k = k} i al)  b 
-      = {!!}
-    Patchμ-cmp (del i al)    = {!!}
-    Patchμ-cmp (fix p)       = {!!}
-    Patchμ-cmp (set xy)      = {!!}
+    Patchμ-cmp (skel p)  q = {!!}
+    Patchμ-cmp (ins i al) q = {!!}
+    -- Patchμ-cmp (ins {k = k} i al) (set q) = ?
+    -- Patchμ-cmp (ins {k = k} i al) (del {k = .k} j q) = ?
+    Patchμ-cmp (del i al) q   = {!!}
+    Patchμ-cmp (fix p)    q   = {!!}
+    Patchμ-cmp (set xy)   q   = {!!}
 
 \end{code}
     

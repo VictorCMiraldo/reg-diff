@@ -18,6 +18,9 @@ module Prelude.PartialFuncs.Base where
   _♭ : ∀{a b}{A : Set a}{B : Set b} → (A → B) → (A ↦ B)
   f ♭ = return ∘ f
 
+  ! : ∀{a}{A : Set a} → A ↦ Unit
+  ! _ = just unit 
+
 {-
   ########################
          PRODUCTS

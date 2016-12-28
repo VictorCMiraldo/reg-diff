@@ -14,8 +14,6 @@ module RegDiff.Diff.Fixpoint.Lab where
 
   import RegDiff.Diff.Multirec.Base konstants keqs 
     as DIFF
-  import RegDiff.Diff.Multirec.Domain konstants keqs
-    as DOMAIN
 
   LIST-F : σπ 1
   LIST-F = u1 ⊕ (K kℕ) ⊗ I ⊗ [] ⊕ []
@@ -51,9 +49,9 @@ module RegDiff.Diff.Fixpoint.Lab where
   ...| yes _ = true
   ...| no  _ = false
 
+{-
   module T1 where
     open DIFF.Internal (LIST-F ∷ []) public
-    open DOMAIN.Internal (LIST-F ∷ []) public
 
     l0 l0' l1 l2 l3 l4 : list
     l0 = (1 > #)
@@ -72,31 +70,8 @@ module RegDiff.Diff.Fixpoint.Lab where
     s3 s30 s31 s32 : Patchμ (T fz) (T fz)
     s3 = {!diffμ l0 l1!}
 
-    s30 = skel
-      (Scns (fs fz)
-       (CX fz fz (AX (set (i1 (1 , unit) , i1 (1 , unit))) A0) ∷
-        (CX fz fz
-         (AX (fix (ins (fs fz) (Ap1ᵒ 5 (AX (fix (skel Scp)) A0)))) A0)
-         ∷ [])))
-
-    s32 = skel
-      (Scns (fs fz)
-       (CX fz fz (AX (set (i1 (1 , unit) , i1 (1 , unit))) A0) ∷
-        (CX fz fz
-         (AX
-          (fix
-           (skel
-            (Scns (fs fz)
-             (CX fz fz (AX (set (i1 (5 , unit) , i1 (7 , unit))) A0) ∷
-              (CX fz fz (AX (fix (skel Scp)) A0) ∷ [])))))
-          A0)
-         ∷ [])))
-
-    s31 = skel
-       (Scns (fs fz)
-        (CX fz fz (AX (set (i1 (1 , unit) , i1 (2 , unit))) A0) ∷
-         (CX fz fz (AX (fix (skel Scp)) A0) ∷ [])))
-{-
+    s30 = ?
+-}
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public
     -- open DOMAIN.Internal (2-3-TREE-F ∷ []) public
@@ -111,7 +86,7 @@ module RegDiff.Diff.Fixpoint.Lab where
     t1 = 2-Node 4 k1 k2
     t2 = 3-Node 5 k1 Leaf k2
 
-    r1 r2 : Patchμ (T fz) (T fz)
+    r1 r2 h1 h2 : Patchμ (T fz) (T fz)
     r1 = diffμ t1 t2
     -- 460 with good align
     -- 3971 with bad align
@@ -120,6 +95,13 @@ module RegDiff.Diff.Fixpoint.Lab where
     -- 905 sop
     -- 853 new sop
 
+    h1 = skel
+        (SX
+         (CX (fs fz) (fs (fs fz))
+          (AX (set (i1 (4 , unit) , i1 (5 , unit)))
+           (AX (fix (skel Scp))
+            (Ap1ᵒ ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0))))))
+
     r2 = diffμ k1 k3
     -- 74  with good align
     -- 471 with bad align
@@ -127,7 +109,18 @@ module RegDiff.Diff.Fixpoint.Lab where
 
     -- 128 sop
     -- 128 new sop
--}
+
+    h2 = ins (fs (fs fz))
+        (Ap1ᵒ 3
+         (AX (fix (skel Scp))
+          (Ap1ᵒ
+           ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
+           ⟩
+           (Ap1ᵒ
+            ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
+            ⟩
+            A0))))
+
 {-
     r1-computed
       = chng
@@ -161,4 +154,4 @@ module RegDiff.Diff.Fixpoint.Lab where
     still-ok-2 = refl
 -}
   
-  open T1 public
+  open T2 public
