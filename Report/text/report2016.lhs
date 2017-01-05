@@ -3,6 +3,7 @@
 \usepackage[a4paper]{geometry}
 \usepackage{amsfonts}
 \usepackage{amsmath}
+\usepackage{amsthm}
 \usepackage[all]{xypic}
 \usepackage{xcolor}
 \usepackage{enumerate}
@@ -44,6 +45,9 @@
              ,fonttitle=\bfseries%
              ,title={TODO}}
 
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Agda related stuff
@@ -382,7 +386,7 @@ how do they relate to this relational view and give examples here and there!
 %format DeltaS = "\F{$\Delta_s$}"
 %format DeltaA = "\F{$\Delta_a$}"
 %format DeltaP = "\F{$\Delta_p$}"
-%format GUARD s f = "{" f "}\hspace{-.1em}\mid_{" s "}"
+%format (GUARD s f) = "{" f "}\hspace{-.1em}\mid_{" s "}"
 
 
 
@@ -393,19 +397,20 @@ fine.
 
   Now, take an element |(x , y) : Delta ty tv|. The application is intuitive!
 We are expecting to transform |x| into |y|. Before formalizing this, we need
-two simple partial functions. Let |GUARD S f| be the domain restriction of |f| to |S|:
+two simple partial functions. Let |f : A -> B| be an arrow in $\PARTIAL$,
+we denote by |GUARD S f| be the domain restriction of |f| to |S : A -> Bool|:
 
 \[
   |(GUARD S f) a| = \big \{ 
      \begin{array}{ll}
-        f\; a   &, \text{if } a \in S \\
+        f\; a   &, \text{if } S\;a \\
         \bot    &, \text{otherwise}
      \end{array}
 \]
 
-We write |GUARD x f| instead of |GUARD {x} f| whenever the type of |x|
-is clear. Let |CONST y| denote the \emph{constant $y$} (total) function lifted
-to $\PARTIAL$. We then define:
+We write |GUARD x f| instead of |GUARD (== x) f| whenever the context
+is clear enough. Let |CONST y| denote the \emph{constant $y$} (total)
+function lifted to $\PARTIAL$. We then define:
 
 \[ |(REL (x , y))| = |GUARD x (CONST y)| \]
 
@@ -828,7 +833,7 @@ the application function of (P1):
 
 Drawing them as a diagram, in $\PARTIAL$, we have:
 
-\newcommand{\SingletonRel}[2]{lalala}
+\newcommand{\SingletonRel}[2]{#1 \mid_{#2}}
 \newcommand{\typeOf}[2]{\F{typeOf}_{#1}\;#2}
 \renewcommand{\Interp}[1]{\F{$\llbracket$} #1 \F{$\rrbracket$}}
 \newcommand{\NAT}{\mathbbm{N}}
@@ -855,66 +860,56 @@ Well, |alpha1| has only one element in it's domain, and it is |(4 , 10 , unit)|.
 we just need to check that |alpha2| is defined for |(4 , 10 , unit)|. this is trivial to do.
 In fact, we can see that |alpha2| is defined for elements of the form |(4 , x , unit)|, $\forall x \in \mathbbm{N}$.
 
-
+Take into account some laws about guards, presented in appendix
+\ref{appendix:guardlaws}, we can calculate a simpler proof obligation:
 
 \newcommand{\subrel}{\;\subseteq\;}
 \newcommand{\JustBy}[2]{& \hspace{-2em} #1 \{ \text{ #2 } \} \\}
 \newcommand{\Just}[1]{\JustBy{\equiv}{#1}}
 \newcommand{\Nojust}{& \hspace{-2em} \equiv \\}
 \newcommand{\StartProof}[1]{ & \hspace{2em} #1 \\ }
+%format .. = "\cdot"
+%format bang1 = "!_{\mathbbm{1}}"
 \begin{align*}
-          & < \SingletonRel{10}{4} , \underline{10} > \subrel < \underline{4} , id > \\
-  \Just{ split universal }
-          & \pi_1 \cdot < \SingletonRel{10}{4} , \underline{10} > \subrel \underline{4} 
-            \; \wedge \; \pi_2 \cdot < \SingletonRel{10}{4} , \underline{10} > \subrel id
+          & | GUARD 4 (CONST 10) * (pi2 . (GUARD 10 ! * !)) PREC pi2 . (GUARD 4 ! * (id * !)) | \\
+  \Just{ Eq (\ref{lemma:guard-times-1}) }
+          & | GUARD ((== 4) ..  pi1) ((CONST 10) * (pi2 . (GUARD 10 ! * !))) PREC pi2 . (GUARD 4 ! * (id * !)) | \\
+  \Just{ Eq (\ref{lemma:pi2-guard-natural})  }
+          & | GUARD ((== 4) .. pi1) ((CONST 10) * (pi2 . (GUARD 10 ! * !))) PREC (GUARD ((== 4) .. pi1) ((id * !) . pi2)) | \\
+  \JustBy{\Leftarrow}{ guard monotonous }
+          & | (CONST 10) * (pi2 . (GUARD 10 ! * !)) PREC (id * !) . pi2 | \\
+  \Just{ Eq (\ref{lemma:pi2-guard-natural}) } 
+          & | (CONST 10) * (GUARD ((== 10) .. pi1) (! . pi2)) PREC (id * !) . pi2 | \\
+  \Just{ Eq (\ref{lemma:guard-times-2}) }
+          & | GUARD ((== 10) .. pi1 .. pi2) ((CONST 10) * (! . pi2)) PREC (id * !) . pi2 | \\
+  \Just{ |!| absorbtion }
+          & | GUARD ((== 10) .. pi1 .. pi2) ((CONST 10) * !) PREC (id * bang1) . pi2 | \\
+  \Just{ |bang1 == id| }
+          & | GUARD ((== 10) .. pi1 .. pi2) ((CONST 10) * !) PREC (id * id) . pi2 | \\
+  \Just{ |*| bi-functor ; |.|-id }
+          & | GUARD ((== 10) .. pi1 .. pi2) ((CONST 10) * !) PREC pi2 | \\
 \end{align*}
 
-The first proof obligation is easy to calculate with:
+Hence, we just have to prove that | GUARD ((== 10) .. pi1 .. pi2) ((CONST 10) * !)| is \emph{at least}
+|pi2| in order to prove |(REL P1) PREC (REL P2)|. If we look at the types in question, this fact becomes
+almost trivial! Both sides of the |PREC| relation above have type |Nat * (Nat * Unit) -> Nat * Unit|.
 
-\begin{align*}
-   & \pi_1 \cdot < \SingletonRel{10}{4} , \underline{10} > \subrel \underline{4} \\
- \JustBy{\Leftarrow}{ $\pi_1$-cancel ; $\subrel$-trans }
-   & \SingletonRel{10}{4} \subrel \underline{4} \\
- \JustBy{\Leftarrow}{ Leibniz }
-   & \SingletonRel{10}{4} \cdot \underline{10} \subrel \underline{4} \cdot \underline{10} \\
- \Just{ $\underline{a}^\circ \cdot \underline{a} \equiv \top$ }
-   & \underline{4} \cdot \top \subrel \underline{4} \cdot \underline{10} \\
- \Just { $\underline{a} \cdot \underline{b} \equiv \underline{a}$ }
-   & \underline{4} \cdot \top \subrel \underline{4} \\
- \Just { $\underline{a} \cdot \top \equiv \underline{a}$ } 
-   & \underline{4} \subrel \underline{4} \\
- \Just { $\subrel$-refl }
-   & True
-\end{align*}
+%{
+%format x1 = "x_1"
+%format x2 = "x_2"
 
-The second is easier to prove once we add variables!
+Let's apply | GUARD ((== 10) .. pi1 .. pi2) ((CONST 10) * !) | to a tuple |x = (x1 , (x2 , unit))|. If
+|((== 10) .. pi1 .. pi2) x| is false, we vacuously have |(REL P1) PREC (REL P2)|, as |nothing PREC _|.
 
-\begin{align*}
-   & \pi_2 \cdot < \SingletonRel{10}{4} , \underline{10}> \subrel \; id \\
-  \Just{ Add variables }
-   & \forall x, y \; . \; x \; (\pi_2 \cdot < \SingletonRel{10}{4} , \underline{10}>) \; y \Rightarrow x = y \\
-  \Just{ PF expand composition }
-   & \forall x, y \; . \exists z \; . \; x \; (\pi_2) \; z \wedge z \; < \SingletonRel{10}{4} , \underline{10}> \; y \Rightarrow x = y \\
-  \Just{ Types force $z = (z_1 , z_2)$ }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x \; (\pi_2) \; (z_1 , z_2) \wedge (z_1 , z_2) \; < \SingletonRel{10}{4} , \underline{10}> \; y \Rightarrow x = y \\
-  \Just{ $\pi_2$ def }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge (z_1 , z_2) \; < \SingletonRel{10}{4} , \underline{10}> \; y \Rightarrow x = y \\
-  \Just{ split def }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 \; (\SingletonRel{10}{4}) \; y \wedge z_2 \; (\underline{10}) \; y \Rightarrow x = y \\
-  \Just{ points def }
-   & \forall x, y \; . \exists z_1 , z_2 \;. \; x = z_2 \wedge z_1 = 4 \wedge y = 10 \wedge z_2 = 10 \Rightarrow x = y \\
-  \Just{ substitutions ; weakening }
-   & \forall x, y \; . \exists z_2 \;. \; x = 10  \wedge y = 10 \Rightarrow x = y \\
-  \Just{ trivial }
-   & True 
-\end{align*}
+If |((== 10) .. pi1 .. pi2) x| is true, then |x2 == 10|. And we have to prove that: 
+\[ |((CONST 10) * !) (x1 , (10 , unit)) == pi2 (x1 , (10 , unit))| \]
+Which is trivially true.
+%}
 
-Nevertheless, it is clear which patch we should choose! We should
-always choose the patch that gives rise to the biggest relation, as
-this is applicable to much more elements.
-
-Hence, our \emph{cost} functions will count how many elements of the domain
-and range of the ``application'' relation of a patch are \emph{fixed}. Note that
+Therefore, we have that |(REL P1) PREC (REL P2)|. Besides the intuition that 
+patch |P2| is a \emph{better} patch, we now have a clear reason to select it.
+Our \emph{cost} functions, then, will count how many elements of the domain
+and range of the application function of a patch are \emph{fixed}. Note that
 the |S| and |C| parts of the algorithm are completely deterministic, hence they
 should \emph{not} contribute to cost:
 
@@ -965,18 +960,18 @@ be patches.
   \item If |P| has a lower cost than |Q|, then the domain and range of the ``application'' relation
         of |P| contains the ``application'' relation of |Q|.
 
-        \[ | cost P < cost Q ==> (REL Q) <@ (REL P) . TOP . (REL P) | \]
+        \[ | cost P < cost Q ==> (REL Q) PREC (REL P) . TOP . (REL P) | \]
 
         \begin{withsalt}
           This is not as simple as 
-            \[ | cost P < cost Q ==> (REL Q) <@ (REL P) | \]
+            \[ | cost P < cost Q ==> (REL Q) PREC (REL P) | \]
           Take two |Deltas|, |px = (10 , 50)| and |py = (30 , 30)|.
           Trivially, |cost py = 0| and |cost px = 2|. 
           Now, |(REL px) = (SINGLR 10 50)| and |(REL py) = id|.
-          It is not true that |(SINGLR 10 50) <@ id|!
+          It is not true that |(SINGLR 10 50) PREC id|!
 
           If we state, however: Let |P , Q| in |diff* x y|; 
-               | cost P < cost Q ==> (REL Q) <@ (REL P) |
+               | cost P < cost Q ==> (REL Q) PREC (REL P) |
           Seems more likely. As the above counter example would not
           work anymore. |diff* 10 50 = (10 , 50) CONS NIL|.
                
@@ -987,7 +982,11 @@ be patches.
         there is a patch that copies this \emph{same thing} and costs
         strictly less.
  
-        \[ | cost P == cost Q ==> Ex R . cost R < cost P | \]
+        \[ | cost P == cost Q ==> Ex R .. cost R < cost P | \]
+
+  \item If |P| has cost 0, |P| is at most the identity patch, that is:
+
+        \[ | cost P == 0 ==> (REL P) PREC id | \]
 \end{enumerate}
 
 \section{Mutually Recursive Types}
@@ -1231,13 +1230,130 @@ Nevertheless, for $M = $|Maybe|, we have that $\KleiFunct{(\pi_i \cdot
 \langle f_1 , f_2 \rangle)} \preceq \KleiFunct{f_i}$, and this
 suffices for pretty much all that we need.
 
+Nevertheless, if one of the arrows of the split is a pure function,
+we have elimination:
+
+\begin{equation}
+  \label{lemma:partial-split-elim-1}
+  |pi1 . (SPLIT f (REL g)) == f|
+\end{equation}
+
+\begin{equation}
+  \label{lemma:partial-split-elim-2}
+  |pi2 . (SPLIT (REL f) g) == g|
+\end{equation}
+
 We define the product of two arrows the usual way:
 
 \[ \KleiFunct{(f \times g)} 
   = \KleiFunct{ \langle f \cdot \pi_1 , g \cdot \pi_2 \rangle }
 \]
 
-  
 
+\section{Guards}
+\label{appendix:guardlaws}
+
+%format S = "S"
+
+  Recall the definition of a guard.  Let |f : A -> B| be an arrow in $\PARTIAL$,
+we denote by |GUARD S f| be the domain restriction of |f| with
+respect to a (total) predicat |S : A -> Bool|:
+\[
+  |(GUARD S f) a| = \big \{ 
+     \begin{array}{ll}
+        f\; a   &, \text{if } S\;a \\
+        \bot    &, \text{otherwise}
+     \end{array}
+\]
+
+  Some base lemmas are proven in Agda, in \texttt{Prelude.PartialFuncs.Base}. We just state
+these here. Every calculation here happens in $\Kleisli{\_ + 1}$, unless otherwise stated.
+
+\begin{equation}
+  \label{lemma:guard-split-1}
+  |SPLIT (GUARD S f) g == (GUARD S (SPLIT f g))|
+\end{equation}
+
+\begin{equation}
+  \label{lemma:guard-split-2}
+  |SPLIT f (GUARD S g) == (GUARD S (SPLIT f g))|
+\end{equation}
+
+%format and = "\wedge"
+\begin{equation}
+  \label{lemma:guard-join}
+  |GUARD S (GUARD R f) == (GUARD (S and R) f)|
+\end{equation}
+
+\begin{equation}
+  \label{lemma:guard-absorb-r}
+  |(GUARD S f) . (REL g) == (GUARD (S .. g) (f . (REL g)))|
+\end{equation}
+
+\begin{equation}
+  \label{lemma:guard-absord-l}
+  |g . (GUARD S f) == (GUARD S (g . f))|
+\end{equation}
+  
+With these at hand, we can prove some interesting properties that allow for easier 
+calculation with guards scattered accross products.
+
+\begin{lemma}
+  Guards enjoy a commutative property with respect to the product functor.
+This means that it does not matter whether we check the input against $S$ before
+or after running $g$.
+
+  \begin{equation}
+    \label{lemma:guard-times-1}
+    | (GUARD S f) * g == (GUARD (S .. pi1) (f * g)) |
+  \end{equation}
+  \begin{equation}
+    \label{lemma:guard-times-2}
+    | f * (GUARD S g) == (GUARD (S .. pi2) (f * g)) |
+  \end{equation}
+\end{lemma}
+\begin{proof}
+  We will prove equation (\ref{lemma:guard-times-1}), the other is
+  analogous.
+\begin{align*}
+   & | (GUARD S f) * g | \\
+\Just{ |*| def }
+   & | (SPLIT ((GUARD S f) . pi1) (g . pi2)) | \\
+\Just{ |pi1| is total }
+   & | (SPLIT ((GUARD S f) . (REL pi1)) (g . pi2)) | \\
+\Just{ Eq (\ref{lemma:guard-absorb-r}) }
+   & | (SPLIT (GUARD (S .. pi1) (f . (REL pi1))) (g . pi2)) | \\
+\Just{ Eq (\ref{lemma:guard-split-1}) }
+   & | (GUARD (S .. pi1) (SPLIT (f . pi1) (g . pi2))) | \\
+\Just{ |*| def }
+   & | (GUARD (S .. pi1) (f * g)) | 
+\end{align*}
+\end{proof}
+
+\begin{lemma}
+  And, whenever we are guarding a pure function, we enjoy a naturality-like property.
+This comes from the fact that total products enjoy cancelation.
+  \begin{equation}
+    \label{lemma:pi1-guard-natural}
+    | pi1 . (f * (GUARD S (REL g))) == (GUARD (S .. pi2) (f . pi1)) |
+  \end{equation}
+  \begin{equation}
+    \label{lemma:pi2-guard-natural}
+    | pi2 . ((GUARD S (REL f)) * g) == (GUARD (S .. pi1) (g . pi2)) |
+  \end{equation}
+\end{lemma}
+\begin{proof}
+  Same as before, we will only prove equation (\ref{lemma:pi2-guard-natural}), as
+the other is analogous.
+\begin{align*}
+   & | pi2 . ((GUARD S (REL f)) * g) | \\
+\Just{ Eq (\ref{lemma:guard-times-2}) }
+   & | pi2 . (GUARD (S .. pi1) ((REL f) * g)) | \\
+\Just{ Eq (\ref{lemma:guard-absord-l}) } 
+   & | (GUARD (S .. pi1) (pi2 . ((REL f) * g))) | \\
+\Just{ |*| def; Eq (\ref{lemma:partial-split-elim-2}) }
+   & | (GUARD (S .. pi1) (g . pi2)) |
+\end{align*}
+\end{proof}
 
 \end{document}
