@@ -40,23 +40,32 @@ module RegDiff.Diff.Multirec.Grupoid
     knot doP = doP
 \end{code}
     
-\begin{code}
+begin{code}
     Alμ : Π → Π → Set
     Alμ = Al (UU→AA Patchμ)
 
-    Al-zip : {k : Famᵢ}{ty : Π}{tv : U}(i : Constr tv) 
-           → Alμ (I k ∷ []) ty
-           → Patchμ tv (T k)
-           → Maybe {!!}
-    Al-zip al = {!!}
+    Al-push : {k : Famᵢ}{ty : Π}{tv : U}(i : Constr ty)
+            → Patchμ ty (T k)
+            → Alμ (I k ∷ []) tv
+            → Maybe (Alμ 
 \end{code}
-
 
 \begin{code}
     {-# TERMINATING #-}
+    Patchμ-cmp : {k i j : Famᵢ}
+               → Patchμ (T i) (T j) → Patchμ (T k) (T i) → Maybe (Patchμ (T k) (T j))
+    Patchμ-cmp {k} {i} {j} (ins {ty = .(T j)} {.i} cᵢ al) q = {!!}
+    Patchμ-cmp {k} {i} {j} p q = {!!}
+    
+    
+\end{code}
+
+begin{code}
+    {-# TERMINATING #-}
     Patchμ-cmp : HasCmp Patchμ
     Patchμ-cmp (skel p)  q = {!!}
-    Patchμ-cmp ik@(ins {k = k} i al) q = ?
+    Patchμ-cmp (ins {k = k} i al) q 
+      = ins i <$> {!!}
     -- Patchμ-cmp (ins {k = k} i al) (set q) = ?
     -- Patchμ-cmp (ins {k = k} i al) (del {k = .k} j q) = ?
     Patchμ-cmp (del i al) q   = {!!}
