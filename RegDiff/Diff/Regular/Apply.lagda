@@ -131,3 +131,25 @@ module RegDiff.Diff.Regular.Apply
   PatchΔ-app : {ty : U} → Patch Δₐ ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
   PatchΔ-app = Patch-app (λ {ty} {tv} → Δₐ-apply {ty} {tv})
 \end{code}
+
+
+  Alignment application function is correct!
+
+\begin{code}
+  module Al-app-correct 
+           {P : AASet}(doP : HasAppₐ P)
+           (costP : ∀{ty tv} → P ty tv → ℕ)
+           (hipP : ∀{ty tv}(p₁ p₂ : P ty tv)
+                 → costP p₁ ≤ costP p₂
+                 → (doP p₂) ≼* (doP p₁))
+      where
+  
+    proof : ∀{ty tv}(a₁ a₂ : Al P ty tv)
+          → Al-cost costP a₁ ≤ Al-cost costP a₂
+          → Al-app doP a₂ ≼* Al-app doP a₁
+    proof A0 A0 hip {x} = up refl
+    proof (Ap1 {a = ta} x a1) (Ap1  y a2) hip = {!!}
+    proof (Ap1 {a = ta} x a1) (Ap1ᵒ {a = tb} y a2) hip = {!!}
+    proof (Ap1 {a = ta} x a1) (AX yz a2) hip = {!!}
+    proof a1 a2 hip = {!!}
+\end{code}
