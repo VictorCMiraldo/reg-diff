@@ -83,24 +83,26 @@ module RegDiff.Diff.Regular.Apply
   Δₛ-apply {ty} {tv} = Δ-apply {ty = ty} {tv} ⟦_⟧ σπ-eq (dec-eq _≟-A_)
 \end{code}
 \begin{code}
-  α-app : {a b : Atom}{P : UUSet}
-        → (doP : HasApp P)
-        → P (α a) (α b)
+  β-app : {a b : Atom}{P : ΠΠSet}
+        → (doP : HasAppₚ P)
+        → P (β a) (β b)
         → ⟦ a ⟧ₐ ↦ ⟦ b ⟧ₐ
-  α-app {a} {b} doP wit = (return ∘ from-α {b}) ∙ doP wit ∘ to-α {a}
+  β-app {a} {b} doP wit = (return ∘ from-β {b}) 
+                        ∙ doP wit 
+                        ∙ (return ∘ to-β {a}) 
 
-  S-app-prod : {P : UUSet}
-             → (doP : HasApp P){l : List Atom}
-             → ListI ((contr P) ∘ α) l
+  S-app-prod : {P : ΠΠSet}
+             → (doP : HasAppₚ P){l : List Atom}
+             → ListI ((contr P) ∘ β) l
              → ⟦ l ⟧ₚ ↦ ⟦ l ⟧ₚ
   S-app-prod doP {[]}     []       = !
-  S-app-prod doP {x ∷ xs} (l ∷ ls) = α-app doP l >< S-app-prod doP ls
+  S-app-prod doP {x ∷ xs} (l ∷ ls) = β-app doP l >< S-app-prod doP ls
 \end{code}
 \begin{code}
-  S-app : {ty : U}{P : UUSet}(doP : HasApp P) → S P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
-  S-app doP Scp          = id ♭
-  S-app doP (Scns i sx)  = to-inj {i = i} ∙ S-app-prod doP sx ∙ from-inj
-  S-app doP (SX p)       = doP p
+  S-app : {ty : U}{P : ΠΠSet}(doP : HasAppₚ P) → S P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
+  S-app doP Scp           = id ♭
+  S-app doP (Scns i sx)   = to-inj {i = i} ∙ S-app-prod doP sx ∙ from-inj
+  S-app doP (Schg i j p)  = to-inj ∙ doP p ∙ from-inj
 \end{code}
 \begin{code}
   guard♯ : {a : Atom}{ty : Π}
@@ -118,14 +120,9 @@ module RegDiff.Diff.Regular.Apply
   Al-app doP (AX   x a)  = doP x >< Al-app doP a
 \end{code}
 \begin{code}
-  C-app : {P : ΠΠSet}(doP : HasAppₚ P)
-        → ∀{ty tv} → C P ty tv → ⟦ ty ⟧ ↦ ⟦ tv ⟧
-  C-app doP (CX i j k) = to-inj ∙ doP k ∙ from-inj
-\end{code}
-\begin{code}
   Patch-app : {ty : U}{P : AASet}(doP : HasAppₐ P) 
             → Patch P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
-  Patch-app doP = S-app (C-app (Al-app doP))
+  Patch-app doP = S-app (Al-app doP)
 \end{code}
 \begin{code}
   PatchΔ-app : {ty : U} → Patch Δₐ ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
@@ -135,7 +132,7 @@ module RegDiff.Diff.Regular.Apply
 
   Alignment application function is correct!
 
-\begin{code}
+begin{code}
   module Al-app-correct 
            {P : AASet}(doP : HasAppₐ P)
            (costP : ∀{ty tv} → P ty tv → ℕ)

@@ -43,6 +43,9 @@ module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
 \begin{code}
   α : {n : ℕ} → Atom n → σπ n
   α a = (a ∷ []) ∷ []
+
+  β : {n : ℕ} → Atom n → π n
+  β x = x ∷ [] 
 \end{code}
 %</into-sop-def>
 %<*sop-denotation-def>

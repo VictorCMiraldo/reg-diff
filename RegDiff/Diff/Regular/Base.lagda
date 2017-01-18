@@ -34,11 +34,13 @@ module RegDiff.Diff.Regular.Base
 
 %<*Spine-def>
 \begin{code}
-  data S (P : UUSet) : U → Set where
-    SX   : {ty : U} → P ty ty → S P ty
+  data S (P : ΠΠSet) : U → Set where
     Scp  : {ty : U} → S P ty
+    Schg : {ty : U}(i j : Constr ty)
+         → P (typeOf ty i) (typeOf ty j)
+         → S P ty
     Scns : {ty : U}(i : Constr ty)
-         → ListI (contr P ∘ α) (typeOf ty i)
+         → ListI (contr P ∘ β) (typeOf ty i)
          → S P ty
 \end{code}
 %</Spine-def>
@@ -46,30 +48,30 @@ module RegDiff.Diff.Regular.Base
 %<*S-map-def>
 \begin{code}
   S-map  :  {ty : U}
-            {P Q : UUSet}(X : ∀{k v} → P k v → Q k v)
+            {P Q : ΠΠSet}(X : ∀{k v} → P k v → Q k v)
          → S P ty → S Q ty
-  S-map f (SX x)       = SX (f x)
   S-map f Scp          = Scp
+  S-map f (Schg i j x) = Schg i j (f x)
   S-map f (Scns i xs)  = Scns i (mapᵢ f xs)
 \end{code}
 %</S-map-def>
 %<*S-mapM-def>
 \begin{code}
   S-mapM  :  {ty : U}{M : Set → Set}{{m : Monad M}}
-             {P Q : UUSet}(X : ∀{k v} → P k v → M (Q k v))
+             {P Q : ΠΠSet}(X : ∀{k v} → P k v → M (Q k v))
           → S P ty → M (S Q ty)
-  S-mapM f (SX x)       = f x >>= return ∘ SX
   S-mapM f Scp          = return Scp
+  S-mapM f (Schg i j x) = f x >>= return ∘ (Schg i j)
   S-mapM f (Scns i xs)  = mapMᵢ f xs >>= return ∘ (Scns i)
 \end{code}
 %</S-mapM-def>
 
 %<*S-cost-def>
 \begin{code}
-  S-cost : {ty : U}{P : UUSet}(doP : {k v : U} → P k v → ℕ)
+  S-cost : {ty : U}{P : ΠΠSet}(doP : {k v : Π} → P k v → ℕ)
          → S P ty → ℕ
-  S-cost doP (SX x)      = doP x
   S-cost doP Scp         = 0
+  S-cost doP (Schg i j x) = doP x
   S-cost doP (Scns i xs) = foldrᵢ (λ h r → doP h + r) 0 xs
 \end{code}
 %</S-cost-def>
@@ -77,73 +79,30 @@ module RegDiff.Diff.Regular.Base
 %<*zip-product-def>
 \begin{code}
   zipₚ : {ty : Π}
-       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → ListI (λ k → Δₛ (α k) (α k)) ty
+       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → ListI (λ k → Δₚ (β k) (β k)) ty
   zipₚ {[]}     _        _         
     = []
   zipₚ {_ ∷ ty} (x , xs) (y , ys)  
-    = (i1 (x , unit) , i1 (y , unit)) ∷ zipₚ xs ys
+    = ((x , unit) , (y , unit)) ∷ zipₚ xs ys
 \end{code}
 %</zip-product-def>
 %<*spine-def>
 \begin{code}
-  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Δₛ ty
+  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Δₚ ty
   spine-cns x y  with sop x | sop y
   spine-cns _ _ | strip cx dx | strip cy dy
     with cx ≟-Fin cy
-  ...| no  _     = SX (inject cx dx , inject cy dy)
+  ...| no  _     = Schg cx cy (dx , dy)
   spine-cns _ _ | strip _ dx | strip cy dy
      | yes refl  = Scns cy (zipₚ dx dy)
   
-  spine : {ty : U}(x y : ⟦ ty ⟧) → S Δₛ ty
+  spine : {ty : U}(x y : ⟦ ty ⟧) → S Δₚ ty
   spine {ty} x y 
     with dec-eq _≟-A_ ty x y 
   ...| yes _     = Scp
   ...| no  _     = spine-cns x y
 \end{code}
 %</spine-def>
-
-  Unsurprisingly, when a spine can't copy anything
-  we gotta perform a change!
-
-%<*C-def>
-\begin{code}
-  data C (P : ΠΠSet) : U → U → Set where
-    CX  : {ty tv : U}
-        → (i : Constr ty)(j : Constr tv)
-        → P (typeOf ty i) (typeOf tv j) 
-        → C P ty tv
-\end{code}
-%</C-def>
-%<*C-map-def>
-\begin{code}
-  C-map  :  {ty tv : U}
-            {P Q : ΠΠSet}(X : ∀{k v} → P k v → Q k v)
-         → C P ty tv → C Q ty tv
-  C-map f (CX i j x) = CX i j (f x)
-\end{code}
-%</C-map-def>
-%<*C-mapM-def>
-\begin{code}
-  C-mapM  :  {ty tv : U}{M : Set → Set}{{m : Monad M}}
-             {P Q : ΠΠSet}(X : ∀{k v} → P k v → M (Q k v))
-          → C P ty tv → M (C Q ty tv)
-  C-mapM f (CX i j x) = f x >>= return ∘ CX i j
-\end{code}
-%</C-mapM-def>
-%<*C-cost>
-\begin{code}
-  C-cost  : {ty tv : U}{P : ΠΠSet}(doP : {k v : Π} → P k v → ℕ)
-          → C P ty tv → ℕ
-  C-cost doP (CX i j x) = doP x
-\end{code}
-%</C-cost>
-%<*change-def>
-\begin{code}
-  change : {ty tv : U} → ⟦ ty ⟧ → ⟦ tv ⟧ → C Δₚ ty tv
-  change x y with sop x | sop y
-  change _ _ | strip cx dx | strip cy dy = CX cx cy (dx , dy)
-\end{code}
-%</change-def>
 
   Last but not least, we are left with products that need some alignment!
 
@@ -205,18 +164,18 @@ module RegDiff.Diff.Regular.Base
 %<*Patch-def>
 \begin{code}
   Patch : AASet → U → Set
-  Patch P = S (C (Al P))
+  Patch P = S (Al P)
 \end{code}
 %</Patch-def>
 \begin{code}
   Patch-cost : {ty : U}{P : AASet}(doP : ∀{k v} → P k v → ℕ)
              → Patch P ty → ℕ
-  Patch-cost doP = S-cost (C-cost (Al-cost doP))
+  Patch-cost doP = S-cost (Al-cost doP)
 
   Patch-mapM : {ty : U}{M : Set → Set}{{m : Monad M}}
                {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
              → Patch P ty → M (Patch Q ty)
-  Patch-mapM X = S-mapM (C-mapM (Al-mapM X))
+  Patch-mapM X = S-mapM (Al-mapM X)
 \end{code}
 \begin{code}
   Patch-cost-Δₐ : {ty : U} → Patch Δₐ ty → ℕ
@@ -243,7 +202,7 @@ module RegDiff.Diff.Regular.Base
 %<*diff1-star-def>
 \begin{code}
   diff1* : {ty : U}(x y : ⟦ ty ⟧) → Patch* ty
-  diff1* x y = S-mapM (C-mapM (uncurry align*) ∘ uncurry change) (spine x y)
+  diff1* x y = S-mapM (uncurry align*) (spine x y)
 \end{code}
 %</diff1-star-def>
 %<*diff1-def>
@@ -255,3 +214,6 @@ module RegDiff.Diff.Regular.Base
      where postulate impossible : {ty : U} → Patch Δₐ ty
 \end{code}
 %</diff1-def>
+
+
+ TODO: Prove that diff1* is NEVER the empty list.

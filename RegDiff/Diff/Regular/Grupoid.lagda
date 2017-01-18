@@ -34,14 +34,10 @@ module RegDiff.Diff.Regular.Grupoid
   Δₛ-inv (x , y) = (y , x)
 \end{code}
 \begin{code}
-  S-inv : {P : UUSet}(doP : HasInv P){ty : U} → S P ty → S P ty
-  S-inv doP Scp         = Scp
-  S-inv doP (SX p)      = SX (doP p)
-  S-inv doP (Scns i ps) = Scns i (mapᵢ doP ps)
-\end{code}
-\begin{code}
-  C-inv : {P : ΠΠSet}(doP : HasInv P) → HasInv (C P)
-  C-inv doP (CX i j p) = CX j i (doP p)
+  S-inv : {P : ΠΠSet}(doP : HasInv P){ty : U} → S P ty → S P ty
+  S-inv doP Scp           = Scp
+  S-inv doP (Schg i j p)  = Schg j i (doP p)
+  S-inv doP (Scns i ps)   = Scns i (mapᵢ doP ps)
 \end{code}
 \begin{code}
   Al-inv : {P : AASet}(doP : HasInv P) → HasInv (Al P)
@@ -52,7 +48,7 @@ module RegDiff.Diff.Regular.Grupoid
 \end{code}
 \begin{code}
   Patch-inv : {P : AASet}(doP : HasInv P){ty : U} → Patch P ty → Patch P ty
-  Patch-inv doP = S-inv (C-inv (Al-inv doP))
+  Patch-inv doP = S-inv (Al-inv doP)
 \end{code}
 \begin{code}
   PatchΔ-inv : {ty : U} → Patch Δₐ ty → Patch Δₐ ty
@@ -83,7 +79,7 @@ module RegDiff.Diff.Regular.Grupoid
   ...| yes _ = just (x , z)
   ...| no  _ = nothing
 \end{code}
-\begin{code}
+begin{code}
   S-cmp : {P : UUSet}(doP : HasCmp P){ty : U} → S P ty → S P ty → Maybe (S P ty)
   S-cmp doP Scp s'         = just s'
   S-cmp doP s Scp          = just s
@@ -96,15 +92,7 @@ module RegDiff.Diff.Regular.Grupoid
   S-cmp doP (SX p) (Scns i ps') = nothing
   S-cmp doP (Scns i ps) (SX p)  = nothing
 \end{code}
-\begin{code}
-  C-cmp : {P : ΠΠSet}(doP : HasCmp P) → HasCmp (C P)
-  C-cmp doP (CX j k ps) (CX i j' qs)
-    with j ≟-Fin j'
-  ...| no _ = nothing
-  C-cmp doP (CX j k ps) (CX i _ qs)
-     | yes refl = CX i k <$> doP ps qs
-\end{code}
-\begin{code}
+begin{code}
   Al-cmp : {P : AASet}(doP : HasCmp P) → HasCmp (Al P)
   Al-cmp doP A0 b = just b
   Al-cmp doP a A0 = just a
@@ -121,12 +109,12 @@ module RegDiff.Diff.Regular.Grupoid
   Al-cmp doP (AX x a) (Ap1ᵒ y b) = nothing
   Al-cmp doP (Ap1 x a) (AX y b) = nothing
 \end{code}
-\begin{code}
+begin{code}
   Patch-cmp : {P : AASet}(doP : HasCmp P){ty : U}
             → Patch P ty → Patch P ty → Maybe (Patch P ty)
   Patch-cmp doP = S-cmp (C-cmp (Al-cmp doP))
 \end{code}
-\begin{code}
+begin{code}
   PatchΔ-cmp : {ty : U} → Patch Δₐ ty → Patch Δₐ ty → Maybe (Patch Δₐ ty)
   PatchΔ-cmp = Patch-cmp (λ {ty} {tv} {tw} → Δₐ-cmp {ty} {tv} {tw})
 \end{code}

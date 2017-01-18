@@ -96,11 +96,9 @@ module RegDiff.Diff.Fixpoint.Lab where
     -- 853 new sop
 
     h1 = skel
-        (SX
-         (CX (fs fz) (fs (fs fz))
-          (AX (set (i1 (4 , unit) , i1 (5 , unit)))
-           (AX (fix (skel Scp))
-            (Ap1ᵒ ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0))))))
+     (Schg (fs fz) (fs (fs fz))
+      (AX (set (i1 (4 , unit) , i1 (5 , unit)))
+       (AX (fix (skel Scp)) (Ap1ᵒ ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0)))))
 
     r2 = diffμ k1 k3
     -- 74  with good align
@@ -111,15 +109,15 @@ module RegDiff.Diff.Fixpoint.Lab where
     -- 128 new sop
 
     h2 = ins (fs (fs fz))
-        (Ap1ᵒ 3
-         (AX (fix (skel Scp))
+       (Ap1ᵒ 3
+        (AX (fix (skel Scp))
+         (Ap1ᵒ
+          ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
+          ⟩
           (Ap1ᵒ
            ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
            ⟩
-           (Ap1ᵒ
-            ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
-            ⟩
-            A0))))
+           A0))))
 
 {-
     r1-computed

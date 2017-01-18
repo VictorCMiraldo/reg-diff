@@ -75,6 +75,12 @@ module RegDiff.Diff.Trivial.Base
 
   →α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
   →α k = i1 (k , unit)
+
+  to-β : {a : Atom} → ⟦ a ⟧ₐ → ⟦ β a ⟧ₚ
+  to-β k = (k , unit)
+
+  from-β : {a : Atom} → ⟦ β a ⟧ₚ → ⟦ a ⟧ₐ
+  from-β (k , unit) = k
 \end{code}
 %</Trivial-aux-defs>
 
