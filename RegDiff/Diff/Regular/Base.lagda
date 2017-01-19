@@ -155,9 +155,18 @@ module RegDiff.Diff.Regular.Base
   align* {y ∷ ty} {[]}     (m , mm) n 
     = Ap1 m <$> align* mm n
   align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
-    =  AX (m , n)   <$> align* mm nn
+    =  align? m n (align* mm nn)
     ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
     ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
+    where
+      align? : {ty tv : Atom}{tys tvs : Π} 
+             → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Δₐ tys tvs)
+             → List (Al Δₐ (ty ∷ tys) (tv ∷ tvs))
+      align? {I _} {I _} x y xys = AX (x , y) <$> xys
+      align? {K _} {K _} x y xys = AX (x , y) <$> xys
+      align? {I _} {K _} x y xys = []
+      align? {K _} {I _} x y xys = []
+      
 \end{code}
 %</align-star-def>
 
