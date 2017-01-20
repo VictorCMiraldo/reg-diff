@@ -31,10 +31,10 @@ module RegDiff.Diff.Regular.Lab where
   Type4 = I x₁ ⊗ I x₁ ⊗ I x₁ ⊗ I x₁ ⊗ I x₁ ⊗ I x₁ ⊗ [] ⊕ []
 
   Prod1 : π 3
-  Prod1 = K kℕ ⊗ I x₁ ⊗ I x₁ ⊗ []
+  Prod1 = K kℕ ⊗ I x₁ ⊗ I x₁ ⊗ I x₁ ⊗ []
 
   Prod2 : π 3
-  Prod2 = I x₁ ⊗ K kℕ ⊗ []
+  Prod2 = K kℕ ⊗ I x₁ ⊗ I x₁ ⊗ []
 
   Prod3 : π 3
   Prod3 = I x₁ ⊗ I x₁ ⊗ []
@@ -47,5 +47,8 @@ module RegDiff.Diff.Regular.Lab where
               (i2 (i2 (i1 (5 , 3 , 6 , unit))))
 
   
-  test : List (Al Δₐ Prod4 Prod4)
-  test = align* (4 , 1 , unit) (10 , 20 , unit)
+  test1 : List (Al Δₐ Prod4 Prod4)
+  test1 = align* (4 , 1 , unit) (10 , 20 , unit)
+
+  test2 : List (Al Δₐ Prod1 Prod2)
+  test2 = align* (4 , 1 , 2 , 3 , unit) (5 , 1 , 3 , unit)

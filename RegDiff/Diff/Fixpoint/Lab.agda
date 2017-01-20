@@ -86,7 +86,7 @@ module RegDiff.Diff.Fixpoint.Lab where
     t1 = 2-Node 4 k1 k2
     t2 = 3-Node 5 k1 Leaf k2
 
-    r1 r2 h1 h2 : Patchμ (T fz) (T fz)
+    r1 r2 h1 h2 h3 : Patchμ (T fz) (T fz)
     r1 = diffμ t1 t2
     -- 460 with good align
     -- 3971 with bad align
@@ -95,10 +95,14 @@ module RegDiff.Diff.Fixpoint.Lab where
     -- 905 sop
     -- 853 new sop
 
+    -- 2889 new sop2
+
     h1 = skel
      (Schg (fs fz) (fs (fs fz))
       (AX (set (i1 (4 , unit) , i1 (5 , unit)))
        (AX (fix (skel Scp)) (Ap1ᵒ ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0)))))
+
+    h3 = {!length (diffμ* t1 t2)!}
 
     r2 = diffμ k1 k3
     -- 74  with good align
