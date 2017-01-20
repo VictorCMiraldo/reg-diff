@@ -147,7 +147,7 @@ module RegDiff.Diff.Regular.Base
   is-ap1ᵒ _          = false 
 \end{code}
 %<*align-star-def>
-begin{code}
+\begin{code}
   align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
   align* {[]}     {[]}     m n = return A0
   align* {[]}     {v ∷ tv} m (n , nn) 
@@ -169,7 +169,7 @@ begin{code}
       
 \end{code}
 %</align-star-def>
-\begin{code}
+begin{code}
   fail : ∀{a}{A : Set a} → List A
   fail = []
 

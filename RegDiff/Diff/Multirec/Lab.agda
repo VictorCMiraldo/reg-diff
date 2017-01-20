@@ -79,8 +79,8 @@ module RegDiff.Diff.Multirec.Lab where
          % # )
 
   t3 = fork 3 
-         ( fork 4 #
-         % fork 1 (fork 5 # % #)
+         ( fork 1 (fork 4 # % #)
+         % fork 5 #
          % # )
 
 
@@ -95,8 +95,10 @@ module RegDiff.Diff.Multirec.Lab where
   -- 6415 SOP with cpy
   -- 2727 SOP with spine
 
+  -- 15473 -- phased-align
+
   t1t3-norm
-    = {!!}
+    = {!t1t3!}
 
 {-
   ABS : Fam 2
