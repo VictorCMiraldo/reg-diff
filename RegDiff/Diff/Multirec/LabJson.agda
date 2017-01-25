@@ -85,6 +85,13 @@ module RegDiff.Diff.Multirec.LabJson where
           A0
           ∷ []))
 
+  -- This patch amounts to the function:
+  {-
+    f : json -> Maybe json
+    f (fork (x % fork y % #)) = just (fork (x % y))
+    f _                       = nothing
+  -}
+
   unfix : {x : Fin 2} → Fix JSON x → ⟦ T x ⟧
   unfix ⟨ x ⟩ = x
 
