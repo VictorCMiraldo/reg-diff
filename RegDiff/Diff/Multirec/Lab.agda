@@ -79,12 +79,12 @@ module RegDiff.Diff.Multirec.Lab where
          % # )
 
   t3 = fork 3 
-         ( fork 4 #
-         % fork 1 (fork 5 # % #)
+         ( fork 1 (fork 4 # % #)
+         % fork 5 #
          % # )
 
 
-  t1t3 t1t3-norm : Patchμ (T (fs fz)) (T (fs fz))
+  t1t3 t1t3-norm t1t3-comp t1t3-comp2 : Patchμ (T (fs fz)) (T (fs fz))
   t1t3 = diffμ t1 t3
   -- 1652 better diff!
   -- 2185 good align
@@ -95,8 +95,57 @@ module RegDiff.Diff.Multirec.Lab where
   -- 6415 SOP with cpy
   -- 2727 SOP with spine
 
+  -- 15473 -- phased-align
+
+  -- cost Δ = 1 ==> cost t1t3-comp = 2
+  -- cost Δ = 2 ==> cost t1t3-comp = 3
+  t1t3-comp
+    = skel
+     (Scns fz
+      (AX (set (i1 (3 , unit) , i1 (3 , unit))) A0 ∷
+       (AX
+        (fix
+         (skel
+          (Scns (fs fz)
+           (AX
+            (fix
+             (skel
+              (Scns fz
+               (AX (set (i1 (4 , unit) , i1 (1 , unit))) A0 ∷
+                (AX
+                 (fix
+                  (ins {k = fz} (fs fz)
+                   (Ap1ᵒ ⟨ i1 (4 , ⟨ i1 unit ⟩ , unit) ⟩ (AX (fix (skel Scp)) A0))))
+                 A0
+                 ∷ [])))))
+            A0
+            ∷ (AX (fix (skel Scp)) A0 ∷ [])))))
+        A0
+        ∷ [])))
+
+  -- cost Δ = 1 ==> cost t1t3-comp2 = 2
+  -- cost Δ = 2 ==> cost t1t3-comp2 = 2
+  t1t3-comp2
+    = skel
+     (Scns fz
+      (AX (set (i1 (3 , unit) , i1 (3 , unit))) A0 ∷
+       (AX
+        (fix
+         (skel
+          (Scns (fs fz)
+           (AX
+            (fix
+             (ins {k = fs fz} fz
+              (Ap1ᵒ 1
+               (AX (fix (ins {k = fs fz} (fs fz) (AX (fix (skel Scp)) (Ap1ᵒ ⟨ i1 unit ⟩ A0))))
+                A0))))
+            A0
+            ∷ (AX (fix (skel Scp)) A0 ∷ [])))))
+        A0
+        ∷ [])))
+
   t1t3-norm
-    = {!!}
+    = {!Patchμ-cost t1t3-comp2!}
 
 {-
   ABS : Fam 2

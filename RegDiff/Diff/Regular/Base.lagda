@@ -155,11 +155,61 @@ module RegDiff.Diff.Regular.Base
   align* {y ∷ ty} {[]}     (m , mm) n 
     = Ap1 m <$> align* mm n
   align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
-    =  AX (m , n)   <$> align* mm nn
+    =  align? m n (align* mm nn)
     ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
     ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
+    where
+      align? : {ty tv : Atom}{tys tvs : Π} 
+             → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Δₐ tys tvs)
+             → List (Al Δₐ (ty ∷ tys) (tv ∷ tvs))
+      align? {I _} {I _} x y xys = AX (x , y) <$> xys
+      align? {K _} {K _} x y xys = AX (x , y) <$> xys
+      align? {I _} {K _} x y xys = []
+      align? {K _} {I _} x y xys = []
+      
 \end{code}
 %</align-star-def>
+begin{code}
+  fail : ∀{a}{A : Set a} → List A
+  fail = []
+
+  align? : {ty tv : Atom}{tys tvs : Π} 
+         → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Δₐ tys tvs)
+         → List (Al Δₐ (ty ∷ tys) (tv ∷ tvs))
+  align? {I _} {I _} x y xys = AX (x , y) <$> xys
+  align? {K _} {K _} x y xys = AX (x , y) <$> xys
+  align? {I _} {K _} x y xys = []
+  align? {K _} {I _} x y xys = []
+
+  mutual
+    alignA* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+    alignA* {[]} {[]}    m n  = return A0
+    alignA* {_ ∷ _} {[]} (m , mm) n  
+      = Ap1 m <$> alignA* mm n
+    alignA* {[]} {_ ∷ _} m (n , nn)  
+      = Ap1ᵒ n <$> alignA* m nn
+    alignA* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn) 
+      =   align? m n (alignA* mm nn)
+      ++  Ap1 m <$> alignD* mm (n , nn)
+      ++  Ap1ᵒ n <$> alignI* (m , mm) nn
+
+    alignD* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+    alignD* {[]}     m n        = alignI* m n
+    alignD* {y ∷ ty} (m , mm) n = Ap1 m <$> alignD* mm n
+                               ++ alignI* (m , mm) n
+
+    alignI* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+    alignI* {[]}    {[]} m n = return A0
+    alignI* {_ ∷ _} {[]} m n = fail
+    alignI* {[]} {_ ∷ _} m (n , nn)
+      = Ap1ᵒ n <$> alignI* m nn
+    alignI* {_ ∷ _} {_ ∷ _} (m , mm) (n , nn)
+      = Ap1ᵒ n <$> alignI* (m , mm) nn
+      ++ align? m n (alignA* mm nn)
+
+  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+  align* x y = alignD* x y
+\end{code}
 
 %<*Patch-def>
 \begin{code}

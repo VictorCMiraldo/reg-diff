@@ -178,6 +178,14 @@ module RegDiff.Diff.Multirec.Base
 
     addCostsμ : {ty tv : U} → Patchμ* ty tv → Patchμ& ty tv
     addCostsμ = map (λ x → Patchμ-cost x , x)
+
+    filterCostsμ : {ty tv : U} → ℕ → Patchμ* ty tv → Patchμ* ty tv
+    filterCostsμ n = filter (cmp n ∘ Patchμ-cost)
+      where
+        cmp : ℕ → ℕ → Bool
+        cmp zero zero = true
+        cmp (suc n) (suc m) = cmp n m
+        cmp _ _ = false
 \end{code}
 %<*diffmu-det>
 \begin{code}
