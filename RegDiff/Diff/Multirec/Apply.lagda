@@ -41,6 +41,14 @@ module RegDiff.Diff.Multirec.Apply
     ⟨⟩ₐᵒ (i2 ())
     ⟨⟩ₐᵒ (i1 (⟨ k ⟩ , unit)) = just k
 
+    α-app : {a b : Atom}{P : UUSet}
+          → (doP : HasApp P)
+          → P (α a) (α b)
+          → ⟦ a ⟧ₐ ↦ ⟦ b ⟧ₐ
+    α-app {a} {b} doP wit = (return ∘ from-α {b}) 
+                          ∙ doP wit 
+                          ∙ (return ∘ to-α {a}) 
+
     {-# TERMINATING #-}
     Patchμ-app : HasApp Patchμ
     Patchμ-app (skel p)  = Patch-app (α-app Patchμ-app) p
