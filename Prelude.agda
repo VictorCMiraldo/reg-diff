@@ -56,6 +56,10 @@ module Prelude where
     using (Dec; yes; no; ¬_)
     public
 
+  So : ∀{a}{A : Set a} → Dec A → Bool
+  So (yes _) = true
+  So (no  _) = false
+
   open import Relation.Binary.PropositionalEquality
     using (_≡_; refl; sym; trans; cong; cong₂; subst; inspect; [_])
     renaming (proof-irrelevance to ≡-pi)
