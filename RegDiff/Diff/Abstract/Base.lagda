@@ -1,9 +1,10 @@
 \begin{code}
 open import Prelude
-open import Data.List.All
 open import Prelude.PartialFuncs.Base
 
-module RegDiff.Diff.Abstract.Base where  
+module RegDiff.Diff.Abstract.Base where
+  
+  open import Data.List.All using (All; [] ; _∷_) public
 \end{code}
 
   We need to pack up information about
@@ -23,7 +24,8 @@ module RegDiff.Diff.Abstract.Base where
       cands  : ∀{a b} → ⟦ a ⟧ → ⟦ b ⟧ → List (P a b)
       apply  : ∀{a b} → P a b → (⟦ a ⟧ ↦ ⟦ b ⟧)
       cost   : ∀{a b} → P a b → ℕ
-  open Diffable
+
+  open Diffable public
 \end{code}
 
   And a predicate about candidates.
@@ -72,7 +74,7 @@ module RegDiff.Diff.Abstract.Base where
       apply₀  : ∀{a} → P₀ a → (⟦ a ⟧ ↦ ⟦ a ⟧)
       cost₀   : ∀{a} → P₀ a → ℕ
   
-  open Diffable₀
+  open Diffable₀ public
 
   IsCand₀ : {A : Set}{⟦_⟧ : A → Set}(D : Diffable₀ ⟦_⟧)
           → {a : A}(x y : ⟦ a ⟧)(p : P₀ D a)
