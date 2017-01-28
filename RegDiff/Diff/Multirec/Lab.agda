@@ -145,7 +145,7 @@ module RegDiff.Diff.Multirec.Lab where
         ∷ [])))
 
   t1t3-norm
-    = {!Patchμ-cost t1t3-comp2!}
+    = {!t1t3!}
 
 {-
   ABS : Fam 2

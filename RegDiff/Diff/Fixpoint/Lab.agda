@@ -49,7 +49,6 @@ module RegDiff.Diff.Fixpoint.Lab where
   ...| yes _ = true
   ...| no  _ = false
 
-{-
   module T1 where
     open DIFF.Internal (LIST-F ∷ []) public
 
@@ -68,9 +67,9 @@ module RegDiff.Diff.Fixpoint.Lab where
     s2 = diffμ l4 l0 -- 6
 
     cost1-ex1 cost1-ex2 : Patchμ (T fz) (T fz)
-    cost1-ex1 = {!s2!}
+    cost1-ex1 = {!diffμ* l4 l0!}
     cost1-ex2 = {!!}
-
+{-
     cost2-ex1 cost2-ex2 : Patchμ (T fz) (T fz)
     cost2-ex1 = skel
          (Scns (fs fz)
@@ -93,6 +92,7 @@ module RegDiff.Diff.Fixpoint.Lab where
             ∷ [])))
     cost2-ex2 = del (fs fz) (Ap1 5 (AX (fix (skel Scp)) A0))
 -}
+{-
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public
     -- open DOMAIN.Internal (2-3-TREE-F ∷ []) public
@@ -143,7 +143,7 @@ module RegDiff.Diff.Fixpoint.Lab where
            ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
            ⟩
            A0))))
-
+-}
 {-
     r1-computed
       = chng
@@ -177,4 +177,4 @@ module RegDiff.Diff.Fixpoint.Lab where
     still-ok-2 = refl
 -}
  
-  open T2 public
+  open T1 public

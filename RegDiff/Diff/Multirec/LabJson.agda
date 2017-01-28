@@ -65,6 +65,9 @@ module RegDiff.Diff.Multirec.LabJson where
 
   js2 = fork (info 1 % info 2 % info 3 % #)
 
+  -- 2427 branches.
+  -- constructors js1 = 11
+  -- constructors js2 = 8
   j12 j12-nf : Patchμ (T jsonᵢ) (T jsonᵢ)
   j12 = diffμ js1 js2
 
