@@ -1,6 +1,6 @@
 module AllFiles where
 
-open import Prelude.ListI
+open import Prelude.List.All
 open import Prelude.Monad
 open import Prelude.Monad.Decl
 open import Prelude.Monad.Instances

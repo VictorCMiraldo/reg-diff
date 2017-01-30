@@ -5,7 +5,7 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
-open import Prelude.ListI
+open import Prelude.List.All
 open import Prelude.Monad
 open import Prelude.PartialFuncs.Base
 open import RegDiff.Generic.Parms
@@ -37,7 +37,7 @@ module RegDiff.Diff.Regular.Apply
 
   S-app-prod : {P : ΠΠSet}
              → (doP : HasAppₚ P){l : List Atom}
-             → ListI ((contr P) ∘ β) l
+             → All ((contr P) ∘ β) l
              → ⟦ l ⟧ₚ ↦ ⟦ l ⟧ₚ
   S-app-prod doP {[]}     []       = !
   S-app-prod doP {x ∷ xs} (l ∷ ls) = β-app doP l >< S-app-prod doP ls
@@ -69,8 +69,8 @@ module RegDiff.Diff.Regular.Apply
   Patch-app doP = S-app (Al-app doP)
 \end{code}
 \begin{code}
-  PatchΔ-app : {ty : U} → Patch Δₐ ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
-  PatchΔ-app = Patch-app (λ {ty} {tv} → Δₐ-apply {ty} {tv})
+  PatchΔ-app : {ty : U} → Patch Trivialₐ ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
+  PatchΔ-app = Patch-app (λ {ty} {tv} → Trivialₐ-apply {ty} {tv})
 \end{code}
 
 

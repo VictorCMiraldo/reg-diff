@@ -55,5 +55,5 @@ module RegDiff.Diff.Multirec.Apply
     Patchμ-app (ins i x) = to-inj ∙ Al-app (α-app Patchμ-app) x ∙ ⟨⟩ₚ
     Patchμ-app (del i x) = ⟨⟩ₚᵒ ∙ Al-app (α-app Patchμ-app) x ∙ from-inj
     Patchμ-app (fix p)   = ⟨⟩ₐ ∙ Patchμ-app p ∙ ⟨⟩ₐᵒ
-    Patchμ-app (set xy)  = Δₛ-apply xy
+    Patchμ-app (set xy)  = Trivialₛ-apply xy
 \end{code}

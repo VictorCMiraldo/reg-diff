@@ -1,7 +1,7 @@
 \begin{code}
 open import Prelude
 open import Prelude.PartialFuncs.Base
-open import Prelude.ListI
+open import Prelude.List.All
 
 module RegDiff.Diff.Abstract.Base where
 \end{code}

@@ -6,7 +6,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
-open import Prelude.ListI
+open import Prelude.List.All
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Multirec.Base
@@ -20,12 +20,6 @@ module RegDiff.Diff.Multirec.Base
     hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
   open import RegDiff.Generic.Eq ks keqs
 \end{code}
-%<*UUSet-coprod>
-\begin{code}
-  _+ᵤ_ : {n : ℕ} → (σπ n → σπ n → Set) → (σπ n → σπ n → Set) → (σπ n → σπ n → Set)
-  (P +ᵤ Q) ty tv = (P ty tv) ⊎ (Q ty tv)
-\end{code}
-%</UUSet-coprod>
 
   The idea is almost the same as for fixpoints,
   but now, we parametrize over a family of datatypes.
@@ -49,7 +43,7 @@ module RegDiff.Diff.Multirec.Base
     Famᵢ : Set
     Famᵢ = Fin fam#
 
-    T : Famᵢ → σπ fam#
+    T : Famᵢ → Sum fam#
     T k = lookup k fam
 \end{code}
 %</Fami-def>
@@ -76,7 +70,7 @@ module RegDiff.Diff.Multirec.Base
             → Patchμ (T k) (T k')      
             → Patchμ (α (I k)) (α (I k'))
       set   : {ty tv : U} 
-            → Δₛ ty tv
+            → Trivialₛ ty tv
             → Patchμ ty tv
 \end{code}
 %</Patchmu-fix-set-def>
@@ -94,7 +88,7 @@ module RegDiff.Diff.Multirec.Base
     Patchμ-cost (fix p)   
       = Patchμ-cost p
     Patchμ-cost (set x)
-      = cost-Δₛ x
+      = cost-Trivialₛ x
 \end{code}
 %</Patchmu-cost>
 
@@ -129,7 +123,7 @@ module RegDiff.Diff.Multirec.Base
 %<*diffmu-mod>
 \begin{code}
       diffμ*-mod : {ty tv : U} → ⟦ ty ⟧ → ⟦ tv ⟧ → List (Patchμ ty tv)
-      diffμ*-mod {ty} {tv} x y with σπ-eq ty tv
+      diffμ*-mod {ty} {tv} x y with Sum-eq ty tv
       ...| no _ = []
       diffμ*-mod x y
          | yes refl 

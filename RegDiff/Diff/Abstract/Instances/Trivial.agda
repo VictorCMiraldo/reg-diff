@@ -2,7 +2,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.PartialFuncs.Base
-open import Prelude.ListI
+open import Prelude.List.All
 open import RegDiff.Generic.Parms
 
 open import RegDiff.Diff.Abstract.Base
@@ -29,12 +29,12 @@ module RegDiff.Diff.Abstract.Instances.Trivial
       where
 
       -- The general template for the trivial diff is:
-      D-delta : Diffable ⟦_⟧
-      D-delta = record 
-        { P = delta ⟦_⟧ 
+      Trivial-delta : Diffable ⟦_⟧
+      Trivial-delta = record 
+        { P = trivial ⟦_⟧ 
         ; cands = λ x y → (x , y) ∷ [] 
-        ; apply = Δ-apply ⟦_⟧ eqA eqP 
-        ; cost = cost-delta ⟦_⟧ eqA eqP 
+        ; apply = Trivial-apply ⟦_⟧ eqA eqP 
+        ; cost = cost-trivial ⟦_⟧ eqA eqP 
         }
 
       -- Now we prove a bunch of lemmas of delta, in general.
@@ -57,7 +57,7 @@ module RegDiff.Diff.Abstract.Instances.Trivial
          | no _ 
 
       lemma-cands-1 : {a b : A}(x : ⟦ a ⟧)(y : ⟦ b ⟧) 
-                    → IsCand D-delta x y (x , y)
+                    → IsCand Trivial-delta x y (x , y)
       lemma-cands-1 {a} {b} x y with eqA a b
       ...| no _ = lemma-singl-correct x y
       lemma-cands-1 {a} {.a} x y 
@@ -65,11 +65,11 @@ module RegDiff.Diff.Abstract.Instances.Trivial
       ...| no  _ = lemma-singl-correct x y
       ...| yes p = cong just p
 
-      lemma-cost-1 : {a b : A}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P D-delta a b)
-                   → IsCand D-delta x y p
-                   → IsCand D-delta x y q
-                   → cost D-delta p ≡ cost D-delta q 
-                   → apply D-delta p ≡ apply D-delta q
+      lemma-cost-1 : {a b : A}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P Trivial-delta a b)
+                   → IsCand Trivial-delta x y p
+                   → IsCand Trivial-delta x y q
+                   → cost Trivial-delta p ≡ cost Trivial-delta q 
+                   → apply Trivial-delta p ≡ apply Trivial-delta q
       lemma-cost-1 {a} {b} x y (px , py) (qx , qy) hP hQ hip
         with eqA a b
       ...| no _ with lemma-singl-correct-2 px x py y hP
@@ -91,11 +91,11 @@ module RegDiff.Diff.Abstract.Instances.Trivial
          | yes refl | yes _ | no _ 
       ...| yes qx≡qy = refl
 
-      lemma-cost-2 : {a b : A}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P D-delta a b)
-                   → IsCand D-delta x y p
-                   → IsCand D-delta x y q
-                   → cost D-delta p ≤ cost D-delta q 
-                   → apply D-delta q ≼* apply D-delta p
+      lemma-cost-2 : {a b : A}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P Trivial-delta a b)
+                   → IsCand Trivial-delta x y p
+                   → IsCand Trivial-delta x y q
+                   → cost Trivial-delta p ≤ cost Trivial-delta q 
+                   → apply Trivial-delta q ≼* apply Trivial-delta p
       lemma-cost-2 {a} {b} x y (px , py) (qx , qy) hP hQ hip
         with eqA a b
       ...| no _ with lemma-singl-correct-2 px x py y hP
@@ -123,7 +123,7 @@ module RegDiff.Diff.Abstract.Instances.Trivial
       -- Finally,
       -- We can prove that the template we had is ok!
       diffable-delta-ok 
-        : IsDiff ⟦_⟧ D-delta
+        : IsDiff ⟦_⟧ Trivial-delta
       diffable-delta-ok = record
         { candidates-ok = λ x y → lemma-cands-1 x y ∷ []
         ; candidates-nonnil = λ {a} {b} x y → s≤s z≤n
@@ -135,38 +135,38 @@ module RegDiff.Diff.Abstract.Instances.Trivial
 
   --   ATOMS
   --   #####
-  Δₐ-Diffable : Diffable ⟦_⟧ₐ
-  Δₐ-Diffable = D-delta
+  Trivialₐ-Diffable : Diffable ⟦_⟧ₐ
+  Trivialₐ-Diffable = Trivial-delta
     where
       open Generic ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_) 
 
-  IsDiff-Δₐ : IsDiff ⟦_⟧ₐ Δₐ-Diffable
-  IsDiff-Δₐ = diffable-delta-ok
+  IsDiff-Trivialₐ : IsDiff ⟦_⟧ₐ Trivialₐ-Diffable
+  IsDiff-Trivialₐ = diffable-delta-ok
     where
       open Generic ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
 
  
   --   PRODUCTS
   --   ########
-  Δₚ-Diffable : Diffable ⟦_⟧ₚ
-  Δₚ-Diffable = D-delta
+  Trivialₚ-Diffable : Diffable ⟦_⟧ₚ
+  Trivialₚ-Diffable = Trivial-delta
     where
-      open Generic ⟦_⟧ₚ π-eq (dec-eqₚ _≟-A_)
+      open Generic ⟦_⟧ₚ Prod-eq (dec-eqₚ _≟-A_)
 
-  IsDiff-Δₚ : IsDiff ⟦_⟧ₚ Δₚ-Diffable
-  IsDiff-Δₚ = diffable-delta-ok
+  IsDiff-Trivialₚ : IsDiff ⟦_⟧ₚ Trivialₚ-Diffable
+  IsDiff-Trivialₚ = diffable-delta-ok
     where
-      open Generic ⟦_⟧ₚ π-eq (dec-eqₚ _≟-A_) 
+      open Generic ⟦_⟧ₚ Prod-eq (dec-eqₚ _≟-A_) 
 
 
   --   SUMS
   --   ####
-  Δₛ-Diffable : Diffable ⟦_⟧
-  Δₛ-Diffable = D-delta
+  Trivialₛ-Diffable : Diffable ⟦_⟧
+  Trivialₛ-Diffable = Trivial-delta
     where
-      open Generic ⟦_⟧ σπ-eq (dec-eq _≟-A_)
+      open Generic ⟦_⟧ Sum-eq (dec-eq _≟-A_)
 
-  IsDiff-Δₛ : IsDiff ⟦_⟧ Δₛ-Diffable
-  IsDiff-Δₛ = diffable-delta-ok
+  IsDiff-Trivialₛ : IsDiff ⟦_⟧ Trivialₛ-Diffable
+  IsDiff-Trivialₛ = diffable-delta-ok
     where
-      open Generic ⟦_⟧ σπ-eq (dec-eq _≟-A_)
+      open Generic ⟦_⟧ Sum-eq (dec-eq _≟-A_)

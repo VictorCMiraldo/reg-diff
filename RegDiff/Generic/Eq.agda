@@ -26,11 +26,11 @@ module RegDiff.Generic.Eq
       then yes ∘ cong K
       else (no ∘ ¬-inv K-inj)
 
-  π-eq : {n : ℕ}(ty tv : π n) → Dec (ty ≡ tv)
-  π-eq = Eq.cmp (eq-List {{ eq Atom-eq }})
+  Prod-eq : {n : ℕ}(ty tv : Prod n) → Dec (ty ≡ tv)
+  Prod-eq = Eq.cmp (eq-List {{ eq Atom-eq }})
 
-  σπ-eq : {n : ℕ}(ty tv : σπ n) → Dec (ty ≡ tv)
-  σπ-eq = Eq.cmp (eq-List {{ eq π-eq }})
+  Sum-eq : {n : ℕ}(ty tv : Sum n) → Dec (ty ≡ tv)
+  Sum-eq = Eq.cmp (eq-List {{ eq Prod-eq }})
 
   dec-eqₐ : {n : ℕ}{A : Parms n}
           → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
@@ -53,7 +53,7 @@ module RegDiff.Generic.Eq
 
   dec-eq : {n : ℕ}{A : Parms n}
          → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
-         → (ty : σπ n)(x y : ⟦ ty ⟧ A)
+         → (ty : Sum n)(x y : ⟦ ty ⟧ A)
          → Dec (x ≡ y)
   dec-eq eqA [] () ()
   dec-eq eqA (p ∷ ps) (i1 x) (i2 y) = no (λ ())

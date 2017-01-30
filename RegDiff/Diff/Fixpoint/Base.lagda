@@ -15,6 +15,6 @@ module RegDiff.Diff.Fixpoint.Base
   import RegDiff.Diff.Multirec.Base ks keqs
     as MREC
 
-  module Internal (T : σπ 1) where
+  module Internal (T : Sum 1) where
     open MREC.Internal (T ∷ []) public
 \end{code}

@@ -8,7 +8,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
-open import Prelude.ListI
+open import Prelude.List.All
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Base
@@ -40,7 +40,7 @@ module RegDiff.Diff.Regular.Base
          → P (typeOf ty i) (typeOf ty j)
          → S P ty
     Scns : {ty : U}(i : Constr ty)
-         → ListI (contr P ∘ β) (typeOf ty i)
+         → All (contr P ∘ β) (typeOf ty i)
          → S P ty
 \end{code}
 %</Spine-def>
@@ -79,7 +79,7 @@ module RegDiff.Diff.Regular.Base
 %<*zip-product-def>
 \begin{code}
   zipₚ : {ty : Π}
-       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → ListI (λ k → Δₚ (β k) (β k)) ty
+       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → All (λ k → Trivialₚ (β k) (β k)) ty
   zipₚ {[]}     _        _         
     = []
   zipₚ {_ ∷ ty} (x , xs) (y , ys)  
@@ -88,7 +88,7 @@ module RegDiff.Diff.Regular.Base
 %</zip-product-def>
 %<*spine-def>
 \begin{code}
-  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Δₚ ty
+  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Trivialₚ ty
   spine-cns x y  with sop x | sop y
   spine-cns _ _ | strip cx dx | strip cy dy
     with cx ≟-Fin cy
@@ -96,7 +96,7 @@ module RegDiff.Diff.Regular.Base
   spine-cns _ _ | strip _ dx | strip cy dy
      | yes refl  = Scns cy (zipₚ dx dy)
   
-  spine : {ty : U}(x y : ⟦ ty ⟧) → S Δₚ ty
+  spine : {ty : U}(x y : ⟦ ty ⟧) → S Trivialₚ ty
   spine {ty} x y 
     with dec-eq _≟-A_ ty x y 
   ...| yes _     = Scp
@@ -138,17 +138,17 @@ module RegDiff.Diff.Regular.Base
 \end{code}
 %</Al-cost-def>
 \begin{code}
-  is-ap1 : {ty tv : Π} → Al Δₐ ty tv → Bool
+  is-ap1 : {ty tv : Π} → Al Trivialₐ ty tv → Bool
   is-ap1 (Ap1 _ _) = true
   is-ap1 _         = false
 
-  is-ap1ᵒ : {ty tv : Π} → Al Δₐ ty tv → Bool
+  is-ap1ᵒ : {ty tv : Π} → Al Trivialₐ ty tv → Bool
   is-ap1ᵒ (Ap1ᵒ _ _) = true
   is-ap1ᵒ _          = false 
 \end{code}
 %<*align-star-def>
 \begin{code}
-  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
   align* {[]}     {[]}     m n = return A0
   align* {[]}     {v ∷ tv} m (n , nn) 
     = Ap1ᵒ n <$> align* m nn
@@ -160,8 +160,8 @@ module RegDiff.Diff.Regular.Base
     ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
     where
       align? : {ty tv : Atom}{tys tvs : Π} 
-             → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Δₐ tys tvs)
-             → List (Al Δₐ (ty ∷ tys) (tv ∷ tvs))
+             → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Trivialₐ tys tvs)
+             → List (Al Trivialₐ (ty ∷ tys) (tv ∷ tvs))
       align? {I _} {I _} x y xys = AX (x , y) <$> xys
       align? {K _} {K _} x y xys = AX (x , y) <$> xys
       align? {I _} {K _} x y xys = []
@@ -174,15 +174,15 @@ begin{code}
   fail = []
 
   align? : {ty tv : Atom}{tys tvs : Π} 
-         → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Δₐ tys tvs)
-         → List (Al Δₐ (ty ∷ tys) (tv ∷ tvs))
+         → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Trivialₐ tys tvs)
+         → List (Al Trivialₐ (ty ∷ tys) (tv ∷ tvs))
   align? {I _} {I _} x y xys = AX (x , y) <$> xys
   align? {K _} {K _} x y xys = AX (x , y) <$> xys
   align? {I _} {K _} x y xys = []
   align? {K _} {I _} x y xys = []
 
   mutual
-    alignA* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+    alignA* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
     alignA* {[]} {[]}    m n  = return A0
     alignA* {_ ∷ _} {[]} (m , mm) n  
       = Ap1 m <$> alignA* mm n
@@ -193,12 +193,12 @@ begin{code}
       ++  Ap1 m <$> alignD* mm (n , nn)
       ++  Ap1ᵒ n <$> alignI* (m , mm) nn
 
-    alignD* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+    alignD* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
     alignD* {[]}     m n        = alignI* m n
     alignD* {y ∷ ty} (m , mm) n = Ap1 m <$> alignD* mm n
                                ++ alignI* (m , mm) n
 
-    alignI* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+    alignI* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
     alignI* {[]}    {[]} m n = return A0
     alignI* {_ ∷ _} {[]} m n = fail
     alignI* {[]} {_ ∷ _} m (n , nn)
@@ -207,7 +207,7 @@ begin{code}
       = Ap1ᵒ n <$> alignI* (m , mm) nn
       ++ align? m n (alignA* mm nn)
 
-  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Δₐ ty tv)
+  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
   align* x y = alignD* x y
 \end{code}
 
@@ -228,24 +228,24 @@ begin{code}
   Patch-mapM X = S-mapM (Al-mapM X)
 \end{code}
 \begin{code}
-  Patch-cost-Δₐ : {ty : U} → Patch Δₐ ty → ℕ
-  Patch-cost-Δₐ = Patch-cost (λ {k} {v} → cost-Δₐ {k} {v})
+  Patch-cost-Trivialₐ : {ty : U} → Patch Trivialₐ ty → ℕ
+  Patch-cost-Trivialₐ = Patch-cost (λ {k} {v} → cost-Trivialₐ {k} {v})
 
   Patch* : U → Set
-  Patch* = List ∘ Patch Δₐ
+  Patch* = List ∘ Patch Trivialₐ
 
   Patch& : U → Set
-  Patch& = List ∘ (ℕ ×_) ∘ Patch Δₐ
+  Patch& = List ∘ (ℕ ×_) ∘ Patch Trivialₐ
 
   addCosts : {ty : U} → Patch* ty → Patch& ty
-  addCosts = map (λ k → Patch-cost-Δₐ k , k)
+  addCosts = map (λ k → Patch-cost-Trivialₐ k , k)
 
-  choose : {ty : U} → Patch Δₐ ty → Patch Δₐ ty → Patch Δₐ ty
-  choose c d with Patch-cost-Δₐ c ≤?-ℕ Patch-cost-Δₐ d
+  choose : {ty : U} → Patch Trivialₐ ty → Patch Trivialₐ ty → Patch Trivialₐ ty
+  choose c d with Patch-cost-Trivialₐ c ≤?-ℕ Patch-cost-Trivialₐ d
   ...| yes _ = d
   ...| no  _ = c
 
-  _<>_ : {ty : U} → Patch Δₐ ty → List (Patch Δₐ ty) → Patch Δₐ ty
+  _<>_ : {ty : U} → Patch Trivialₐ ty → List (Patch Trivialₐ ty) → Patch Trivialₐ ty
   c <> [] = c
   c <> (d ∷ ds) = (choose c d) <> ds
 \end{code}
@@ -257,11 +257,11 @@ begin{code}
 %</diff1-star-def>
 %<*diff1-def>
 \begin{code}
-  diff1 : {ty : U} → ⟦ ty ⟧ → ⟦ ty ⟧ → Patch Δₐ ty
+  diff1 : {ty : U} → ⟦ ty ⟧ → ⟦ ty ⟧ → Patch Trivialₐ ty
   diff1 x y with diff1* x y
   ...| s ∷ ss = s <> ss
   ...| []     = impossible
-     where postulate impossible : {ty : U} → Patch Δₐ ty
+     where postulate impossible : {ty : U} → Patch Trivialₐ ty
 \end{code}
 %</diff1-def>
 

@@ -30,13 +30,13 @@ module RegDiff.Diff.Trivial.Base
 %<*Trivial-defs>
 \begin{code}
   U : Set
-  U = σπ parms#
+  U = Sum parms#
 
   Atom : Set
   Atom = Atom' parms#
   
   Π : Set
-  Π = π parms#
+  Π = Prod parms#
 \end{code}
 %</Trivial-defs>
 %<*Trivial-aux-defs>
@@ -91,59 +91,59 @@ module RegDiff.Diff.Trivial.Base
   semantics. This reduces code duplication as we will
   need diagonals over Atoms, Products and Sums
 
-%<*delta-polymorphic-def>
+%<*trivial-polymorphic-def>
 \begin{code}
-  delta : ∀{a}{A : Set a}(P : A → Set)
+  trivial : ∀{a}{A : Set a}(P : A → Set)
         → A → A → Set
-  delta P a₁ a₂ = P a₁ × P a₂
+  trivial P a₁ a₂ = P a₁ × P a₂
 \end{code}
-%</delta-polymorphic-def>
+%</trivial-polymorphic-def>
 
-%<*cost-delta-polymorphic-def>
+%<*cost-trivial-polymorphic-def>
 \begin{code}
-  cost-delta-raw : ℕ
-  cost-delta-raw = 2
+  cost-trivial-raw : ℕ
+  cost-trivial-raw = 2
 
-  cost-delta : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
+  cost-trivial : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
                (eqA : (x y : A) → Dec (x ≡ y))
                (eqP : (k : A)(x y : P k) → Dec (x ≡ y))
-             → delta P ty tv → ℕ
-  cost-delta {ty = ty} {tv = tv} P eqA eqP (pa1 , pa2) 
+             → trivial P ty tv → ℕ
+  cost-trivial {ty = ty} {tv = tv} P eqA eqP (pa1 , pa2) 
     with eqA ty tv
-  ...| no _ = cost-delta-raw
-  cost-delta {ty = ty} P eqA eqP (pa1 , pa2) 
+  ...| no _ = cost-trivial-raw
+  cost-trivial {ty = ty} P eqA eqP (pa1 , pa2) 
      | yes refl with eqP ty pa1 pa2
-  ...| no  _ = cost-delta-raw
+  ...| no  _ = cost-trivial-raw
   ...| yes _ = 0
 \end{code}
-%</cost-delta-polymorphic-def>
+%</cost-trivial-polymorphic-def>
 
-%<*delta-a-def>
+%<*trivial-a-def>
 \begin{code}
-  Δₐ : AASet
-  Δₐ = delta ⟦_⟧ₐ
+  Trivialₐ : AASet
+  Trivialₐ = trivial ⟦_⟧ₐ
 
-  cost-Δₐ : {ty tv : Atom} → Δₐ ty tv → ℕ
-  cost-Δₐ {ty} {tv} = cost-delta {ty = ty} {tv} ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
+  cost-Trivialₐ : {ty tv : Atom} → Trivialₐ ty tv → ℕ
+  cost-Trivialₐ {ty} {tv} = cost-trivial {ty = ty} {tv} ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
 \end{code}
-%</delta-a-def>
+%</trivial-a-def>
 
-%<*delta-p-def>
+%<*trivial-p-def>
 \begin{code}
-  Δₚ : ΠΠSet
-  Δₚ = delta ⟦_⟧ₚ
+  Trivialₚ : ΠΠSet
+  Trivialₚ = trivial ⟦_⟧ₚ
 
-  cost-Δₚ : {ty tv : Π} → Δₚ ty tv → ℕ
-  cost-Δₚ {ty} {tv} = cost-delta {ty = ty} {tv} ⟦_⟧ₚ π-eq (dec-eqₚ _≟-A_)
+  cost-Trivialₚ : {ty tv : Π} → Trivialₚ ty tv → ℕ
+  cost-Trivialₚ {ty} {tv} = cost-trivial {ty = ty} {tv} ⟦_⟧ₚ Prod-eq (dec-eqₚ _≟-A_)
 \end{code}
-%</delta-a-def>
+%</trivial-a-def>
 
-%<*delta-s-def>
+%<*trivial-s-def>
 \begin{code}
-  Δₛ : UUSet
-  Δₛ = delta ⟦_⟧
+  Trivialₛ : UUSet
+  Trivialₛ = trivial ⟦_⟧
 
-  cost-Δₛ : {ty tv : U} → Δₛ ty tv → ℕ
-  cost-Δₛ {ty} {tv} = cost-delta {ty = ty} {tv} ⟦_⟧ σπ-eq (dec-eq _≟-A_)
+  cost-Trivialₛ : {ty tv : U} → Trivialₛ ty tv → ℕ
+  cost-Trivialₛ {ty} {tv} = cost-trivial {ty = ty} {tv} ⟦_⟧ Sum-eq (dec-eq _≟-A_)
 \end{code}
-%</delta-s-def>
+%</trivial-s-def>

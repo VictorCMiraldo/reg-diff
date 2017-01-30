@@ -2,7 +2,6 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
-open import Prelude.ListI
 open import Prelude.Monad
 open import Prelude.PartialFuncs.Base
 open import RegDiff.Generic.Parms
@@ -53,32 +52,27 @@ module RegDiff.Diff.Trivial.Apply
           → P ty → P tv → (P ty ↦ P tv)
   singl {ty = ty} P eqP pa pb
     = ((const pb) ♭) & (So ∘ eqP ty pa)
-    
-    {- with eqP ty pa x
-  ...| yes _ = just pb
-  ...| no  _ = nothing
-     -}
 \end{code}
 \begin{code}
-  Δ-apply : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
+  Trivial-apply : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
             (eqA : (x y : A) → Dec (x ≡ y))
             (eqP : (k : A)(x y : P k) → Dec (x ≡ y))
-          → delta P ty tv → (P ty ↦ P tv)
-  Δ-apply {ty = ty} {tv = tv} P eqA eqP (pa1 , pa2)
+          → trivial P ty tv → (P ty ↦ P tv)
+  Trivial-apply {ty = ty} {tv = tv} P eqA eqP (pa1 , pa2)
     with eqA ty tv
   ...| no _ = singl P eqP pa1 pa2
-  Δ-apply {ty = ty} P eqA eqP (pa1 , pa2) 
+  Trivial-apply {ty = ty} P eqA eqP (pa1 , pa2) 
      | yes refl with eqP ty pa1 pa2
   ...| no  _ = singl P eqP pa1 pa2
   ...| yes _ = id ♭
 \end{code}
 \begin{code}
-  Δₐ-apply : {ty tv : Atom} → Δₐ ty tv → (⟦ ty ⟧ₐ ↦ ⟦ tv ⟧ₐ)
-  Δₐ-apply {ty} {tv} = Δ-apply {ty = ty} {tv} ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
+  Trivialₐ-apply : {ty tv : Atom} → Trivialₐ ty tv → (⟦ ty ⟧ₐ ↦ ⟦ tv ⟧ₐ)
+  Trivialₐ-apply {ty} {tv} = Trivial-apply {ty = ty} {tv} ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
 
-  Δₚ-apply : {ty tv : Π} → Δₚ ty tv → (⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ)
-  Δₚ-apply {ty} {tv} = Δ-apply {ty = ty} {tv} ⟦_⟧ₚ π-eq (dec-eqₚ _≟-A_)
+  Trivialₚ-apply : {ty tv : Π} → Trivialₚ ty tv → (⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ)
+  Trivialₚ-apply {ty} {tv} = Trivial-apply {ty = ty} {tv} ⟦_⟧ₚ Prod-eq (dec-eqₚ _≟-A_)
 
-  Δₛ-apply : {ty tv : U} → Δₛ ty tv → (⟦ ty ⟧ ↦ ⟦ tv ⟧)
-  Δₛ-apply {ty} {tv} = Δ-apply {ty = ty} {tv} ⟦_⟧ σπ-eq (dec-eq _≟-A_)
+  Trivialₛ-apply : {ty tv : U} → Trivialₛ ty tv → (⟦ ty ⟧ ↦ ⟦ tv ⟧)
+  Trivialₛ-apply {ty} {tv} = Trivial-apply {ty = ty} {tv} ⟦_⟧ Sum-eq (dec-eq _≟-A_)
 \end{code}

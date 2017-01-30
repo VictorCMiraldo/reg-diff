@@ -2,7 +2,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.RelCalc.Base
-open import Prelude.ListI
+open import Prelude.List.All
 
 module RegDiff.Diff.Multirec.LabJson where
 
@@ -21,10 +21,10 @@ module RegDiff.Diff.Multirec.LabJson where
   jsonᵢ    = fz
   jsArrᵢ   = fs fz
 
-  json-type : σπ 2
+  json-type : Sum 2
   json-type = (I jsArrᵢ ⊗ u1) ⊕ (K kℕ ⊗ u1) ⊕ []
 
-  jsArr-type : σπ 2
+  jsArr-type : Sum 2
   jsArr-type = u1 ⊕ (I jsonᵢ ⊗ I jsArrᵢ ⊗ u1) ⊕ []
 
   JSON : Fam 2

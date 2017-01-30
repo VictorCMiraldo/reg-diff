@@ -3,7 +3,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
-open import Prelude.ListI
+open import Prelude.List.All
 open import RegDiff.Generic.Parms
 open import Prelude.PartialFuncs.Base
 
@@ -24,14 +24,14 @@ module RegDiff.Diff.Regular.Grupoid
   HasInv Q = ∀{x₁ x₂} → Q x₁ x₂ → Q x₂ x₁
 \end{code}
 \begin{code}
-  Δₐ-inv : HasInv Δₐ
-  Δₐ-inv (x , y) = (y , x)
+  Trivialₐ-inv : HasInv Trivialₐ
+  Trivialₐ-inv (x , y) = (y , x)
 
-  Δₚ-inv : HasInv Δₚ
-  Δₚ-inv (x , y) = (y , x)
+  Trivialₚ-inv : HasInv Trivialₚ
+  Trivialₚ-inv (x , y) = (y , x)
 
-  Δₛ-inv : HasInv Δₛ
-  Δₛ-inv (x , y) = (y , x)
+  Trivialₛ-inv : HasInv Trivialₛ
+  Trivialₛ-inv (x , y) = (y , x)
 \end{code}
 \begin{code}
   S-inv : {P : ΠΠSet}(doP : HasInv P){ty : U} → S P ty → S P ty
@@ -51,8 +51,8 @@ module RegDiff.Diff.Regular.Grupoid
   Patch-inv doP = S-inv (Al-inv doP)
 \end{code}
 \begin{code}
-  PatchΔ-inv : {ty : U} → Patch Δₐ ty → Patch Δₐ ty
-  PatchΔ-inv = Patch-inv (λ {ty} {tv} → Δₐ-inv {ty} {tv})
+  PatchTrivial-inv : {ty : U} → Patch Trivialₐ ty → Patch Trivialₐ ty
+  PatchTrivial-inv = Patch-inv (λ {ty} {tv} → Trivialₐ-inv {ty} {tv})
 \end{code}
 
 
@@ -61,20 +61,20 @@ module RegDiff.Diff.Regular.Grupoid
   HasCmp Q = ∀{x₁ x₂ x₃} → Q x₂ x₃ → Q x₁ x₂ → Maybe (Q x₁ x₃)
 \end{code}
 \begin{code}
-  Δₐ-cmp : HasCmp Δₐ
-  Δₐ-cmp {_} {a} (w , z) (x , w') 
+  Trivialₐ-cmp : HasCmp Trivialₐ
+  Trivialₐ-cmp {_} {a} (w , z) (x , w') 
     with dec-eqₐ _≟-A_ a w w' 
   ...| yes _ = just (x , z)
   ...| no  _ = nothing
 
-  Δₚ-cmp : HasCmp Δₚ
-  Δₚ-cmp {_} {p} (w , z) (x , w')
+  Trivialₚ-cmp : HasCmp Trivialₚ
+  Trivialₚ-cmp {_} {p} (w , z) (x , w')
     with dec-eqₚ _≟-A_ p w w' 
   ...| yes _ = just (x , z)
   ...| no  _ = nothing
 
-  Δₛ-cmp : HasCmp Δₛ
-  Δₛ-cmp {_} {s} (w , z) (x , w')
+  Trivialₛ-cmp : HasCmp Trivialₛ
+  Trivialₛ-cmp {_} {s} (w , z) (x , w')
     with dec-eq _≟-A_ s w w' 
   ...| yes _ = just (x , z)
   ...| no  _ = nothing
@@ -115,8 +115,8 @@ begin{code}
   Patch-cmp doP = S-cmp (C-cmp (Al-cmp doP))
 \end{code}
 begin{code}
-  PatchΔ-cmp : {ty : U} → Patch Δₐ ty → Patch Δₐ ty → Maybe (Patch Δₐ ty)
-  PatchΔ-cmp = Patch-cmp (λ {ty} {tv} {tw} → Δₐ-cmp {ty} {tv} {tw})
+  PatchTrivial-cmp : {ty : U} → Patch Trivialₐ ty → Patch Trivialₐ ty → Maybe (Patch Trivialₐ ty)
+  PatchTrivial-cmp = Patch-cmp (λ {ty} {tv} {tw} → Trivialₐ-cmp {ty} {tv} {tw})
 \end{code}
 
   Ideally, we want to prove the following:
@@ -131,10 +131,10 @@ begin{code}
   S-inv-lemma₁ appP invP (SX x) = {!s!}
   S-inv-lemma₁ appP invP (Scns i sx) = {!!}
 
-  PatchΔ-inv-lemma₁
-    : {ty : U}(p : Patch Δₐ ty)
-    → (PatchΔ-app p ∙ PatchΔ-app (PatchΔ-inv p)) ≼* (id ♭)
-  PatchΔ-inv-lemma₁ p = {!!}
+  PatchTrivial-inv-lemma₁
+    : {ty : U}(p : Patch Trivialₐ ty)
+    → (PatchTrivial-app p ∙ PatchTrivial-app (PatchTrivial-inv p)) ≼* (id ♭)
+  PatchTrivial-inv-lemma₁ p = {!!}
 
   
 
