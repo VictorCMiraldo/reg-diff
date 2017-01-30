@@ -1,6 +1,7 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
+open import Prelude.ListI
 open import Prelude.PartialFuncs.Base
 open import RegDiff.Generic.Parms
 
@@ -33,3 +34,10 @@ module RegDiff.Diff.Regular.Lemmas
     with dec-eq _≟-A_ ty x y 
   ...| yes p     = p
   ...| no  _     = ⊥-elim (spine-cns≢Scp x y hip)
+
+  Scns-elim : {ty : U}(x y : ⟦ ty ⟧)
+            → (i : Constr ty)(ps : ListI (contr Δₚ ∘ β) (typeOf ty i))
+            → spine x y ≡ Scns i ps
+            → x ≡ inject i {!mapᵢ p1 ps!} 
+            × y ≡ inject i {!!}
+  Scns-elim x y i ps = {!!}

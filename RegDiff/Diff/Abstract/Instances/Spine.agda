@@ -35,31 +35,12 @@ module RegDiff.Diff.Abstract.Instances.Spine
                             (IsDiff-P : IsDiff ⟦_⟧ₚ doP)
         where
 
-      spine-cns≢Scp : {ty : U}(x y : ⟦ ty ⟧)
-                   → spine-cns x y ≡ Scp → ⊥
-      spine-cns≢Scp x y hip with sop x | sop y
-      spine-cns≢Scp _ _ hip
-        | strip cx dx | strip cy dy 
-        with cx ≟-Fin cy
-      spine-cns≢Scp _ _ () | strip _ _ | strip _ _ 
-         | yes refl
-      spine-cns≢Scp _ _ () | strip _ _ | strip _ _ 
-         | no  _ 
-
-      spine≡Scp-elim : {ty : U}(x y : ⟦ ty ⟧)
-                     → spine x y ≡ Scp → x ≡ y
-      spine≡Scp-elim {ty} x y hip 
-        with dec-eq _≟-A_ ty x y 
-      ...| yes p     = p
-      ...| no  _     = ⊥-elim (spine-cns≢Scp x y hip)
+      
 
       lemma-cands-0 : {ty : U}(x y : ⟦ ty ⟧)
                     → All (IsCand₀ (S-Diffable doP) x y) 
                           (cands₀ (S-Diffable doP) x y)
-      lemma-cands-0 x y with spine x y
-      ...| Scp        = {!!}
-      ...| Scns i ps  = {!!}
-      ...| Schg i j p = {!!}
+      lemma-cands-0 x y = {!tabulate!}
        
       IsDiff-S : IsDiff₀ ⟦_⟧ (S-Diffable doP)
       IsDiff-S = record

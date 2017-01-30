@@ -2,7 +2,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.PartialFuncs.Base
-
+open import Prelude.ListI
 open import RegDiff.Generic.Parms
 
 open import RegDiff.Diff.Abstract.Base

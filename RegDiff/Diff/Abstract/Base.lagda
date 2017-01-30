@@ -1,10 +1,9 @@
 \begin{code}
 open import Prelude
 open import Prelude.PartialFuncs.Base
+open import Prelude.ListI
 
 module RegDiff.Diff.Abstract.Base where
-  
-  open import Data.List.All using (All; [] ; _∷_) public
 \end{code}
 
   We need to pack up information about

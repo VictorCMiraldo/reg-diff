@@ -20,6 +20,7 @@ module RegDiff.Diff.Regular.Apply
   open import RegDiff.Generic.Eq ks keqs
   open import RegDiff.Diff.Regular.Base ks keqs A _≟-A_
   open import RegDiff.Diff.Trivial.Apply ks keqs A _≟-A_
+    public
 \end{code}
 
   The application functions in both directions makes it easy
