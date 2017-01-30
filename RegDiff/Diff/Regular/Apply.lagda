@@ -5,7 +5,6 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
-open import Prelude.List.All
 open import Prelude.Monad
 open import Prelude.PartialFuncs.Base
 open import RegDiff.Generic.Parms
@@ -39,8 +38,8 @@ module RegDiff.Diff.Regular.Apply
              → (doP : HasAppₚ P){l : List Atom}
              → All ((contr P) ∘ β) l
              → ⟦ l ⟧ₚ ↦ ⟦ l ⟧ₚ
-  S-app-prod doP {[]}     []       = !
-  S-app-prod doP {x ∷ xs} (l ∷ ls) = β-app doP l >< S-app-prod doP ls
+  S-app-prod doP {[]}     []       = ?
+  S-app-prod doP {x ∷ xs} (l ∷ ls) = ? -- β-app doP l >< S-app-prod doP ls
 \end{code}
 \begin{code}
   S-app : {ty : U}{P : ΠΠSet}(doP : HasAppₚ P) → S P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
@@ -51,14 +50,14 @@ module RegDiff.Diff.Regular.Apply
 \begin{code}
   guard♯ : {a : Atom}{ty : Π}
          → ⟦ a ⟧ₐ → ⟦ a ∷ ty ⟧ₚ ↦ ⟦ ty ⟧ₚ
-  guard♯ {a} x (y , ys) 
+  guard♯ {a} x (y ∷ ys) 
     with dec-eqₐ _≟-A_ a x y
   ...| no  _ = nothing
   ...| yes _ = just ys
 
   Al-app : {P : AASet}(doP : HasAppₐ P)
          → ∀{ty tv} → Al P ty tv → ⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ
-  Al-app doP A0          = !
+  Al-app doP A0          = ?
   Al-app doP (Ap1 {a = ta} x a)  = Al-app doP a ∙ guard♯ {a = ta} x
   Al-app doP (Ap1ᵒ x a)  = split♯ ((const x) ♭) (Al-app doP a)
   Al-app doP (AX   x a)  = doP x >< Al-app doP a

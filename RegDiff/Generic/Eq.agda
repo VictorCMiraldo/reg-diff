@@ -1,6 +1,7 @@
 open import Prelude
 open import Prelude.Eq
-open import Prelude.Vector
+open import Prelude.Vector using (Vec; VecI; lookupᵢ; lookup)
+
 open import RegDiff.Generic.Parms
 
 module RegDiff.Generic.Eq 
@@ -43,29 +44,29 @@ module RegDiff.Generic.Eq
           → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
           → (ty : List (Atom n))(x y : ⟦ ty ⟧ₚ A)
           → Dec (x ≡ y)
-  dec-eqₚ eqA [] unit unit = yes refl
-  dec-eqₚ eqA (a ∷ as) (xa , xs) (ya , ys) 
+  dec-eqₚ eqA [] [] [] = yes refl
+  dec-eqₚ eqA (a ∷ as) (xa ∷ xs) (ya ∷ ys) 
     = ifd dec-eqₐ eqA a xa ya 
       then ifd dec-eqₚ eqA as xs ys 
-           then (λ hb ha → yes (cong₂ _,_ ha hb)) 
-           else flip (const (no ∘ ¬-inv (p2 ∘ ×-inj))) 
-      else (no ∘ ¬-inv (p1 ∘ ×-inj))
+           then (λ hb ha → yes (cong₂ _∷_ ha hb)) 
+           else flip (const (no ∘ ¬-inv (p2 ∘ ∷ᵢ-inj))) 
+      else (no ∘ ¬-inv (p1 ∘ ∷ᵢ-inj))
 
   dec-eq : {n : ℕ}{A : Parms n}
          → (eqA : ∀{k}(x y : A k) → Dec (x ≡ y))
          → (ty : Sum n)(x y : ⟦ ty ⟧ A)
          → Dec (x ≡ y)
   dec-eq eqA [] () ()
-  dec-eq eqA (p ∷ ps) (i1 x) (i2 y) = no (λ ())
-  dec-eq eqA (p ∷ ps) (i2 x) (i1 y) = no (λ ())
-  dec-eq eqA (p ∷ ps) (i1 x) (i1 y) 
+  dec-eq eqA (p ∷ ps) (here x) (there y) = no (λ ())
+  dec-eq eqA (p ∷ ps) (there x) (here y) = no (λ ())
+  dec-eq eqA (p ∷ ps) (here x) (here y)
     = ifd dec-eqₚ eqA p x y 
-      then yes ∘ cong i1 
-      else (no ∘ ¬-inv i1-inj)
-  dec-eq eqA (p ∷ ps) (i2 x) (i2 y) 
+      then yes ∘ cong here
+      else (no ∘ ¬-inv here-inj)
+  dec-eq eqA (p ∷ ps) (there x) (there y)
     = ifd dec-eq eqA ps x y 
-      then yes ∘ cong i2 
-      else (no ∘ ¬-inv i2-inj)
+      then yes ∘ cong there
+      else (no ∘ ¬-inv there-inj)
 
   {-# TERMINATING #-}
   _≟_ : {n : ℕ}{F : Fam n}{k : Fin n}

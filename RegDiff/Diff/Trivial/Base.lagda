@@ -67,20 +67,20 @@ module RegDiff.Diff.Trivial.Base
   UU→AA P a a' = P (α a) (α a')
 
   to-α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
-  to-α k = i1 (k , unit)
+  to-α k = here (k ∷ [])
 
   from-α : {a : Atom} → ⟦ α a ⟧ → ⟦ a ⟧ₐ
-  from-α (i1 (k , unit)) = k
-  from-α (i2 ())
+  from-α (here (k ∷ [])) = k
+  from-α (there ())
 
   →α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
-  →α k = i1 (k , unit)
+  →α k = here (k ∷ [])
 
   to-β : {a : Atom} → ⟦ a ⟧ₐ → ⟦ β a ⟧ₚ
-  to-β k = (k , unit)
+  to-β k = (k ∷ [])
 
   from-β : {a : Atom} → ⟦ β a ⟧ₚ → ⟦ a ⟧ₐ
-  from-β (k , unit) = k
+  from-β (k ∷ []) = k
 \end{code}
 %</Trivial-aux-defs>
 
