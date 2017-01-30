@@ -17,6 +17,16 @@ module RegDiff.Diff.Regular.Lemmas
   open import RegDiff.Diff.Regular.Base ks keqs A _≟-A_
   open import RegDiff.Diff.Regular.Apply ks keqs A _≟-A_
 
+  _* : ∀{a b}{A : Set a} → (A → A → Set b) → (A → A → Set b)
+  (R *) x y = List (R x y)
+
+  S-list-distr
+    : {ty : U}{P : ΠΠSet}
+    → S (P *) ty → List (S P ty)
+  S-list-distr Scp = Scp ∷ []
+  S-list-distr (Schg i j x) = map (Schg i j) x
+  S-list-distr (Scns i x) = Scns i {!!} ∷ []
+
   spine-cns≢Scp : {ty : U}(x y : ⟦ ty ⟧)
                → spine-cns x y ≡ Scp → ⊥
   spine-cns≢Scp x y hip with sop x | sop y
@@ -36,15 +46,13 @@ module RegDiff.Diff.Regular.Lemmas
   ...| yes p     = p
   ...| no  _     = ⊥-elim (spine-cns≢Scp x y hip)
 
-  Scns-unzip-p1
-    : {ty : U}(i : Constr ty)
-    → All (contr Trivialₚ ∘ β) (typeOf ty i)
-    → All (⟦_⟧ₚ ∘ β) (typeOf ty i)
-  Scns-unzip-p1 _ = mapᵢ p1
+  unzipₚ
+    : {ty : Π}
+    → All (contr Trivialₚ ∘ β) ty
+    → ⟦ ty ⟧ₚ × ⟦ ty ⟧ₚ
+  unzipₚ [] = unit , unit
+  unzipₚ (((x , unit) , (y , unit)) ∷ xys) 
+    = let (xs , ys) = unzipₚ xys
+       in (x , xs) , (y , ys)
 
-  Scns-elim : {ty : U}(x y : ⟦ ty ⟧)
-            → (i : Constr ty)(ps : All (contr Trivialₚ ∘ β) (typeOf ty i))
-            → spine x y ≡ Scns i ps
-            → x ≡ inject i {!!} 
-            × y ≡ inject i {!!}
-  Scns-elim x y i ps = {!!}
+  

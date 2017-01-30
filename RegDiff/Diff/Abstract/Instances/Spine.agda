@@ -34,19 +34,31 @@ module RegDiff.Diff.Abstract.Instances.Spine
 
   private 
     module Hypothesis (doP : Diffable ⟦_⟧ₚ)
-                            (IsDiff-P : IsDiff ⟦_⟧ₚ doP)
+                      (IsDiff-P : IsDiff ⟦_⟧ₚ doP)
         where
 
       
+      lemma-cands-0-scns
+        : {ty : U}{i : Constr ty}(dx dy : ⟦ typeOf ty i ⟧ₚ)
+        → All (IsCand₀ (S-Diffable doP) (inject {ty = ty} i dx) (inject i dy))
+              (mapMᵢ (uncurry (cands doP)) (zipₚ dx dy) >>=
+                     return ∘ Scns i)
+      lemma-cands-0-scns {ty} {i} dx dy = {!dx!}
 
       lemma-cands-0 : {ty : U}(x y : ⟦ ty ⟧)
                     → All (IsCand₀ (S-Diffable doP) x y) 
                           (cands₀ (S-Diffable doP) x y)
-      lemma-cands-0 x y with spine x y | inspect (spine x) y
-      lemma-cands-0 x y | Scp        | [ S ] = {!!} 
-      lemma-cands-0 x y | Scns i ps  | [ S ] = {!!}
-      lemma-cands-0 x y | Schg i j p | [ S ] = {!!}
-       
+      lemma-cands-0 {ty} x y with dec-eq _≟-A_ ty x y
+      ...| yes p = (cong just p) ∷ []
+      ...| no  _ with sop x | sop y
+      lemma-cands-0 _ _ | no _
+         | strip cx dx | strip cy dy 
+         with cx ≟-Fin cy
+      lemma-cands-0 _ _ | no _ | strip cx dx | strip _ dy
+         | yes refl = lemma-cands-0-scns dx dy
+      lemma-cands-0 _ _ | no _ | strip cx dx | strip _ dy
+         | no _ = {!!}
+
       IsDiff-S : IsDiff₀ ⟦_⟧ (S-Diffable doP)
       IsDiff-S = record
         { candidates-ok₀ = {!!}
