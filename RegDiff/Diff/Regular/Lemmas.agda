@@ -1,7 +1,8 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
-open import Prelude.ListI
+open import Prelude.List.All
 open import Prelude.PartialFuncs.Base
 open import RegDiff.Generic.Parms
 
@@ -35,9 +36,15 @@ module RegDiff.Diff.Regular.Lemmas
   ...| yes p     = p
   ...| no  _     = ⊥-elim (spine-cns≢Scp x y hip)
 
+  Scns-unzip-p1
+    : {ty : U}(i : Constr ty)
+    → All (contr Trivialₚ ∘ β) (typeOf ty i)
+    → All (⟦_⟧ₚ ∘ β) (typeOf ty i)
+  Scns-unzip-p1 _ = mapᵢ p1
+
   Scns-elim : {ty : U}(x y : ⟦ ty ⟧)
-            → (i : Constr ty)(ps : ListI (contr Δₚ ∘ β) (typeOf ty i))
+            → (i : Constr ty)(ps : All (contr Trivialₚ ∘ β) (typeOf ty i))
             → spine x y ≡ Scns i ps
-            → x ≡ inject i {!mapᵢ p1 ps!} 
+            → x ≡ inject i {!!} 
             × y ≡ inject i {!!}
   Scns-elim x y i ps = {!!}

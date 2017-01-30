@@ -1,8 +1,9 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 open import Prelude
 open import Prelude.Eq
-open import Prelude.Vector
+open import Prelude.Vector using (Vec ; VecI)
 open import Prelude.Monad
-open import Prelude.ListI
+open import Prelude.List.All
 open import Prelude.PartialFuncs.Base
 
 open import RegDiff.Generic.Parms
@@ -19,6 +20,7 @@ module RegDiff.Diff.Abstract.Instances.Spine
   open import RegDiff.Generic.Eq ks keqs
   open import RegDiff.Diff.Regular.Base ks keqs A _≟-A_
   open import RegDiff.Diff.Regular.Apply ks keqs A _≟-A_
+  open import RegDiff.Diff.Regular.Lemmas ks keqs A _≟-A_
 
   open Monad {{...}}
 
@@ -40,7 +42,10 @@ module RegDiff.Diff.Abstract.Instances.Spine
       lemma-cands-0 : {ty : U}(x y : ⟦ ty ⟧)
                     → All (IsCand₀ (S-Diffable doP) x y) 
                           (cands₀ (S-Diffable doP) x y)
-      lemma-cands-0 x y = {!tabulate!}
+      lemma-cands-0 x y with spine x y | inspect (spine x) y
+      lemma-cands-0 x y | Scp        | [ S ] = {!!} 
+      lemma-cands-0 x y | Scns i ps  | [ S ] = {!!}
+      lemma-cands-0 x y | Schg i j p | [ S ] = {!!}
        
       IsDiff-S : IsDiff₀ ⟦_⟧ (S-Diffable doP)
       IsDiff-S = record
