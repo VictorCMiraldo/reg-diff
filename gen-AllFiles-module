@@ -1,0 +1,28 @@
+#! /bin/bash
+
+FNAME_init="AllFiles.agda"
+DIFF=1
+
+if [[ -e $FNAME_init ]]; then
+  echo "$FNAME already exists!"
+  echo ""
+  echo "I will show you a diff and you decide what to do."
+  echo ""
+  DIFF=0
+  FNAME="AllFiles.tmp"
+else
+  FNAME=$FNAME_init
+fi
+  
+echo -e "module AllFiles where\n" > $FNAME    
+        
+for i in $(find ./ -mindepth 2 -name "*agda" \
+	  | sed "s/\.l\?agda//" \
+	  | sed "s&.\/&&" \
+	  | sed "s&/&\.&g"); do
+  echo "open import $i" >> $FNAME
+done
+
+if [[ $DIFF ]]; then
+  diff $FNAME_init $FNAME
+fi
