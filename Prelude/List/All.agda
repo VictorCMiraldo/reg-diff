@@ -3,11 +3,17 @@ open import Prelude.Monad
 
 module Prelude.List.All where
 
+  open Monad {{...}} 
+
   open import Data.List.All 
     using (All; [] ; _∷_; tabulate) 
     public
 
-  open Monad {{...}} 
+  ∷ᵢ-inj : ∀{a p}{A : Set a}{P : A → Set p}{l : List A}
+            {k : A}{x y : P k}{xs ys : All P l}
+         → _≡_ {A = All P (k ∷ l)} (x ∷ xs) (y ∷ ys) 
+         → x ≡ y × xs ≡ ys
+  ∷ᵢ-inj refl = refl , refl
 
   mapᵢ : ∀{a b}{A : Set a}{P Q : A → Set b}{l : List A}
         → (f : ∀{k} → P k → Q k)

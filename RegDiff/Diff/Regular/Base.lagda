@@ -8,7 +8,6 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
-open import Prelude.List.All
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Base
@@ -82,8 +81,8 @@ module RegDiff.Diff.Regular.Base
        → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → All (λ k → Trivialₚ (β k) (β k)) ty
   zipₚ {[]}     _        _         
     = []
-  zipₚ {_ ∷ ty} (x , xs) (y , ys)  
-    = ((x , unit) , (y , unit)) ∷ zipₚ xs ys
+  zipₚ {_ ∷ ty} (x ∷ xs) (y ∷ ys)  
+    = ((x ∷ []) , (y ∷ [])) ∷ zipₚ xs ys
 \end{code}
 %</zip-product-def>
 %<*spine-def>
@@ -150,14 +149,14 @@ module RegDiff.Diff.Regular.Base
 \begin{code}
   align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
   align* {[]}     {[]}     m n = return A0
-  align* {[]}     {v ∷ tv} m (n , nn) 
+  align* {[]}     {v ∷ tv} m (n ∷ nn) 
     = Ap1ᵒ n <$> align* m nn
-  align* {y ∷ ty} {[]}     (m , mm) n 
+  align* {y ∷ ty} {[]}     (m ∷ mm) n 
     = Ap1 m <$> align* mm n
-  align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
+  align* {y ∷ ty} {v ∷ tv} (m ∷ mm) (n ∷ nn)
     =  align? m n (align* mm nn)
-    ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
-    ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
+    ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n ∷ nn))
+    ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m ∷ mm) nn)
     where
       align? : {ty tv : Atom}{tys tvs : Π} 
              → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Trivialₐ tys tvs)

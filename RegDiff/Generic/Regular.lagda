@@ -1,13 +1,15 @@
 \begin{code}
 open import Prelude
 open import Prelude.Vector
-open import Prelude.List.All
 open import RegDiff.Generic.Parms
 
 module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
 
   infixr 25 _⊗_
   infixr 22 _⊕_
+
+  open import Prelude.List.All public
+  open import Prelude.List.Any public
 
 \end{code}
 %<*sop-synonyms-def>
@@ -55,17 +57,28 @@ module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
   ⟦ K x ⟧ₐ     A = lookup x ks
 
   ⟦_⟧ₚ : {n : ℕ} → Prod n → Parms n → Set
+  ⟦ p ⟧ₚ A = All (λ x → ⟦ x ⟧ₐ A) p
+{-
+
+  Which is isomorphic to:
+
   ⟦ []     ⟧ₚ  A = Unit
   ⟦ a ∷ as ⟧ₚ  A = ⟦ a ⟧ₐ A × ⟦ as ⟧ₚ A
+-}
 
   ⟦_⟧ : {n : ℕ} → Sum n → Parms n → Set
+  ⟦ p ⟧ A = Any (λ x → ⟦ x ⟧ₚ A) p
+{-
+  Which is ismoprohic to:
+
   ⟦ []     ⟧   A = ⊥
   ⟦ p ∷ ps ⟧   A = ⟦ p ⟧ₚ A ⊎ ⟦ ps ⟧ A
+-}
 \end{code}
 %</sop-denotation-def>
 \begin{code}
   injₐ : {n : ℕ}{k : Atom n}{P : Parms n} → ⟦ k ⟧ₐ P → ⟦ α k ⟧ P
-  injₐ k = i1 (k , unit)
+  injₐ k = here (k ∷ [])
 \end{code}
 %<*Constr-def>
 \begin{code}
@@ -90,8 +103,8 @@ module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
          → (i : Constr ty) → ⟦ typeOf ty i ⟧ₚ A
          → ⟦ ty ⟧ A
   inject {ty = []} () cs
-  inject {ty = x ∷ ty} fz cs     = i1 cs
-  inject {ty = x ∷ ty} (fs i) cs = i2 (inject i cs)
+  inject {ty = x ∷ ty} fz cs     = here cs
+  inject {ty = x ∷ ty} (fs i) cs = there (inject i cs)
 \end{code}
 %</injection-def>
 %<*SOP-view>
@@ -105,9 +118,9 @@ module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
   sop : {n : ℕ}{A : Parms n}{ty : Sum n}
       → (x : ⟦ ty ⟧ A) → SOP x
   sop {ty = []} ()
-  sop {ty = x ∷ ty} (i1 k) = strip fz k
-  sop {ty = x ∷ ty} (i2 k) with sop k
-  sop {ty = x ∷ ty} (i2 _) | strip i k' = strip (fs i) k'
+  sop {ty = x ∷ ty} (here k) = strip fz k
+  sop {ty = x ∷ ty} (there k) with sop k
+  sop {ty = x ∷ ty} (there _) | strip i k' = strip (fs i) k'
 
   constrOf : {n : ℕ}{A : Parms n}{ty : Sum n}
            → (x : ⟦ ty ⟧ A) → Constr ty
@@ -123,14 +136,14 @@ module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
   size1ₚ : {n : ℕ}{A : Parms n}(f : ∀{k} → A k → ℕ)(ty : Prod n)
          → ⟦ ty ⟧ₚ A → ℕ
   size1ₚ f [] x = 1
-  size1ₚ f (I x ∷ as) (⟦x⟧ , xs) = f ⟦x⟧ + size1ₚ f as xs
-  size1ₚ f (K x ∷ as) (⟦x⟧ , xs) = 1 + size1ₚ f as xs
+  size1ₚ f (I x ∷ as) (⟦x⟧ ∷ xs) = f ⟦x⟧ + size1ₚ f as xs
+  size1ₚ f (K x ∷ as) (⟦x⟧ ∷ xs) = 1 + size1ₚ f as xs
 
   size1 : {n : ℕ}{A : Parms n}(f : ∀{k} → A k → ℕ)(ty : Sum n)
         → ⟦ ty ⟧ A → ℕ
   size1 f [] ()
-  size1 f (ty ∷ tys) (i1 x) = size1ₚ  f ty x
-  size1 f (ty ∷ tys) (i2 y) = size1   f tys y
+  size1 f (ty ∷ tys) (here x) = size1ₚ  f ty x
+  size1 f (ty ∷ tys) (there y) = size1   f tys y
 
   size-const : {n : ℕ}{A : Parms n}(ty : Sum n) → ⟦ ty ⟧ A → ℕ
   size-const = size1 (const 1)
