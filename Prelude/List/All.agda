@@ -37,3 +37,27 @@ module Prelude.List.All where
            → (f : ∀{k} → P k → P k → M (Q k)) → (m n : All P l) → M (All Q l)
   zipWithMᵢ f []       []       = return []
   zipWithMᵢ f (m ∷ ms) (n ∷ ns) = f m n >>= λ fmn → zipWithMᵢ f ms ns >>= return ∘ (fmn ∷_)
+
+
+  -- Possibly temporary lemmas (Jan-30, being used by 
+  --     RegDiff.Diff.Abstract.Instances.Spine)
+  --
+  --
+  all-list-commute
+    : ∀{a b}{A : Set a}{P : A → Set b}{l : List A}
+    → All (List ∘ P) l
+    → List (All P l)
+  all-list-commute [] 
+    = [] ∷ []
+  all-list-commute (px ∷ xs) 
+    = foldr (λ h r → map (_∷ h) px ++ r) [] (all-list-commute xs)
+
+  all-map-commute 
+    : ∀{a b c}{A : Set a}{B : Set b}{P : B → Set c}
+    → {l : List A}{f : A → B}
+    → All (P ∘ f) l 
+    → All P (map f l)
+  all-map-commute {l = []}     [] = []
+  all-map-commute {l = l ∷ ls} (x ∷ xs) = x ∷ all-map-commute xs
+
+  

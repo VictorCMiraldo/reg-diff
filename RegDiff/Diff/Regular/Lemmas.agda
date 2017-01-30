@@ -25,7 +25,8 @@ module RegDiff.Diff.Regular.Lemmas
     → S (P *) ty → List (S P ty)
   S-list-distr Scp = Scp ∷ []
   S-list-distr (Schg i j x) = map (Schg i j) x
-  S-list-distr (Scns i x) = Scns i {!!} ∷ []
+  S-list-distr (Scns i x) 
+    = map (Scns i) (all-list-commute x)
 
   spine-cns≢Scp : {ty : U}(x y : ⟦ ty ⟧)
                → spine-cns x y ≡ Scp → ⊥

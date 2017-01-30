@@ -27,7 +27,8 @@ module RegDiff.Diff.Abstract.Instances.Spine
   S-Diffable : Diffable ⟦_⟧ₚ → Diffable₀ ⟦_⟧
   S-Diffable doP = record 
     { P₀     = S (P doP) 
-    ; cands₀ = λ x y → S-mapM (uncurry (cands doP)) (spine x y)
+    -- ; cands₀ = λ x y → S-mapM (uncurry (cands doP)) (spine x y)
+    ; cands₀ = λ x y → S-list-distr (S-map (uncurry (cands doP)) (spine x y))
     ; apply₀ = S-app (apply doP) 
     ; cost₀ = S-cost (cost doP) 
     }
@@ -55,7 +56,8 @@ module RegDiff.Diff.Abstract.Instances.Spine
          | strip cx dx | strip cy dy 
          with cx ≟-Fin cy
       lemma-cands-0 _ _ | no _ | strip cx dx | strip _ dy
-         | yes refl = lemma-cands-0-scns dx dy
+         | yes refl 
+         = all-map-commute {!!} -- lemma-cands-0-scns dx dy
       lemma-cands-0 _ _ | no _ | strip cx dx | strip _ dy
          | no _ = {!!}
 
