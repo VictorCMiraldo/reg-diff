@@ -81,12 +81,14 @@ module Prelude.Monad.Decl where
                → (x >>= return) ≡ x
     >>=-return {{m}} x = sym (id-μ-η m)
 
-{-
     >>=-assoc  : ∀{a}{M : Set a → Set a}{{_ : Monad M}}{A B C : Set a}
                → (x : M A)(f : A → M B)(g : B → M C)
                → ((x >>= f) >>= g) ≡ (x >>= (λ x' → f x' >>= g))
-    >>=-assoc {{m}} x f g = trans (cong (μ m) (sym (μ-natural m (mmap f x) g))) 
-                           (trans (μ-assoc m) {!!})
--}
-
-  
+    >>=-assoc {{m}} x f g 
+       = trans (cong (μ m) (sym (μ-natural m (mmap f x) g))) 
+        (trans (cong (λ P → μ m (μ m P)) 
+                     (fmap-∘ (isFunctor m) x (fmap (isFunctor m) g) f)) 
+        (trans (μ-assoc m) 
+        (cong (μ m)
+                     (fmap-∘ (isFunctor m) x (μ m) (fmap (isFunctor m) g ∘ f)))
+        ))
