@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 open import Prelude
 open import Prelude.Monad
 
@@ -9,7 +10,7 @@ module Prelude.List.All where
 
   open Monad {{...}} 
 
-  mapᵢ : ∀{a b}{A : Set a}{P Q : A → Set b}{l : List A}
+  mapᵢ : ∀{a b c}{A : Set a}{P : A → Set b}{Q : A → Set c}{l : List A}
         → (f : ∀{k} → P k → Q k)
         → All P l → All Q l
   mapᵢ f [] = []
@@ -20,8 +21,8 @@ module Prelude.List.All where
   foldrᵢ cons nil []        = nil
   foldrᵢ cons nil (l ∷ ls)  = cons l (foldrᵢ cons nil ls)
 
-  mapMᵢ : ∀{a}{A : Set a}{M : Set a → Set a}{{m : Monad M}}
-           {P Q : A → Set a}{l : List A}
+  mapMᵢ : ∀{a p}{A : Set a}{M : Set a → Set a}{{m : Monad M}}
+           {P : A → Set p}{Q : A → Set a}{l : List A}
         → (f : ∀{k} → P k → M (Q k))
         → All P l → M (All Q l)
   mapMᵢ f []       = return []
@@ -60,4 +61,60 @@ module Prelude.List.All where
   all-map-commute {l = []}     [] = []
   all-map-commute {l = l ∷ ls} (x ∷ xs) = x ∷ all-map-commute xs
 
-  
+  All-transport
+    : ∀{a p q}{A : Set a}{P : A → Set p}{Q : A → Set q}
+    → (tr : ∀{x} → P x → Q x){l : List A}
+    → All P l
+    → All Q l
+  All-transport tr [] = []
+  All-transport tr (px ∷ pxs) = tr px ∷ All-transport tr pxs
+
+  _++ₐ_ : ∀{a p}{A : Set a}{P : A → Set p}
+        → {l1 l2 : List A}
+        → All P l1 → All P l2 → All P (l1 ++ l2)
+  []       ++ₐ n = n
+  (px ∷ m) ++ₐ n = px ∷ (m ++ₐ n)
+
+  All-bind-split
+    : ∀{a p}{A B : Set a}
+    → {P : B → Set p}
+    → (x : List A)(f : A → List B)
+    → All (All P ∘ f) x
+    → All P (x >>= f)
+  All-bind-split [] f hip = []
+  All-bind-split (x ∷ xs) f (h ∷ hip) 
+    = h ++ₐ All-bind-split xs f hip
+
+  All-bind-return-split
+    : ∀{a p}{A B : Set a}
+    → {P : B → Set p}
+    → (x : List A)(f : A → B)
+    → All (P ∘ f) x
+    → All P (x >>= return ∘ f)
+  All-bind-return-split x f hip 
+    = All-bind-split x (return ∘ f) (mapᵢ (_∷ []) hip)
+
+{-
+  data ALL {a p q}{A : Set a}{P : A → Set p}
+           (Q : ∀{x} → P x → Set q) 
+           : {l : List A} → All P l → Set (a ⊔ p ⊔ q) where
+    []   : ALL Q []
+    _∷_  : {l : A}{ls : List A}{xs : All P ls}
+         → {x : P l} → Q x → ALL Q xs → ALL Q (x ∷ xs)
+
+  All-mapMᵢ-commute
+    : ∀{a p r}{A : Set a}{P : A → Set p}{Q : A → Set a}
+    → {l : List A}
+    → {R : All Q l → Set r}
+    → (f : ∀{k} → P k → List (Q k))
+    → (x : All P l)
+    → R {!!}
+    → All R (mapMᵢ f x)
+  All-mapMᵢ-commute = {!!}
+-}
+{-
+: ∀{a}{A : Set a}{M : Set a → Set a}{{m : Monad M}}
+           {P Q : A → Set a}{l : List A}
+        → (f : ∀{k} → P k → M (Q k))
+        → All P l → M (All Q l)
+-}

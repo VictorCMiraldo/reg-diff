@@ -27,8 +27,7 @@ module RegDiff.Diff.Abstract.Instances.Spine
   S-Diffable : Diffable ⟦_⟧ₚ → Diffable₀ ⟦_⟧
   S-Diffable doP = record 
     { P₀     = S (P doP) 
-    -- ; cands₀ = λ x y → S-mapM (uncurry (cands doP)) (spine x y)
-    ; cands₀ = λ x y → S-list-distr (S-map (uncurry (cands doP)) (spine x y))
+    ; cands₀ = λ x y → S-mapM (uncurry (cands doP)) (spine x y)
     ; apply₀ = S-app (apply doP) 
     ; cost₀ = S-cost (cost doP) 
     }
@@ -38,13 +37,29 @@ module RegDiff.Diff.Abstract.Instances.Spine
                       (IsDiff-P : IsDiff ⟦_⟧ₚ doP)
         where
 
-      
-      lemma-cands-0-scns
-        : {ty : U}{i : Constr ty}(dx dy : ⟦ typeOf ty i ⟧ₚ)
-        → All (IsCand₀ (S-Diffable doP) (inject {ty = ty} i dx) (inject i dy))
-              (mapMᵢ (uncurry (cands doP)) (zipₚ dx dy) >>=
-                     return ∘ Scns i)
-      lemma-cands-0-scns {ty} {i} dx dy = {!dx!}
+      S-app-Scns-elim
+        : {ty : U}{i : Constr ty}{dx dy : ⟦ typeOf ty i ⟧ₚ}
+        → (p : All (contr (P doP) ∘ β) (typeOf ty i))
+        → S-app-prod (apply doP) p dx ≡ just dy
+        → S-app (apply doP) (Scns i p) (inject {ty = ty} i dx) 
+        ≡ just (inject i dy)
+      S-app-Scns-elim {ty} {i} {dx} {dy} p hip 
+        rewrite fromInj-inject {ty} i dx
+              | hip
+              = refl
+
+      S-app-prod-hip
+        : {ty : Π}(dx dy : ⟦ ty ⟧ₚ)
+        → All (λ z → S-app-prod (apply doP) z dx ≡ just dy)
+              (mapMᵢ (uncurry (cands doP)) (zipₚ dx dy))
+      S-app-prod-hip {[]} unit unit = refl ∷ []
+      S-app-prod-hip {x ∷ ty} (dx , dxs) (dy , dys)
+        = All-bind-split 
+          (uncurry (cands doP) ((dx , unit) , dy , unit))
+          (λ qi → mapMᵢ (uncurry (cands doP)) (zipₚ dxs dys) 
+              >>= return ∘ _∷_ qi) 
+          {!!}
+
 
       lemma-cands-0 : {ty : U}(x y : ⟦ ty ⟧)
                     → All (IsCand₀ (S-Diffable doP) x y) 
@@ -57,7 +72,11 @@ module RegDiff.Diff.Abstract.Instances.Spine
          with cx ≟-Fin cy
       lemma-cands-0 _ _ | no _ | strip cx dx | strip _ dy
          | yes refl 
-         = all-map-commute {!!} -- lemma-cands-0-scns dx dy
+         = All-bind-return-split 
+              (mapMᵢ (uncurry (cands doP)) (zipₚ dx dy)) 
+              (Scns cx) 
+              (All-transport (λ {x} p → S-app-Scns-elim x p) 
+                             (S-app-prod-hip dx dy))
       lemma-cands-0 _ _ | no _ | strip cx dx | strip _ dy
          | no _ = {!!}
 
