@@ -4,6 +4,8 @@ open import Prelude.Eq
 open import Prelude.Vector using (Vec ; VecI)
 open import Prelude.Monad
 open import Prelude.List.All
+open import Prelude.List.Lemmas
+open import Prelude.Nat.Lemmas
 open import Prelude.PartialFuncs.Base
 
 open import RegDiff.Generic.Parms
@@ -201,7 +203,46 @@ module RegDiff.Diff.Abstract.Instances.Spine
               (mapᵢ (S-app-chg-correct cx cy dx dy)
                     (IsDiff.candidates-ok IsDiff-P dx dy))
 
+      -- Now, we need to prove the candidates list
+      -- is never empty.
 
+      -- The Scns case is still the hardest one, but this
+      -- time it goes much easier.
+      lemma-eval-cands-length
+        : {ty : Π}(dx dy : ⟦ ty ⟧ₚ)
+        → 1 ≤ length (eval-cands dx dy)
+      lemma-eval-cands-length {[]} unit unit 
+        = s≤s z≤n
+      lemma-eval-cands-length {x ∷ ty} (dx , dxs) (dy , dys)
+        with IsDiff.candidates-nonnil IsDiff-P {β x} {β x} 
+                                      (dx , unit) (dy , unit)
+      ...| aux
+        with cands doP {β x} {β x} (dx , unit) (dy , unit)
+      ...| []     = aux
+      ...| c ∷ cs 
+        with lemma-eval-cands-length dxs dys
+      ...| aux' 
+        with eval-cands dxs dys
+      ...| []      = ⊥-elim (1+n≰n aux')
+      ...| r ∷ res = s≤s z≤n
+
+      lemma-cands-length 
+        : {ty : U}(x y : ⟦ ty ⟧)
+        → 1 ≤ length (cands₀ (S-Diffable doP) x y)
+      lemma-cands-length {ty} x y with dec-eq _≟-A_ ty x y
+      ...| yes p = s≤s z≤n
+      ...| no  _ with sop x | sop y
+      lemma-cands-length _ _ | no _
+         | strip cx dx | strip cy dy 
+         with cx ≟-Fin cy
+      lemma-cands-length {ty} _ _ | no _ | strip cx dx | strip _ dy
+         | yes refl 
+         = ≤-trans (lemma-eval-cands-length dx dy) 
+                   (length->>=-return (eval-cands dx dy))
+      lemma-cands-length _ _ | no _ | strip cx dx | strip cy dy
+         | no _ 
+         =  ≤-trans (IsDiff.candidates-nonnil IsDiff-P dx dy)
+                    (length->>=-return (cands doP dx dy)) 
 
       -- Last but not least, we assemble all of them
       -- in a record that proves that our Spine
@@ -209,7 +250,7 @@ module RegDiff.Diff.Abstract.Instances.Spine
       IsDiff-S-priv : IsDiff₀ ⟦_⟧ (S-Diffable doP)
       IsDiff-S-priv = record
         { candidates-ok₀ = lemma-cands-ok
-        ; candidates-nonnil₀ = {!!}
+        ; candidates-nonnil₀ = lemma-cands-length
         ; cost-eq = {!!}
         ; cost-order₀ = {!!}
         }
