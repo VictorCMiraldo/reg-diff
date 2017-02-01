@@ -44,6 +44,9 @@ module Prelude.List.All where
   --     RegDiff.Diff.Abstract.Instances.Spine)
   --
   --
+  -- They are also equivalences, we are just
+  -- proving one way of them, though. If this works out,
+  -- would be nice to reengineer this.
   all-list-commute
     : ∀{a b}{A : Set a}{P : A → Set b}{l : List A}
     → All (List ∘ P) l
@@ -53,27 +56,29 @@ module Prelude.List.All where
   all-list-commute (px ∷ xs) 
     = foldr (λ h r → map (_∷ h) px ++ r) [] (all-list-commute xs)
 
-  all-map-commute 
-    : ∀{a b c}{A : Set a}{B : Set b}{P : B → Set c}
-    → {l : List A}{f : A → B}
-    → All (P ∘ f) l 
-    → All P (map f l)
-  all-map-commute {l = []}     [] = []
-  all-map-commute {l = l ∷ ls} (x ∷ xs) = x ∷ all-map-commute xs
-
-  All-transport
-    : ∀{a p q}{A : Set a}{P : A → Set p}{Q : A → Set q}
-    → (tr : ∀{x} → P x → Q x){l : List A}
-    → All P l
-    → All Q l
-  All-transport tr [] = []
-  All-transport tr (px ∷ pxs) = tr px ∷ All-transport tr pxs
-
   _++ₐ_ : ∀{a p}{A : Set a}{P : A → Set p}
         → {l1 l2 : List A}
         → All P l1 → All P l2 → All P (l1 ++ l2)
   []       ++ₐ n = n
   (px ∷ m) ++ₐ n = px ∷ (m ++ₐ n)
+
+  All-concat-commute
+    : ∀{a p}{A : Set a}{P : A → Set p}
+    → (x : List (List A))
+    → All (All P) x
+    → All P (concat x)
+  All-concat-commute .[] [] = []
+  All-concat-commute (x ∷ xs) (hip ∷ hips) 
+    = hip ++ₐ All-concat-commute xs hips
+
+  All-map-commute
+    : ∀{a p}{A B : Set a}{P : B → Set p}
+    → (x : List A)(f : A → B)
+    → All (P ∘ f) x
+    → All P (map f x)
+  All-map-commute .[] f [] = []
+  All-map-commute (_ ∷ xs) f (px ∷ hip) 
+    = px ∷ All-map-commute _ f hip
 
   All-bind-split
     : ∀{a p}{A B : Set a}
@@ -81,9 +86,8 @@ module Prelude.List.All where
     → (x : List A)(f : A → List B)
     → All (All P ∘ f) x
     → All P (x >>= f)
-  All-bind-split [] f hip = []
-  All-bind-split (x ∷ xs) f (h ∷ hip) 
-    = h ++ₐ All-bind-split xs f hip
+  All-bind-split x f hip 
+    = All-concat-commute (map f x) (All-map-commute x f hip)
 
   All-bind-return-split
     : ∀{a p}{A B : Set a}

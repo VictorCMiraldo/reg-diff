@@ -44,6 +44,12 @@ module RegDiff.Diff.Regular.Lemmas
     rewrite sop-inject-inv {ty} i d 
           | ≟-Fin-refl i
           = refl
+{-
+  S-app-prod-ind-step
+    : {y : Atom}{ty : Π}{P : ΠΠSet}(dx dy : ⟦ y ⟧ₐ)(dxs dys : ⟦ ty ⟧ₚ)
+    → 
+-}
+-- The lemmas that follow have not been used
 
   _* : ∀{a b}{A : Set a} → (A → A → Set b) → (A → A → Set b)
   (R *) x y = List (R x y)

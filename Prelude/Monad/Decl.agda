@@ -63,7 +63,7 @@ module Prelude.Monad.Decl where
   _<*>_ {{a}} mab ma = app a mab ma
 
   
-  module Properties where
+  module MonadProperties where
 
     mmap-return : ∀{a}{M : Set a → Set a}{{m : Monad M}}{A B : Set a}
                 → (x : A)(f : A → B)
@@ -76,10 +76,17 @@ module Prelude.Monad.Decl where
     return->>= {{m}} x f = trans (cong (μ m) (mmap-return x f)) 
                                  (μ-η-id m)
 
-    >>=-return : ∀{a}{M : Set a → Set a}{{_ : Monad M}}{A B : Set a}
+    >>=-return : ∀{a}{M : Set a → Set a}{{_ : Monad M}}{A : Set a}
                → (x : M A)
                → (x >>= return) ≡ x
     >>=-return {{m}} x = sym (id-μ-η m)
+
+    >>=-return-f : ∀{a}{M : Set a → Set a}{{m : Monad M}}{A B : Set a}
+                 → (x : M A)(f : A → B)
+                 → (x >>= return ∘ f) ≡ mmap {{m}} f x
+    >>=-return-f {{m}} x f 
+      = trans (cong (μ m) (sym (fmap-∘ (isFunctor m) x (η m) f))) 
+              (sym (id-μ-η m))
 
     >>=-assoc  : ∀{a}{M : Set a → Set a}{{_ : Monad M}}{A B C : Set a}
                → (x : M A)(f : A → M B)(g : B → M C)
@@ -92,3 +99,14 @@ module Prelude.Monad.Decl where
         (cong (μ m)
                      (fmap-∘ (isFunctor m) x (μ m) (fmap (isFunctor m) g ∘ f)))
         ))
+
+{-
+
+    In general this does not hold!
+
+    >>=-swap : ∀{a}{M : Set a → Set a}{{_ : Monad M}}{A B C : Set a}
+             → (x : M A)(y : M B)(g : A → B → M C)
+             → (y >>= (λ y' → x >>= λ x' → g x' y'))
+             ≡ (x >>= (λ x' → y >>= g x'))
+    >>=-swap x y g = {!!}
+-}
