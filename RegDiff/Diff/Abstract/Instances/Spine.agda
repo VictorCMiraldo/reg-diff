@@ -245,6 +245,17 @@ private
                   (length->>=-return (cands doP dx dy)) 
 
 
+    lemma-cost-eq
+      : {ty : U}(x y : ⟦ ty ⟧)(p q : S (P doP) ty)
+      → IsCand₀ (S-Diffable doP) x y p
+      → IsCand₀ (S-Diffable doP) x y q
+      → cost₀ (S-Diffable doP) p ≡ cost₀ (S-Diffable doP) q
+      → apply₀ (S-Diffable doP) p ≡ apply₀ (S-Diffable doP) q
+    lemma-cost-eq x y Scp Scp hP hQ hip = refl
+    lemma-cost-eq x y Scp (Scns i q) hP hQ hip 
+      = {!p q!}
+    lemma-cost-eq x y p q hP hQ hip = {!p q!}
+      
 
     -- Last but not least, we assemble all of them
     -- in a record that proves that our Spine
