@@ -6,7 +6,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
-open import Prelude.PartialFuncs.Base
+open import Prelude.PartialFuncs.Base using (_↦_; _♭)
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Regular.Apply
@@ -26,6 +26,33 @@ module RegDiff.Diff.Regular.Apply
   to see how the two phases of the algorithm play together.
 
 \begin{code}
+  split♯ : ∀{a b p}{A : Set a}{B : Set b}{P : B → Set p}
+         → {x : B}{xs : List B}
+         → (A ↦ P x) → (A ↦ All P xs)
+         → A ↦ All P (x ∷ xs)
+  split♯ f g x with f x | g x
+  ...| just fx | just gx = just (fx ∷ gx) 
+  ...| nothing | just gx = nothing
+  ...| just fx | nothing = nothing
+  ...| nothing | nothing = nothing
+
+  π1♯ : ∀{a p}{A : Set a}{P : A → Set p}{x : A}{xs : List A}
+      → All P (x ∷ xs) ↦ P x
+  π1♯ (px ∷ _) = just px
+
+  π2♯ : ∀{a p}{A : Set a}{P : A → Set p}{x : A}{xs : List A}
+      → All P (x ∷ xs) ↦ All P xs
+  π2♯ (_ ∷ pxs) = just pxs
+
+  _×♯_ : ∀{p}{C D : Set p}
+          {P : C → Set p}{Q : D → Set p}
+       → {x : C}{y : D}{xs : List C}{ys : List D}
+       → (P x ↦ Q y) → (All P xs ↦ All Q ys)
+       → All P (x ∷ xs) ↦ All Q (y ∷ ys)
+  f ×♯ g = split♯ (f ∙ π1♯) (g ∙ π2♯)
+\end{code}
+
+\begin{code}
   β-app : {a b : Atom}{P : ΠΠSet}
         → (doP : HasAppₚ P)
         → P (β a) (β b)
@@ -38,8 +65,8 @@ module RegDiff.Diff.Regular.Apply
              → (doP : HasAppₚ P){l : List Atom}
              → All ((contr P) ∘ β) l
              → ⟦ l ⟧ₚ ↦ ⟦ l ⟧ₚ
-  S-app-prod doP {[]}     []       = ?
-  S-app-prod doP {x ∷ xs} (l ∷ ls) = ? -- β-app doP l >< S-app-prod doP ls
+  S-app-prod doP {[]}     []       = (const []) ♭ -- !
+  S-app-prod doP {x ∷ xs} (l ∷ ls) = β-app doP l ×♯ S-app-prod doP ls
 \end{code}
 \begin{code}
   S-app : {ty : U}{P : ΠΠSet}(doP : HasAppₚ P) → S P ty → ⟦ ty ⟧ ↦ ⟦ ty ⟧
@@ -57,10 +84,10 @@ module RegDiff.Diff.Regular.Apply
 
   Al-app : {P : AASet}(doP : HasAppₐ P)
          → ∀{ty tv} → Al P ty tv → ⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ
-  Al-app doP A0          = ?
+  Al-app doP A0          = (const []) ♭
   Al-app doP (Ap1 {a = ta} x a)  = Al-app doP a ∙ guard♯ {a = ta} x
   Al-app doP (Ap1ᵒ x a)  = split♯ ((const x) ♭) (Al-app doP a)
-  Al-app doP (AX   x a)  = doP x >< Al-app doP a
+  Al-app doP (AX   x a)  = doP x ×♯ Al-app doP a
 \end{code}
 \begin{code}
   Patch-app : {ty : U}{P : AASet}(doP : HasAppₐ P) 

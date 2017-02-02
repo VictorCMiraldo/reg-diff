@@ -2,7 +2,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector using (Vec ; VecI)
 open import Prelude.Monad
-open import Prelude.List.All
+-- open import Prelude.List.All
 open import Prelude.List.Lemmas
 open import Prelude.Nat.Lemmas
 open import Prelude.PartialFuncs.Base
@@ -84,9 +84,9 @@ private
     S-app-prod-correct
       : {y : Atom}{ty : Π}(dx dy : ⟦ y ⟧ₐ)(dxs dys : ⟦ ty ⟧ₚ)
       → {k : P doP (β y) (β y)}{ks : All (contr (P doP) ∘ β) ty}
-      → IsCand doP (dx , unit) (dy , unit) k
+      → IsCand doP (dx ∷ []) (dy ∷ []) k
       → S-app-prod (apply doP) ks dxs ≡ just dys
-      → S-app-prod (apply doP) (k ∷ ks) (dx , dxs) ≡ just (dy , dys)
+      → S-app-prod (apply doP) (k ∷ ks) (dx ∷ dxs) ≡ just (dy ∷ dys)
     S-app-prod-correct dx dy dxs dys hip0 hip1
       rewrite hip0 | hip1 = refl
 
@@ -129,33 +129,33 @@ private
         : {ty : Π}(dx dy : ⟦ ty ⟧ₚ)
         → All (λ z → S-app-prod (apply doP) z dx ≡ just dy)
               (eval-cands dx dy)
-      S-app-prod-hip {[]} unit unit = refl ∷ []
-      S-app-prod-hip {x ∷ ty} (dx , dxs) (dy , dys)
+      S-app-prod-hip {[]} [] [] = refl ∷ []
+      S-app-prod-hip {x ∷ ty} (dx ∷ dxs) (dy ∷ dys)
         = All-concat-commute 
              (map (eval-cands-cons dxs dys) 
-                  (uncurry (cands doP) ((dx , unit) , dy , unit))) 
+                  (uncurry (cands doP) (dx ∷ [] , dy ∷ []))) 
           (S-app-prod-hip-aux dx dy dxs dys) 
 
       S-app-prod-hip-aux
         : {y : Atom}{ty : Π}(dx dy : ⟦ y ⟧ₐ)(dxs dys : ⟦ ty ⟧ₚ)
-        → All (All (λ z → S-app-prod (apply doP) z (dx , dxs) ≡ just (dy , dys)))
+        → All (All (λ z → S-app-prod (apply doP) z (dx ∷ dxs) ≡ just (dy ∷ dys)))
               (map (eval-cands-cons dxs dys)  
-                (uncurry (cands doP {β y} {β y}) ((dx , unit) , dy , unit)))
+                (uncurry (cands doP {β y} {β y}) (dx ∷ [] , dy ∷ [])))
       S-app-prod-hip-aux {y} dx dy dxs dys 
         rewrite fun-ext (eval-cands-simplify {y} dxs dys) 
               = All-map-commute 
-                  (cands doP {β y} {β y} (dx , unit) (dy , unit)) 
+                  (cands doP {β y} {β y} (dx ∷ []) (dy ∷ [])) 
                   (eval-cands-cons' dxs dys) 
                   (mapᵢ (λ {k} → All-map-commute (eval-cands dxs dys) (_∷_ k)) 
                   (mapᵢ (S-app-prod-core dx dy dxs dys) 
                         (cands-correct okP {β y} {β y} 
-                                              (dx , unit) (dy , unit))))
+                                              (dx ∷ []) (dy ∷ []))))
 
       S-app-prod-core
         : {y : Atom}{ty : Π}(dx dy : ⟦ y ⟧ₐ)(dxs dys : ⟦ ty ⟧ₚ)
         → {k : P doP (β y) (β y)}
-        → IsCand doP (dx , unit) (dy , unit) k
-        → All (λ z → S-app-prod (apply doP) (k ∷ z) (dx , dxs) ≡ just (dy , dys))
+        → IsCand doP (dx ∷ []) (dy ∷ []) k
+        → All (λ z → S-app-prod (apply doP) (k ∷ z) (dx ∷ dxs) ≡ just (dy ∷ dys))
               (eval-cands dxs dys)
       S-app-prod-core dx dy dxs dys {k} hip
         = mapᵢ (S-app-prod-correct dx dy dxs dys hip) 
@@ -216,12 +216,12 @@ private
     lemma-eval-cands-length
       : {ty : Π}(dx dy : ⟦ ty ⟧ₚ)
       → 1 ≤ length (eval-cands dx dy)
-    lemma-eval-cands-length {[]} unit unit 
+    lemma-eval-cands-length {[]} [] [] 
       = s≤s z≤n
-    lemma-eval-cands-length {x ∷ ty} (dx , dxs) (dy , dys)
-      with cands-nonnil okP {β x} {β x} (dx , unit) (dy , unit)
+    lemma-eval-cands-length {x ∷ ty} (dx ∷ dxs) (dy ∷ dys)
+      with cands-nonnil okP {β x} {β x} (dx ∷ []) (dy ∷ [])
     ...| aux
-      with cands doP {β x} {β x} (dx , unit) (dy , unit)
+      with cands doP {β x} {β x} (dx ∷ []) (dy ∷ [])
     ...| []     = aux
     ...| c ∷ cs 
       with lemma-eval-cands-length dxs dys
