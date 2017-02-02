@@ -23,98 +23,16 @@ module RegDiff.Diff.Regular.Base
   open import RegDiff.Generic.Eq ks keqs
   open import RegDiff.Diff.Trivial.Base ks keqs A _≟-A_
     public
+
+  -- Now the spine is just re-exported
+  open import RegDiff.Diff.Regular.Base.Spine ks keqs A _≟-A_
+    public
+
+  -- And the alignment too!
+  open import RegDiff.Diff.Regular.Base.AlignmentType ks keqs A _≟-A_
+    public
 \end{code}
 
-  We begin with the definition of a spine. The spine is 
-  responsible for agressively copying structure.
- 
-  Scp copies the whole structure where Scns copies only
-  the top most constructor. Note that we do NOT align
-  values comming from the same constructor.
-
-%<*Spine-def>
-\begin{code}
-  data S (P : ΠΠSet) : U → Set where
-    Scp  : {ty : U} → S P ty
-    Schg : {ty : U}(i j : Constr ty)
-         → P (typeOf ty i) (typeOf ty j)
-         → S P ty
-    Scns : {ty : U}(i : Constr ty)
-         → All (contr P ∘ β) (typeOf ty i)
-         → S P ty
-\end{code}
-%</Spine-def>
-
-%<*S-map-def>
-\begin{code}
-  S-map  :  {ty : U}
-            {P Q : ΠΠSet}(X : ∀{k v} → P k v → Q k v)
-         → S P ty → S Q ty
-  S-map f Scp          = Scp
-  S-map f (Schg i j x) = Schg i j (f x)
-  S-map f (Scns i xs)  = Scns i (mapᵢ f xs)
-\end{code}
-%</S-map-def>
-%<*S-mapM-def>
-\begin{code}
-  S-mapM  :  {ty : U}{M : Set → Set}{{m : Monad M}}
-             {P Q : ΠΠSet}(X : ∀{k v} → P k v → M (Q k v))
-          → S P ty → M (S Q ty)
-  S-mapM f Scp          = return Scp
-  S-mapM f (Schg i j x) = f x >>= return ∘ (Schg i j)
-  S-mapM f (Scns i xs)  = mapMᵢ f xs >>= return ∘ (Scns i)
-\end{code}
-%</S-mapM-def>
-
-%<*S-cost-def>
-\begin{code}
-  S-cost : {ty : U}{P : ΠΠSet}(doP : {k v : Π} → P k v → ℕ)
-         → S P ty → ℕ
-  S-cost doP Scp         = 0
-  S-cost doP (Schg i j x) = doP x
-  S-cost doP (Scns i xs) = foldrᵢ (λ h r → doP h + r) 0 xs
-\end{code}
-%</S-cost-def>
-
-%<*zip-product-def>
-\begin{code}
-  zipₚ : {ty : Π}
-       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → All (λ k → Trivialₚ (β k) (β k)) ty
-  zipₚ {[]}     _        _         
-    = []
-  zipₚ {_ ∷ ty} (x , xs) (y , ys)  
-    = ((x , unit) , (y , unit)) ∷ zipₚ xs ys
-\end{code}
-%</zip-product-def>
-%<*spine-def>
-\begin{code}
-  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Trivialₚ ty
-  spine-cns x y  with sop x | sop y
-  spine-cns _ _ | strip cx dx | strip cy dy
-    with cx ≟-Fin cy
-  ...| no  _     = Schg cx cy (dx , dy)
-  spine-cns _ _ | strip _ dx | strip cy dy
-     | yes refl  = Scns cy (zipₚ dx dy)
-  
-  spine : {ty : U}(x y : ⟦ ty ⟧) → S Trivialₚ ty
-  spine {ty} x y 
-    with dec-eq _≟-A_ ty x y 
-  ...| yes _     = Scp
-  ...| no  _     = spine-cns x y
-\end{code}
-%</spine-def>
-
-  Last but not least, we are left with products that need some alignment!
-
-%<*Al-def>
-\begin{code}
-  data Al (P : AASet) : Π → Π → Set where
-    A0   :                                          Al P [] []
-    Ap1  : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P (a ∷ ty) tv
-    Ap1ᵒ : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P ty       (a ∷ tv)
-    AX   : ∀{a a' ty tv}  → P a a'  → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
-\end{code}
-%</Al-def>
 
 %<*Al-mapM-def>
 \begin{code}
@@ -169,47 +87,6 @@ module RegDiff.Diff.Regular.Base
       
 \end{code}
 %</align-star-def>
-begin{code}
-  fail : ∀{a}{A : Set a} → List A
-  fail = []
-
-  align? : {ty tv : Atom}{tys tvs : Π} 
-         → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Trivialₐ tys tvs)
-         → List (Al Trivialₐ (ty ∷ tys) (tv ∷ tvs))
-  align? {I _} {I _} x y xys = AX (x , y) <$> xys
-  align? {K _} {K _} x y xys = AX (x , y) <$> xys
-  align? {I _} {K _} x y xys = []
-  align? {K _} {I _} x y xys = []
-
-  mutual
-    alignA* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
-    alignA* {[]} {[]}    m n  = return A0
-    alignA* {_ ∷ _} {[]} (m , mm) n  
-      = Ap1 m <$> alignA* mm n
-    alignA* {[]} {_ ∷ _} m (n , nn)  
-      = Ap1ᵒ n <$> alignA* m nn
-    alignA* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn) 
-      =   align? m n (alignA* mm nn)
-      ++  Ap1 m <$> alignD* mm (n , nn)
-      ++  Ap1ᵒ n <$> alignI* (m , mm) nn
-
-    alignD* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
-    alignD* {[]}     m n        = alignI* m n
-    alignD* {y ∷ ty} (m , mm) n = Ap1 m <$> alignD* mm n
-                               ++ alignI* (m , mm) n
-
-    alignI* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
-    alignI* {[]}    {[]} m n = return A0
-    alignI* {_ ∷ _} {[]} m n = fail
-    alignI* {[]} {_ ∷ _} m (n , nn)
-      = Ap1ᵒ n <$> alignI* m nn
-    alignI* {_ ∷ _} {_ ∷ _} (m , mm) (n , nn)
-      = Ap1ᵒ n <$> alignI* (m , mm) nn
-      ++ align? m n (alignA* mm nn)
-
-  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
-  align* x y = alignD* x y
-\end{code}
 
 %<*Patch-def>
 \begin{code}
