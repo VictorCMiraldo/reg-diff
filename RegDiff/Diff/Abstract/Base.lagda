@@ -40,17 +40,24 @@ module RegDiff.Diff.Abstract.Base where
   for the record above. We only want the Diffables that
   obey certain laws!
 
+  We first separate the correctness of the candidates
+  from the correctness of the cost function.
+
 \begin{code}
-  record IsDiff {A : Set}(⟦_⟧ : A → Set)(D : Diffable ⟦_⟧) : Set₁ where
+  record CandsCorrect {A : Set}(⟦_⟧ : A → Set)(D : Diffable ⟦_⟧) : Set₁ where
     field
-      candidates-ok
+      cands-correct
         : ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧) 
         → All (IsCand D x y) (cands D x y)
 
-      candidates-nonnil
+      cands-nonnil
         : ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧)
         → 1 ≤ length (cands D x y)
       
+  record CostCorrect {A : Set}(⟦_⟧ : A → Set)(D : Diffable ⟦_⟧) : Set₁ where
+    field
+      cands-correct : CandsCorrect ⟦_⟧ D
+
       cost-eq
         : ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P D a b)
           (hp : IsCand D x y p)(hq : IsCand D x y q)
@@ -65,7 +72,6 @@ module RegDiff.Diff.Abstract.Base where
   Now we repeat everything for homogeneous patches!
 
 \begin{code}
-
   record Diffable₀ {A : Set}(⟦_⟧ : A → Set) : Set₁ where
     field
       P₀      : A → Set
@@ -80,17 +86,21 @@ module RegDiff.Diff.Abstract.Base where
           → Set
   IsCand₀ D x y p = apply₀ D p x ≡ just y
 
-  record IsDiff₀ {A : Set}(⟦_⟧ : A → Set)(D : Diffable₀ ⟦_⟧) : Set₁ where
+  record CandsCorrect₀ {A : Set}(⟦_⟧ : A → Set)(D : Diffable₀ ⟦_⟧) : Set₁ where
     field
-      candidates-ok₀
+      cands-correct₀
         : ∀{a}(x y : ⟦ a ⟧)
         → All (IsCand₀ D x y) (cands₀ D x y)
 
-      candidates-nonnil₀
+      cands-nonnil₀
         : ∀{a}(x y : ⟦ a ⟧)
         → 1 ≤ length (cands₀ D x y)
       
-      cost-eq
+  record CostCorrect₀ {A : Set}(⟦_⟧ : A → Set)(D : Diffable₀ ⟦_⟧) : Set₁ where
+    field
+      cands-correct₀ : CandsCorrect₀ ⟦_⟧ D
+
+      cost-eq₀
         : ∀{a}(x y : ⟦ a ⟧)(p q : P₀ D a)
           (hp : IsCand₀ D x y p)(hq : IsCand₀ D x y q)
         → cost₀ D p ≡ cost₀ D q → apply₀ D p ≡ apply₀ D q

@@ -122,11 +122,17 @@ module RegDiff.Diff.Abstract.Instances.Trivial
 
       -- Finally,
       -- We can prove that the template we had is ok!
-      diffable-delta-ok 
-        : IsDiff ⟦_⟧ Trivial-delta
-      diffable-delta-ok = record
-        { candidates-ok = λ x y → lemma-cands-1 x y ∷ []
-        ; candidates-nonnil = λ {a} {b} x y → s≤s z≤n
+      Trivial-Correct
+        : CandsCorrect ⟦_⟧ Trivial-delta
+      Trivial-Correct = record
+        { cands-correct = λ x y → lemma-cands-1 x y ∷ []
+        ; cands-nonnil  = λ {a} {b} x y → s≤s z≤n
+        }
+
+      Trivial-CostCorrect 
+        : CostCorrect ⟦_⟧ Trivial-delta
+      Trivial-CostCorrect = record
+        { cands-correct = Trivial-Correct
         ; cost-eq = lemma-cost-1
         ; cost-order = lemma-cost-2
         }
@@ -140,8 +146,13 @@ module RegDiff.Diff.Abstract.Instances.Trivial
     where
       open Generic ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_) 
 
-  IsDiff-Trivialₐ : IsDiff ⟦_⟧ₐ Trivialₐ-Diffable
-  IsDiff-Trivialₐ = diffable-delta-ok
+  Trivialₐ-Correct : CandsCorrect ⟦_⟧ₐ Trivialₐ-Diffable
+  Trivialₐ-Correct = Trivial-Correct
+    where
+      open Generic ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
+
+  Trivialₐ-CostCorrect : CostCorrect ⟦_⟧ₐ Trivialₐ-Diffable
+  Trivialₐ-CostCorrect = Trivial-CostCorrect
     where
       open Generic ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
 
@@ -153,8 +164,13 @@ module RegDiff.Diff.Abstract.Instances.Trivial
     where
       open Generic ⟦_⟧ₚ Prod-eq (dec-eqₚ _≟-A_)
 
-  IsDiff-Trivialₚ : IsDiff ⟦_⟧ₚ Trivialₚ-Diffable
-  IsDiff-Trivialₚ = diffable-delta-ok
+  Trivialₚ-Correct : CandsCorrect ⟦_⟧ₚ Trivialₚ-Diffable
+  Trivialₚ-Correct = Trivial-Correct
+    where
+      open Generic ⟦_⟧ₚ Prod-eq (dec-eqₚ _≟-A_) 
+
+  Trivialₚ-CostCorrect : CostCorrect ⟦_⟧ₚ Trivialₚ-Diffable
+  Trivialₚ-CostCorrect = Trivial-CostCorrect
     where
       open Generic ⟦_⟧ₚ Prod-eq (dec-eqₚ _≟-A_) 
 
@@ -166,7 +182,12 @@ module RegDiff.Diff.Abstract.Instances.Trivial
     where
       open Generic ⟦_⟧ Sum-eq (dec-eq _≟-A_)
 
-  IsDiff-Trivialₛ : IsDiff ⟦_⟧ Trivialₛ-Diffable
-  IsDiff-Trivialₛ = diffable-delta-ok
+  Trivialₛ-Correct : CandsCorrect ⟦_⟧ Trivialₛ-Diffable
+  Trivialₛ-Correct = Trivial-Correct
+    where
+      open Generic ⟦_⟧ Sum-eq (dec-eq _≟-A_)
+
+  Trivialₛ-CostCorrect : CostCorrect ⟦_⟧ Trivialₛ-Diffable
+  Trivialₛ-CostCorrect = Trivial-CostCorrect
     where
       open Generic ⟦_⟧ Sum-eq (dec-eq _≟-A_)
