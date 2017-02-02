@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector using (Vec ; VecI)
@@ -253,16 +252,16 @@ private
     -- Last but not least, we assemble all of them
     -- in a record that proves that our Spine
     -- construction is a diffing structure.
-    IsDiff-S-priv : CandsCorrect₀ ⟦_⟧ (S-Diffable doP)
-    IsDiff-S-priv = record
+    S-CandsCorrect-priv : CandsCorrect₀ ⟦_⟧ (S-Diffable doP)
+    S-CandsCorrect-priv = record
       { cands-correct₀ = lemma-cands-ok
       ; cands-nonnil₀  = lemma-cands-length
       }
 
 -- Finally, we export a concise definition!
-IsDiff-S : (doP : Diffable ⟦_⟧ₚ)(IsDiff-P : CandsCorrect ⟦_⟧ₚ doP)
-         → CandsCorrect₀ ⟦_⟧ (S-Diffable doP)
-IsDiff-S doP okP = IsDiff-S-priv
+S-CandsCorrect : (doP : Diffable ⟦_⟧ₚ)(okP : CandsCorrect ⟦_⟧ₚ doP)
+               → CandsCorrect₀ ⟦_⟧ (S-Diffable doP)
+S-CandsCorrect doP okP = S-CandsCorrect-priv
   where
     open HypothesisCands doP okP
       
