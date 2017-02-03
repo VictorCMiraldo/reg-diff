@@ -48,7 +48,7 @@ private
     lemma-cands-ok {[]} {[]} unit unit 
       = refl ∷ []
     lemma-cands-ok {[]} {tv ∷ tvs} unit (y , ys) 
-      = ?
+      = {!!}
     lemma-cands-ok {ty ∷ tys} {[]} (x , xs) unit
       = {!!}
     lemma-cands-ok {ty ∷ tys} {tv ∷ tvs} (x , xs) (y , ys) 
