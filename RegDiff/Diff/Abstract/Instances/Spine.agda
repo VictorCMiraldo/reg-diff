@@ -16,10 +16,8 @@ module RegDiff.Diff.Abstract.Instances.Spine
        {parms# : ℕ}(A : Parms parms#)(_≟-A_ : ParmEq A)
     where
 
-open import RegDiff.Generic.Multirec ks
-  hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-open import RegDiff.Generic.Eq ks keqs
-open import RegDiff.Diff.Regular.Base ks keqs A _≟-A_
+open import RegDiff.Diff.Universe ks keqs A _≟-A_
+open import RegDiff.Diff.Regular.Base.Spine ks keqs A _≟-A_
 open import RegDiff.Diff.Regular.Apply ks keqs A _≟-A_
 open import RegDiff.Diff.Regular.Lemmas ks keqs A _≟-A_
 
@@ -132,8 +130,6 @@ private
       S-app-prod-hip {[]} unit unit = refl ∷ []
       S-app-prod-hip {x ∷ ty} (dx , dxs) (dy , dys)
         = All-concat-commute 
-             (map (eval-cands-cons dxs dys) 
-                  (uncurry (cands doP) ((dx , unit) , dy , unit))) 
           (S-app-prod-hip-aux dx dy dxs dys) 
 
       S-app-prod-hip-aux

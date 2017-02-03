@@ -13,18 +13,19 @@ module RegDiff.Diff.Multirec.Apply
   open Monad {{...}}
   open Applicative {{...}}
 
-  open import RegDiff.Generic.Multirec ks
-    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-  open import RegDiff.Generic.Eq ks keqs
+  import RegDiff.Generic.Multirec ks as MREC
+  import RegDiff.Generic.Eq ks keqs as EQ
   open import RegDiff.Diff.Multirec.Base ks keqs
     renaming (module Internal to MRECInternal)
 \end{code}
 
 \begin{code}
-  module Internal {fam# : ℕ}(fam : Fam fam#) where
+  module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
 
     open MRECInternal fam
-    open import RegDiff.Diff.Regular.Apply ks keqs (Fix fam) _≟_
+    open import RegDiff.Diff.Universe ks keqs (MREC.Fix fam) EQ._≟_
+    open import RegDiff.Diff.Trivial.Apply ks keqs (MREC.Fix fam) EQ._≟_
+    open import RegDiff.Diff.Regular.Apply ks keqs (MREC.Fix fam) EQ._≟_
       public
 \end{code}
 \begin{code}

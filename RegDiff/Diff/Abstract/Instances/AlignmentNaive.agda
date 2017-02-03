@@ -11,15 +11,13 @@ open import RegDiff.Generic.Parms
 
 open import RegDiff.Diff.Abstract.Base
 
-module RegDiff.Diff.Abstract.Instances.Alignment
+module RegDiff.Diff.Abstract.Instances.AlignmentNaive
        {ks#    : ℕ}(ks : Vec Set ks#)(keqs  : VecI Eq ks)
        {parms# : ℕ}(A : Parms parms#)(_≟-A_ : ParmEq A)
     where
 
-open import RegDiff.Generic.Multirec ks
-  hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-open import RegDiff.Generic.Eq ks keqs
-open import RegDiff.Diff.Regular.Base ks keqs A _≟-A_
+open import RegDiff.Diff.Universe ks keqs A _≟-A_
+open import RegDiff.Diff.Regular.Base.AlignmentNaive ks keqs A _≟-A_
 open import RegDiff.Diff.Regular.Apply ks keqs A _≟-A_
 open import RegDiff.Diff.Regular.Lemmas ks keqs A _≟-A_
 
@@ -47,7 +45,14 @@ private
     lemma-cands-ok 
       : {ty tv : Π}(x : ⟦ ty ⟧ₚ)(y : ⟦ tv ⟧ₚ)
       → All (IsCand (Al-Diffable doP) x y) (cands (Al-Diffable doP) x y)
-    lemma-cands-ok x y = {!!}
+    lemma-cands-ok {[]} {[]} unit unit 
+      = refl ∷ []
+    lemma-cands-ok {[]} {tv ∷ tvs} unit (y , ys) 
+      = ?
+    lemma-cands-ok {ty ∷ tys} {[]} (x , xs) unit
+      = {!!}
+    lemma-cands-ok {ty ∷ tys} {tv ∷ tvs} (x , xs) (y , ys) 
+      = {!!}
 
 
     lemma-cands-length 

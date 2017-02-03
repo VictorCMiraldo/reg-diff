@@ -13,9 +13,7 @@ module RegDiff.Diff.Regular.Base.Spine
 
   open Monad {{...}}
 
-  open import RegDiff.Generic.Multirec ks
-    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-  open import RegDiff.Generic.Eq ks keqs
+  open import RegDiff.Diff.Universe ks keqs A _≟-A_
   open import RegDiff.Diff.Trivial.Base ks keqs A _≟-A_
 \end{code}
 
