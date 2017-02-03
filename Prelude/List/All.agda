@@ -64,21 +64,21 @@ module Prelude.List.All where
 
   All-concat-commute
     : ∀{a p}{A : Set a}{P : A → Set p}
-    → (x : List (List A))
+    → {x : List (List A)}
     → All (All P) x
     → All P (concat x)
-  All-concat-commute .[] [] = []
-  All-concat-commute (x ∷ xs) (hip ∷ hips) 
-    = hip ++ₐ All-concat-commute xs hips
+  All-concat-commute [] = []
+  All-concat-commute (hip ∷ hips) 
+    = hip ++ₐ All-concat-commute hips
 
   All-map-commute
     : ∀{a p}{A B : Set a}{P : B → Set p}
-    → (x : List A)(f : A → B)
+    → {x : List A}(f : A → B)
     → All (P ∘ f) x
     → All P (map f x)
-  All-map-commute .[] f [] = []
-  All-map-commute (_ ∷ xs) f (px ∷ hip) 
-    = px ∷ All-map-commute _ f hip
+  All-map-commute f [] = []
+  All-map-commute f (px ∷ hip) 
+    = px ∷ All-map-commute f hip
 
   All-bind-split
     : ∀{a p}{A B : Set a}
@@ -87,7 +87,7 @@ module Prelude.List.All where
     → All (All P ∘ f) x
     → All P (x >>= f)
   All-bind-split x f hip 
-    = All-concat-commute (map f x) (All-map-commute x f hip)
+    = All-concat-commute (All-map-commute f hip)
 
   All-bind-return-split
     : ∀{a p}{A B : Set a}
@@ -97,6 +97,17 @@ module Prelude.List.All where
     → All P (x >>= return ∘ f)
   All-bind-return-split x f hip 
     = All-bind-split x (return ∘ f) (mapᵢ (_∷ []) hip)
+
+  All-<$>-split
+    : ∀{a p}{A B C : Set a}
+    → {P : C → Set p}
+    → (x : List A)(f : A → B)
+    → (m : B → List C)
+    → All (All P ∘ m ∘ f) x
+    → All P ((f <$> x) >>= m)
+  All-<$>-split x f m hip
+    = All-bind-split (f <$> x) m 
+      (All-bind-return-split x f hip)
 
 {-
   data ALL {a p q}{A : Set a}{P : A → Set p}

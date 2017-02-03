@@ -140,9 +140,8 @@ private
       S-app-prod-hip-aux {y} dx dy dxs dys 
         rewrite fun-ext (eval-cands-simplify {y} dxs dys) 
               = All-map-commute 
-                  (cands doP {β y} {β y} (dx , unit) (dy , unit)) 
                   (eval-cands-cons' dxs dys) 
-                  (mapᵢ (λ {k} → All-map-commute (eval-cands dxs dys) (_∷_ k)) 
+                  (mapᵢ (λ {k} → All-map-commute (_∷_ k)) 
                   (mapᵢ (S-app-prod-core dx dy dxs dys) 
                         (cands-correct okP {β y} {β y} 
                                               (dx , unit) (dy , unit))))
