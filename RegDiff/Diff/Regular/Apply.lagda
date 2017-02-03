@@ -57,8 +57,8 @@ module RegDiff.Diff.Regular.Apply
   Al-app : {P : AASet}(doP : HasAppₐ P)
          → ∀{ty tv} → Al P ty tv → ⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ
   Al-app doP A0          = !
-  Al-app doP (Ap1 {a = ta} x a)  = Al-app doP a ∙ guard♯ {a = ta} x
-  Al-app doP (Ap1ᵒ x a)  = split♯ ((const x) ♭) (Al-app doP a)
+  Al-app doP (Adel {a = ta} x a)  = Al-app doP a ∙ guard♯ {a = ta} x
+  Al-app doP (Ains x a)  = split♯ ((const x) ♭) (Al-app doP a)
   Al-app doP (AX   x a)  = doP x >< Al-app doP a
 \end{code}
 \begin{code}

@@ -23,26 +23,26 @@ module RegDiff.Diff.Regular.Base.AlignmentOptimized
 
 %</Al-cost-def>
 \begin{code}
-  is-ap1 : {ty tv : Π} → Al Trivialₐ ty tv → Bool
-  is-ap1 (Ap1 _ _) = true
-  is-ap1 _         = false
+  is-del : {ty tv : Π} → Al Trivialₐ ty tv → Bool
+  is-del (Adel _ _) = true
+  is-del _         = false
 
-  is-ap1ᵒ : {ty tv : Π} → Al Trivialₐ ty tv → Bool
-  is-ap1ᵒ (Ap1ᵒ _ _) = true
-  is-ap1ᵒ _          = false 
+  is-ins : {ty tv : Π} → Al Trivialₐ ty tv → Bool
+  is-ins (Ains _ _) = true
+  is-ins _          = false 
 \end{code}
 %<*align-star-def>
 \begin{code}
   align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
   align* {[]}     {[]}     m n = return A0
   align* {[]}     {v ∷ tv} m (n , nn) 
-    = Ap1ᵒ n <$> align* m nn
+    = Ains n <$> align* m nn
   align* {y ∷ ty} {[]}     (m , mm) n 
-    = Ap1 m <$> align* mm n
+    = Adel m <$> align* mm n
   align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
     =  align? m n (align* mm nn)
-    ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
-    ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
+    ++ Adel  m       <$> filter (not ∘ is-del)  (align* mm (n , nn))
+    ++ Ains n       <$> filter (not ∘ is-ins)   (align* (m , mm) nn)
     where
       align? : {ty tv : Atom}{tys tvs : Π} 
              → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Trivialₐ tys tvs)

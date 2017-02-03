@@ -26,12 +26,12 @@ module RegDiff.Diff.Regular.Base.AlignmentNaive
   align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
   align* {[]}     {[]}     m n = return A0
   align* {[]}     {v ∷ tv} m (n , nn) 
-    = Ap1ᵒ n <$> align* m nn
+    = Ains n <$> align* m nn
   align* {y ∷ ty} {[]}     (m , mm) n 
-    = Ap1 m <$> align* mm n
+    = Adel m <$> align* mm n
   align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
     =  AX (m , n)   <$> align* mm nn
-    ++ Ap1  m       <$> align* mm (n , nn)
-    ++ Ap1ᵒ n       <$> align* (m , mm) nn      
+    ++ Adel  m       <$> align* mm (n , nn)
+    ++ Ains n       <$> align* (m , mm) nn      
 \end{code}
 %</align-star-def>

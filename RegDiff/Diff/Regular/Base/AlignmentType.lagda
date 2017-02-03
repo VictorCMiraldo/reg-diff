@@ -21,8 +21,8 @@ module RegDiff.Diff.Regular.Base.AlignmentType
 \begin{code}
   data Al (P : Atom → Atom → Set) : Π → Π → Set where
     A0   :                                          Al P [] []
-    Ap1  : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P (a ∷ ty) tv
-    Ap1ᵒ : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P ty       (a ∷ tv)
+    Adel : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P (a ∷ ty) tv
+    Ains : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P ty       (a ∷ tv)
     AX   : ∀{a a' ty tv}  → P a a'  → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
 \end{code}
 %</Al-def>
@@ -32,8 +32,8 @@ module RegDiff.Diff.Regular.Base.AlignmentType
             {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
           → Al P ty tv → M (Al Q ty tv)
   Al-mapM f A0 = return A0
-  Al-mapM f (Ap1 x a) = Al-mapM f a >>= return ∘ (Ap1 x) 
-  Al-mapM f (Ap1ᵒ x a) = Al-mapM f a >>= return ∘ (Ap1ᵒ x)
+  Al-mapM f (Adel x a) = Al-mapM f a >>= return ∘ (Adel x) 
+  Al-mapM f (Ains x a) = Al-mapM f a >>= return ∘ (Ains x)
   Al-mapM f (AX x a) = f x >>= λ x' → Al-mapM f a >>= return ∘ (AX x') 
 \end{code}
 %</Al-mapM-def>
@@ -42,7 +42,7 @@ module RegDiff.Diff.Regular.Base.AlignmentType
   Al-cost : {ty tv : Π}{P : AASet}(doP : {k v : Atom} → P k v → ℕ)
           → Al P ty tv → ℕ
   Al-cost doP A0         = 0
-  Al-cost doP (Ap1 x a)  = 1 + Al-cost doP a
-  Al-cost doP (Ap1ᵒ x a) = 1 + Al-cost doP a
+  Al-cost doP (Adel x a)  = 1 + Al-cost doP a
+  Al-cost doP (Ains x a) = 1 + Al-cost doP a
   Al-cost doP (AX x a)   = doP x + Al-cost doP a
 \end{code}
