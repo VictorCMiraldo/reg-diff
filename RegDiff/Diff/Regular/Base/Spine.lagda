@@ -53,8 +53,8 @@ module RegDiff.Diff.Regular.Base.Spine
              {P Q : ΠΠSet}(X : ∀{k v} → P k v → M (Q k v))
           → S P ty → M (S Q ty)
   S-mapM f Scp          = return Scp
-  S-mapM f (Schg i j x) = f x >>= return ∘ (Schg i j)
-  S-mapM f (Scns i xs)  = mapMᵢ f xs >>= return ∘ (Scns i)
+  S-mapM f (Schg i j x) = Schg i j <$> f x
+  S-mapM f (Scns i xs)  = Scns i   <$> mapMᵢ f xs
 \end{code}
 %</S-mapM-def>
 

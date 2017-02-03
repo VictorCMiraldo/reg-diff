@@ -48,7 +48,9 @@ private
     lemma-cands-ok {[]} {[]} unit unit 
       = refl ∷ []
     lemma-cands-ok {[]} {tv ∷ tvs} unit (y , ys) 
-      = All-<$>-split {!!} {!!} {!!}
+      = All-<$>-split {x = align* unit ys} (Ains y) 
+                      (Al-mapM (uncurry (cands doP))) 
+                      {!!}
     lemma-cands-ok {ty ∷ tys} {[]} (x , xs) unit
       = {!!}
     lemma-cands-ok {ty ∷ tys} {tv ∷ tvs} (x , xs) (y , ys) 

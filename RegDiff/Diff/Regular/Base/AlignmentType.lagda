@@ -32,9 +32,9 @@ module RegDiff.Diff.Regular.Base.AlignmentType
             {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
           → Al P ty tv → M (Al Q ty tv)
   Al-mapM f A0 = return A0
-  Al-mapM f (Adel x a) = Al-mapM f a >>= return ∘ (Adel x) 
-  Al-mapM f (Ains x a) = Al-mapM f a >>= return ∘ (Ains x)
-  Al-mapM f (AX x a) = f x >>= λ x' → Al-mapM f a >>= return ∘ (AX x') 
+  Al-mapM f (Adel x a) = Adel x <$> Al-mapM f a 
+  Al-mapM f (Ains x a) = Ains x <$> Al-mapM f a
+  Al-mapM f (AX x a) = f x >>= λ x' → AX x' <$> Al-mapM f a
 \end{code}
 %</Al-mapM-def>
 %<*Al-cost-def>

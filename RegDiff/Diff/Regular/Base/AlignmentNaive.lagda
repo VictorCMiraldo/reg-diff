@@ -31,7 +31,7 @@ module RegDiff.Diff.Regular.Base.AlignmentNaive
     = Adel m <$> align* mm n
   align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
     =  AX (m , n)   <$> align* mm nn
-    ++ Adel  m       <$> align* mm (n , nn)
+    ++ Adel  m      <$> align* mm (n , nn)
     ++ Ains n       <$> align* (m , mm) nn      
 \end{code}
 %</align-star-def>

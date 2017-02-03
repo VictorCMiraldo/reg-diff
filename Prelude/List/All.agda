@@ -89,24 +89,24 @@ module Prelude.List.All where
   All-bind-split f hip 
     = All-concat-commute (All-map-commute f hip)
 
-  All-bind-return-split
+  All-<$>-split
     : ∀{a p}{A B : Set a}
     → {P : B → Set p}{x : List A}
     → (f : A → B)
     → All (P ∘ f) x
-    → All P (x >>= return ∘ f)
-  All-bind-return-split f hip 
+    → All P (f <$> x)
+  All-<$>-split f hip 
     = All-bind-split (return ∘ f) (mapᵢ (_∷ []) hip)
 
-  All-<$>-split
+  All-<$>->>=-split
     : ∀{a p}{A B C : Set a}
     → {P : C → Set p}{x : List A}
     → (f : A → B)
     → (m : B → List C)
     → All (All P ∘ m ∘ f) x
     → All P ((f <$> x) >>= m)
-  All-<$>-split f m hip
-    = All-bind-split m (All-bind-return-split f hip)
+  All-<$>->>=-split f m hip
+    = All-bind-split m (All-<$>-split f hip)
 
 {-
   data ALL {a p q}{A : Set a}{P : A → Set p}
