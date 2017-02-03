@@ -62,6 +62,14 @@ module Prelude.List.All where
   []       ++ₐ n = n
   (px ∷ m) ++ₐ n = px ∷ (m ++ₐ n)
 
+  ++ₐ-split : ∀{a p}{A : Set a}{P : A → Set p}
+            → {l1 l2 : List A}
+            → All P (l1 ++ l2) → (All P l1 × All P l2)
+  ++ₐ-split {l1 = []} hip = [] , hip
+  ++ₐ-split {l1 = x ∷ xs} (px ∷ hip)
+    = let pl1 , pl2 = ++ₐ-split hip
+       in px ∷ pl1 , pl2
+
   All-concat-commute
     : ∀{a p}{A : Set a}{P : A → Set p}
     → {x : List (List A)}
@@ -80,6 +88,25 @@ module Prelude.List.All where
   All-map-commute f (px ∷ hip) 
     = px ∷ All-map-commute f hip
 
+  All-concat-uncommute
+    : ∀{a p}{A : Set a}{P : A → Set p}
+    → {x : List (List A)}
+    → All P (concat x)
+    → All (All P) x
+  All-concat-uncommute {x = []} [] = []
+  All-concat-uncommute {x = x ∷ xs} hip 
+    = let h0 , h1 = ++ₐ-split {l1 = x} hip
+       in h0 ∷ All-concat-uncommute h1
+
+  All-map-uncommute
+    : ∀{a p}{A B : Set a}{P : B → Set p}
+    → {x : List A}(f : A → B)
+    → All P (map f x)
+    → All (P ∘ f) x
+  All-map-uncommute {x = []} f [] = []
+  All-map-uncommute {x = x ∷ xs} f (px ∷ hip) 
+    = px ∷ All-map-uncommute f hip
+
   All-bind-split
     : ∀{a p}{A B : Set a}
     → {P : B → Set p}{x : List A}
@@ -88,6 +115,15 @@ module Prelude.List.All where
     → All P (x >>= f)
   All-bind-split f hip 
     = All-concat-commute (All-map-commute f hip)
+
+  All-bind-unsplit
+    : ∀{a p}{A B : Set a}
+    → {P : B → Set p}{x : List A}
+    → (f : A → List B)
+    → All P (x >>= f)
+    → All (All P ∘ f) x
+  All-bind-unsplit f hip 
+    = All-map-uncommute f (All-concat-uncommute hip)
 
   All-<$>-split
     : ∀{a p}{A B : Set a}

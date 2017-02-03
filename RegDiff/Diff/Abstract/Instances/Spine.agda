@@ -235,11 +235,11 @@ private
     lemma-cands-length {ty} _ _ | no _ | strip cx dx | strip _ dy
        | yes refl 
        = ≤-trans (lemma-eval-cands-length dx dy) 
-                 (length->>=-return (eval-cands dx dy))
+                 (length-<$> (eval-cands dx dy))
     lemma-cands-length _ _ | no _ | strip cx dx | strip cy dy
        | no _ 
        =  ≤-trans (cands-nonnil okP dx dy)
-                  (length->>=-return (cands doP dx dy)) 
+                  (length-<$> (cands doP dx dy)) 
       
 
     -- Last but not least, we assemble all of them

@@ -46,3 +46,4 @@ module RegDiff.Diff.Regular.Base.AlignmentType
   Al-cost doP (Ains x a) = 1 + Al-cost doP a
   Al-cost doP (AX x a)   = doP x + Al-cost doP a
 \end{code}
+3
