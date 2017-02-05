@@ -31,8 +31,6 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
   open BASE.Internal fam
   open APPLY.Internal fam
 
-  open CandsCorrect
-
   Fix-Diffable : Diffable (Fix fam)
   Fix-Diffable = record 
     { P = λ a b → Patchμ (T a) (T b)
@@ -67,7 +65,7 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
     alignμ'-correct {[]} {_ ∷ _} xs ys = []
     alignμ'-correct {_ ∷ _} {[]} xs ys = []
     alignμ'-correct {ty ∷ tys} {tv ∷ tvs} xs ys 
-      = cands-correct (Al-CandsCorrect ↑-Fix-Diffable {!!}) xs ys
+      = {!!}
 
     lemma-ins-correct₀
       : {k : Famᵢ}{ty : U}(x : Fix fam k)(y : ⟦ ty ⟧)
@@ -113,16 +111,10 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
       
 
 
-  Fix-CandsCorrect : CandsCorrect (Fix fam) Fix-Diffable
-  Fix-CandsCorrect = record
-    { cands-correct = lemma-cands-correct
-    ; cands-nonnil  = {!!}
-    }
+  Fix-Correct : CandsCorrect (Fix fam) Fix-Diffable
+  Fix-Correct = lemma-cands-correct
 
-  ↑-Fix-CandsCorrect : CandsCorrect ⟦_⟧ₐ ↑-Fix-Diffable
-  ↑-Fix-CandsCorrect = record
-    { cands-correct = ?
-    ; cands-nonnil  = ?
-    }
+  ↑-Fix-Correct : CandsCorrect ⟦_⟧ₐ ↑-Fix-Diffable
+  ↑-Fix-Correct = {!!}
 
   
