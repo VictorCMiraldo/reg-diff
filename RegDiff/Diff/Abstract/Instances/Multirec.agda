@@ -27,8 +27,11 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
 
   open import RegDiff.Diff.Universe ks keqs (MREC.Fix fam) EQ._≟_
   open import RegDiff.Diff.Trivial.Base ks keqs (MREC.Fix fam) EQ._≟_
+  open import RegDiff.Diff.Abstract.Instances.Patch ks keqs (MREC.Fix fam) EQ._≟_
   open BASE.Internal fam
   open APPLY.Internal fam
+
+  open CandsCorrect
 
   Fix-Diffable : Diffable (Fix fam)
   Fix-Diffable = record 
@@ -38,13 +41,42 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
     ; cost = Patchμ-cost 
     }
 
+  ↑-Fix-Diffable : Diffable ⟦_⟧ₐ
+  ↑-Fix-Diffable = record 
+    { P = UU→AA Patchμ 
+    ; cands = diffμ*-atoms
+    ; apply = {!!} 
+    ; cost = {!!}
+    }
+
+  Patchμ-app-ins
+    : {k : Famᵢ}{ty : U}(x : Fix fam k)(cy : Constr ty)
+    → (dy : ⟦ typeOf ty cy ⟧ₚ)
+    → {p : Al (UU→AA Patchμ) (I k ∷ []) (typeOf ty cy)}
+    → Al-app (α-app Patchμ-app₀) p (x , unit) ≡ just dy
+    → Patchμ-app₀ (ins cy p) (unmu x) ≡ just (inject {ty = ty} cy dy)
+  Patchμ-app-ins ⟨ x ⟩ cy dy hip 
+    rewrite hip = refl
+
   private
+    alignμ'-correct
+      : {ty tv : Π}(xs : ⟦ ty ⟧ₚ)(ys : ⟦ tv ⟧ₚ)
+      → All (λ p → Al-app (α-app Patchμ-app₀) p xs ≡ just ys)  
+            (alignμ' xs ys)
+    alignμ'-correct {[]} {[]} xs ys = []
+    alignμ'-correct {[]} {_ ∷ _} xs ys = []
+    alignμ'-correct {_ ∷ _} {[]} xs ys = []
+    alignμ'-correct {ty ∷ tys} {tv ∷ tvs} xs ys 
+      = cands-correct (Al-CandsCorrect ↑-Fix-Diffable {!!}) xs ys
+
     lemma-ins-correct₀
       : {k : Famᵢ}{ty : U}(x : Fix fam k)(y : ⟦ ty ⟧)
       → All (λ p → Patchμ-app₀ p (unmu x) ≡ just y) (diffμ*-ins x y)
     lemma-ins-correct₀ x y with sop y
     lemma-ins-correct₀ x _ | strip cy dy
-      = All-<$>-commute {!!} {!!}
+      = All-<$>-commute (ins cy) 
+                        (mapᵢ (λ {p} → Patchμ-app-ins x cy dy {p}) 
+                              (alignμ'-correct (x , unit) dy))
 
     lemma-ins-correct
       : {k k' : Famᵢ}(x : Fix fam k)(y : ⟦ T k' ⟧)
@@ -85,6 +117,12 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
   Fix-CandsCorrect = record
     { cands-correct = lemma-cands-correct
     ; cands-nonnil  = {!!}
+    }
+
+  ↑-Fix-CandsCorrect : CandsCorrect ⟦_⟧ₐ ↑-Fix-Diffable
+  ↑-Fix-CandsCorrect = record
+    { cands-correct = ?
+    ; cands-nonnil  = ?
     }
 
   

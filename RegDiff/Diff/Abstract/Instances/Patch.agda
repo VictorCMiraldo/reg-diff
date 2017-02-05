@@ -25,7 +25,9 @@ open import RegDiff.Diff.Regular.Lemmas ks keqs A _≟-A_
 open Monad {{...}}
 
 open import RegDiff.Diff.Abstract.Instances.Spine ks keqs A _≟-A_
+  public
 open import RegDiff.Diff.Abstract.Instances.Alignment ks keqs A _≟-A_
+  public
 
 Patch-Diffable : Diffable ⟦_⟧ₐ → Diffable₀ ⟦_⟧
 Patch-Diffable doP = record 
