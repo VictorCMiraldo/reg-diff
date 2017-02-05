@@ -115,42 +115,42 @@ module Prelude.List.All where
   All-map-uncommute {x = x ∷ xs} f (px ∷ hip) 
     = px ∷ All-map-uncommute f hip
 
-  All-bind-split
+  All-bind-commute
     : ∀{a p}{A B : Set a}
     → {P : B → Set p}{x : List A}
     → (f : A → List B)
     → All (All P ∘ f) x
     → All P (x >>= f)
-  All-bind-split f hip 
+  All-bind-commute f hip 
     = All-concat-commute (All-map-commute f hip)
 
-  All-bind-unsplit
+  All-bind-uncommute
     : ∀{a p}{A B : Set a}
     → {P : B → Set p}{x : List A}
     → (f : A → List B)
     → All P (x >>= f)
     → All (All P ∘ f) x
-  All-bind-unsplit f hip 
+  All-bind-uncommute f hip 
     = All-map-uncommute f (All-concat-uncommute hip)
 
-  All-<$>-split
+  All-<$>-commute
     : ∀{a p}{A B : Set a}
     → {P : B → Set p}{x : List A}
     → (f : A → B)
     → All (P ∘ f) x
     → All P (f <$> x)
-  All-<$>-split f hip 
-    = All-bind-split (return ∘ f) (mapᵢ (_∷ []) hip)
+  All-<$>-commute f hip 
+    = All-bind-commute (return ∘ f) (mapᵢ (_∷ []) hip)
 
-  All-<$>->>=-split
+  All-<$>->>=-commute
     : ∀{a p}{A B C : Set a}
     → {P : C → Set p}{x : List A}
     → (f : A → B)
     → (m : B → List C)
     → All (All P ∘ m ∘ f) x
     → All P ((f <$> x) >>= m)
-  All-<$>->>=-split f m hip
-    = All-bind-split m (All-<$>-split f hip)
+  All-<$>->>=-commute f m hip
+    = All-bind-commute m (All-<$>-commute f hip)
 
   x∈[]-abs : ∀{a}{A : Set a}{x : A}
            → x ∈ [] → ⊥

@@ -188,7 +188,7 @@ private
     -- If they have the same constructor, we are in the Scns case.
     lemma-cands-ok _ _ | no _ | strip cx dx | strip _ dy
        | yes refl 
-       = All-<$>-split 
+       = All-<$>-commute 
             (Scns cx) 
             (mapᵢ (λ {x} p → S-app-Scns-elim x p) 
                   (S-app-prod-hip dx dy))
@@ -196,7 +196,7 @@ private
     -- If not, we are in the Schg case.
     lemma-cands-ok _ _ | no _ | strip cx dx | strip cy dy
        | no _ 
-       = All-<$>-split 
+       = All-<$>-commute 
             (Schg cx cy) 
             (mapᵢ (S-app-chg-correct cx cy dx dy)
                   (cands-correct okP dx dy))

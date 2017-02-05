@@ -60,7 +60,25 @@ module RegDiff.Diff.Multirec.Apply
 \end{code}
 
 \begin{code}
-    Patchμ-app : {a b : Famᵢ} → Patchμ (T a) (T b) 
-               → Fix fam a ↦ Fix fam b
+    Patchμ-app : {k k' : Famᵢ} → Patchμ (T k) (T k') 
+               → Fix fam k ↦ Fix fam k'
     Patchμ-app p = (⟨_⟩ ♭) ∙ Patchμ-app₀ p ∙ (unmu ♭)         
+\end{code}
+
+\begin{code}
+    Patchμ-app-app₀-trₗ
+      : {k k' : Famᵢ}(x : Fix fam k)(y : ⟦ T k' ⟧)
+      → {p : Patchμ (T k) (T k')}
+      → Patchμ-app₀ p (unmu x) ≡ just y
+      → Patchμ-app {k} {k'} p x ≡ just ⟨ y ⟩
+    Patchμ-app-app₀-trₗ ⟨ x ⟩ y hip 
+      rewrite hip = refl
+
+    Patchμ-app-app₀-trᵣ
+      : {k k' : Famᵢ}(x : ⟦ T k ⟧)(y : Fix fam k')
+      → {p : Patchμ (T k) (T k')}
+      → Patchμ-app₀ p x ≡ just (unmu y)
+      → Patchμ-app {k} {k'} p ⟨ x ⟩ ≡ just y
+    Patchμ-app-app₀-trᵣ x ⟨ y ⟩ hip 
+      rewrite hip = refl
 \end{code}

@@ -59,7 +59,7 @@ private
       → All (IsCand (Al-Diffable doP) {b = ty ∷ tys} xs (y , ys)) 
             (Ains y <$> Al-mapM (uncurry (cands doP)) k)
     lemma-cands-ins {ty} {tys} y xs ys hip
-      = All-<$>-split (Ains y) (mapᵢ (λ {k} → Ains-correct {ty} {tys} y xs ys {k}) hip)
+      = All-<$>-commute (Ains y) (mapᵢ (λ {k} → Ains-correct {ty} {tys} y xs ys {k}) hip)
 
     Adel-correct
       : {tv : Atom}{tys tvs : Π}(x : ⟦ tv ⟧ₐ)(xs : ⟦ tvs ⟧ₚ)(ys : ⟦ tys ⟧ₚ)
@@ -79,7 +79,7 @@ private
       → All (IsCand (Al-Diffable doP) {a = tv ∷ tvs} (x , xs) ys) 
             (Adel x <$> Al-mapM (uncurry (cands doP)) k)
     lemma-cands-del {ty} {tys} x xs ys hip
-      = All-<$>-split (Adel x) (mapᵢ (λ {k} → Adel-correct {ty} {tys} x xs ys {k}) hip)
+      = All-<$>-commute (Adel x) (mapᵢ (λ {k} → Adel-correct {ty} {tys} x xs ys {k}) hip)
 
     AX-correct
       : {tv ty : Atom}{tys tvs : Π}(x : ⟦ tv ⟧ₐ)(xs : ⟦ tvs ⟧ₚ)(y : ⟦ ty ⟧ₐ)(ys : ⟦ tys ⟧ₚ)
@@ -101,9 +101,9 @@ private
       with cands-correct okP {ty} {tv} x y
     ...| csOk
       with cands doP {ty} {tv} x y
-    ...| cs = All-bind-split {x = cs} 
+    ...| cs = All-bind-commute {x = cs} 
                 (λ x' → AX x' <$> Al-mapM (uncurry (cands doP)) k) 
-                (mapᵢ (λ {j} h → All-<$>-split 
+                (mapᵢ (λ {j} h → All-<$>-commute 
                                    {x = Al-mapM (uncurry (cands doP)) k} 
                                    (AX j) 
                                    (mapᵢ (λ {l} → AX-correct x xs y ys {j} {l} h) 
@@ -117,36 +117,36 @@ private
         → All (IsCand (Al-Diffable doP) {tvs} {ty ∷ tys} xs (y , ys))
               ((Ains y <$> align* xs ys) >>= Al-mapM (uncurry (cands doP)))
       lemma-cands-Ains-helper y xs ys
-        = All-<$>->>=-split {x = align* xs ys} 
+        = All-<$>->>=-commute {x = align* xs ys} 
               (Ains y) 
               (Al-mapM (uncurry (cands doP))) 
               (mapᵢ (λ {k} → lemma-cands-ins y xs ys {k}) 
-                (All-bind-unsplit (Al-mapM (uncurry (cands doP))) 
-                                  (lemma-cands-ok xs ys)))
+                (All-bind-uncommute (Al-mapM (uncurry (cands doP))) 
+                                    (lemma-cands-ok xs ys)))
 
       lemma-cands-Adel-helper
         : {tv : Atom}{tys tvs : Π}(x : ⟦ tv ⟧ₐ)(xs : ⟦ tvs ⟧ₚ)(ys : ⟦ tys ⟧ₚ)
         → All (IsCand (Al-Diffable doP) {tv ∷ tvs} {tys} (x , xs) ys)
               ((Adel x <$> align* xs ys) >>= Al-mapM (uncurry (cands doP)))
       lemma-cands-Adel-helper x xs ys
-        = All-<$>->>=-split {x = align* xs ys} 
+        = All-<$>->>=-commute {x = align* xs ys} 
             (Adel x) 
             (Al-mapM (uncurry (cands doP))) 
             (mapᵢ (λ {k} → lemma-cands-del x xs ys {k}) 
-              (All-bind-unsplit (Al-mapM (uncurry (cands doP))) 
-                                (lemma-cands-ok xs ys)))
+              (All-bind-uncommute (Al-mapM (uncurry (cands doP))) 
+                                  (lemma-cands-ok xs ys)))
 
       lemma-cands-AX-helper
         : {tv ty : Atom}{tys tvs : Π}(x : ⟦ tv ⟧ₐ)(xs : ⟦ tvs ⟧ₚ)(y : ⟦ ty ⟧ₐ)(ys : ⟦ tys ⟧ₚ)
         → All (IsCand (Al-Diffable doP) {tv ∷ tvs} {ty ∷ tys} (x , xs) (y , ys))
               ((AX (x , y) <$> align* xs ys) >>= Al-mapM (uncurry (cands doP)))
       lemma-cands-AX-helper x xs y ys 
-        = All-<$>->>=-split {x = align* xs ys} 
+        = All-<$>->>=-commute {x = align* xs ys} 
             (AX (x , y)) 
             (Al-mapM (uncurry (cands doP))) 
             (mapᵢ (λ {k} →  lemma-cands-AX x xs y ys {k}) 
-                  (All-bind-unsplit (Al-mapM (uncurry (cands doP))) 
-                                    (lemma-cands-ok xs ys)))
+                  (All-bind-uncommute (Al-mapM (uncurry (cands doP))) 
+                                      (lemma-cands-ok xs ys)))
 
       lemma-cands-ok 
         : {ty tv : Π}(x : ⟦ ty ⟧ₚ)(y : ⟦ tv ⟧ₚ)

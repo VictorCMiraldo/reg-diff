@@ -38,4 +38,53 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
     ; cost = Patchμ-cost 
     }
 
+  private
+    lemma-ins-correct₀
+      : {k : Famᵢ}{ty : U}(x : Fix fam k)(y : ⟦ ty ⟧)
+      → All (λ p → Patchμ-app₀ p (unmu x) ≡ just y) (diffμ*-ins x y)
+    lemma-ins-correct₀ x y with sop y
+    lemma-ins-correct₀ x _ | strip cy dy
+      = All-<$>-commute {!!} {!!}
+
+    lemma-ins-correct
+      : {k k' : Famᵢ}(x : Fix fam k)(y : ⟦ T k' ⟧)
+      → All (λ p → Patchμ-app {k} {k'} p x ≡ just ⟨ y ⟩) (diffμ*-ins x y)
+    lemma-ins-correct {k} {k'} x y
+      = mapᵢ (λ {p} → Patchμ-app-app₀-trₗ {k} {k'} x y {p}) 
+             (lemma-ins-correct₀ x y)
+
+    lemma-del-correct₀
+      : {ty : U}{k' : Famᵢ}(x : ⟦ ty ⟧)(y : Fix fam k')
+      → All (λ p → Patchμ-app₀ p x ≡ just (unmu y)) (diffμ*-del x y)
+    lemma-del-correct₀ x y = {!!}
+
+    lemma-del-correct
+      : {k k' : Famᵢ}(x : ⟦ T k ⟧)(y : Fix fam k')
+      → All (λ p → Patchμ-app {k} {k'} p ⟨ x ⟩ ≡ just y) (diffμ*-del x y)
+    lemma-del-correct {k} {k'} x y
+      = mapᵢ (λ {p} → Patchμ-app-app₀-trᵣ {k} {k'} x y {p}) 
+             (lemma-del-correct₀ x y)
+
+    lemma-mod-correct
+      : {k k' : Famᵢ}(x : ⟦ T k ⟧)(y : ⟦ T k' ⟧)
+      → All (λ p → Patchμ-app {k} {k'} p ⟨ x ⟩ ≡ just ⟨ y ⟩) 
+            (diffμ*-mod x y)
+    lemma-mod-correct = {!!}
+
+    lemma-cands-correct
+      : {k k' : Famᵢ}(x : Fix fam k)(y : Fix fam k')
+      → All (IsCand Fix-Diffable x y) (cands Fix-Diffable x y)
+    lemma-cands-correct {k} {k'} ⟨ x ⟩ ⟨ y ⟩ 
+      = lemma-mod-correct {k} {k'} x y 
+      ++ₐ (lemma-ins-correct {k} {k'} ⟨ x ⟩ y 
+      ++ₐ  lemma-del-correct {k} {k'} x ⟨ y ⟩)
+      
+
+
+  Fix-CandsCorrect : CandsCorrect (Fix fam) Fix-Diffable
+  Fix-CandsCorrect = record
+    { cands-correct = lemma-cands-correct
+    ; cands-nonnil  = {!!}
+    }
+
   
