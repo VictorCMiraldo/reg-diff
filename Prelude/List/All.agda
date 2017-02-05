@@ -5,7 +5,15 @@ open import Prelude.Monad
 module Prelude.List.All where
 
   open import Data.List.All 
-    using (All; [] ; _∷_; tabulate) 
+    using (All; [] ; _∷_)
+    renaming ( tabulate to All-tabulate
+             ; lookup   to All-lookup
+             ) 
+    public
+
+  open import Data.List.Any as Any using (here; there)
+    public
+  open Any.Membership-≡ using (_∈_; _⊆_) 
     public
 
   open Monad {{...}} 
@@ -143,6 +151,20 @@ module Prelude.List.All where
     → All P ((f <$> x) >>= m)
   All-<$>->>=-split f m hip
     = All-bind-split m (All-<$>-split f hip)
+
+  x∈[]-abs : ∀{a}{A : Set a}{x : A}
+           → x ∈ [] → ⊥
+  x∈[]-abs ()
+
+  All-⊆ : ∀{a p}{A : Set a}{P : A → Set p}
+        → {l1 l2 : List A}
+        → (l1 ⊆ l2)
+        → All P l2
+        → All P l1
+  All-⊆ {l1 = []} hip _ = []
+  All-⊆ {l1 = x ∷ l1} hip pxs
+    = All-lookup pxs (hip (here refl)) 
+    ∷ All-⊆ (hip ∘ there) pxs
 
 {-
   data ALL {a p q}{A : Set a}{P : A → Set p}

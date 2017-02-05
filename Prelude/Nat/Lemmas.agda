@@ -38,7 +38,5 @@ module Prelude.Nat.Lemmas where
   ≤-refl : ∀{m} → m ≤ m
   ≤-refl = IsPreorder.reflexive PreO refl
 
-  ≤-steps
-
   1≤-witness : ∀{m} → 1 ≤ m → ∃ (λ n → m ≡ suc n)
   1≤-witness (s≤s {n = n} w) = n , refl
