@@ -35,13 +35,10 @@ Al-Diffable doP = record
 
 
 private 
-  module HypothesisCands 
+  module CandsCorrect 
            (doP : Diffable ⟦_⟧ₐ)
            (okP : CandsCorrect ⟦_⟧ₐ doP)
       where
-
-    open CandsCorrect
-
 
     Ains-correct
       : {ty : Atom}{tys tvs : Π}(y : ⟦ ty ⟧ₐ)(xs : ⟦ tvs ⟧ₚ)(ys : ⟦ tys ⟧ₚ)
@@ -98,7 +95,7 @@ private
       → All (IsCand (Al-Diffable doP) {a = tv ∷ tvs} {ty ∷ tys} (x , xs) (y , ys)) 
             (Al-mapM (uncurry (cands doP)) (AX (x , y) k))
     lemma-cands-AX {ty} {tv} x xs y ys {k} hip 
-      with cands-correct okP {ty} {tv} x y
+      with okP {ty} {tv} x y
     ...| csOk
       with cands doP {ty} {tv} x y
     ...| cs = All-bind-commute {x = cs} 
@@ -172,6 +169,12 @@ private
               ++ₐ  lemma-cands-Ains-helper y (x , xs) ys)
 
 
+private 
+  module CandsNonNil 
+           (doP : Diffable ⟦_⟧ₐ)
+           (okP : CandsNonNil ⟦_⟧ₐ doP)
+      where
+
     -- Al-mapM cands is, by (module) hypothesis, always non-nil.
     lemma-Al-mapM-nonnil
       : {ty tv : Π}(x : Al Trivialₐ ty tv)
@@ -189,7 +192,7 @@ private
       rewrite length-concat (map (λ x' → AX x' <$> Al-mapM (λ {k} {v} 
                                  → uncurry (cands doP {k} {v})) d) 
                             (cands doP {tv} {ty} x y)) 
-         with cands-nonnil okP {tv} {ty} x y
+         with okP {tv} {ty} x y
     ...| prf with cands doP {tv} {ty} x y
     ...| [] = prf
     ...| c ∷ cs with 1≤length-witness 
@@ -259,17 +262,16 @@ private
                       >>= Al-mapM (λ {k} {v} → uncurry (cands doP {k} {v}))))
 
 
-    Al-CandsCorrect-priv : CandsCorrect ⟦_⟧ₚ (Al-Diffable doP)
-    Al-CandsCorrect-priv = record
-      { cands-correct = lemma-cands-ok
-      ; cands-nonnil  = lemma-cands-length
-      }
 
--- Finally, we export a concise definition!
-Al-CandsCorrect : (doP : Diffable ⟦_⟧ₐ)(okP : CandsCorrect ⟦_⟧ₐ doP)
-               → CandsCorrect ⟦_⟧ₚ (Al-Diffable doP)
-Al-CandsCorrect doP okP = Al-CandsCorrect-priv
+Al-Correct : (doP : Diffable ⟦_⟧ₐ)(okP : CandsCorrect ⟦_⟧ₐ doP)
+           → CandsCorrect ⟦_⟧ₚ (Al-Diffable doP)
+Al-Correct doP okP = lemma-cands-ok
   where
-    open HypothesisCands doP okP
+    open CandsCorrect doP okP
       
       
+Al-Inhab : (doP : Diffable ⟦_⟧ₐ)(okP : CandsNonNil ⟦_⟧ₐ doP)
+         → CandsNonNil ⟦_⟧ₚ (Al-Diffable doP)
+Al-Inhab doP okP = lemma-cands-length
+  where
+    open CandsNonNil doP okP

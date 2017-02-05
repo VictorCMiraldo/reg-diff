@@ -37,8 +37,13 @@ Patch-Diffable doP = record
   ; cost₀  = cost₀  (S-Diffable (Al-Diffable doP))
   }
 
-Patch-CandsCorrect
-  : (doP : Diffable ⟦_⟧ₐ)(okP : CandsCorrect ⟦_⟧ₐ doP)
-  → CandsCorrect₀ ⟦_⟧ (Patch-Diffable doP)
-Patch-CandsCorrect doP okP
-  = S-CandsCorrect (Al-Diffable doP) (Al-CandsCorrect doP okP)
+Patch-Correct : (doP : Diffable ⟦_⟧ₐ)(okP : CandsCorrect ⟦_⟧ₐ doP)
+              → CandsCorrect₀ ⟦_⟧ (Patch-Diffable doP)
+Patch-Correct doP okP
+  = S-Correct (Al-Diffable doP) (Al-Correct doP okP)
+
+
+Patch-Inhab : (doP : Diffable ⟦_⟧ₐ)(okP : CandsNonNil ⟦_⟧ₐ doP)
+            → CandsNonNil₀ ⟦_⟧ (Patch-Diffable doP)
+Patch-Inhab doP okP
+  = S-Inhab (Al-Diffable doP) (Al-Inhab doP okP)

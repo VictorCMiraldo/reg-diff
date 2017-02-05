@@ -34,17 +34,15 @@ Al-Diffable doP = record
   }
 
 private 
-  module HypothesisCands 
+  module CandsCorrect
            (doP : Diffable ⟦_⟧ₐ)
            (okP : CandsCorrect ⟦_⟧ₐ doP)
       where
 
-    open CandsCorrect
-
     open import RegDiff.Diff.Abstract.Instances.AlignmentNaive 
       ks keqs A _≟-A_ 
       renaming ( Al-Diffable to AlN-Diffable
-               ; Al-CandsCorrect to AlN-CandsCorrect)
+               ; Al-Correct to AlN-Correct)
 
     postulate
       opt⊆naive 
@@ -56,22 +54,30 @@ private
         → All (IsCand (Al-Diffable doP) x y) (cands (Al-Diffable doP) x y)
     lemma-cands-ok x y 
       = All-⊆ (opt⊆naive x y) 
-              (cands-correct (AlN-CandsCorrect doP okP) x y)
+              (AlN-Correct doP okP x y)
+
+
+private 
+  module CandsNonNil
+           (doP : Diffable ⟦_⟧ₐ)
+           (okP : CandsNonNil ⟦_⟧ₐ doP)
+      where
 
     postulate
       lemma-cands-length 
         : {ty tv : Π}(x : ⟦ ty ⟧ₚ)(y : ⟦ tv ⟧ₚ)
         → 1 ≤ length (cands (Al-Diffable doP) x y)
 
-    Al-CandsCorrect-priv : CandsCorrect ⟦_⟧ₚ (Al-Diffable doP)
-    Al-CandsCorrect-priv = record
-      { cands-correct = lemma-cands-ok
-      ; cands-nonnil  = lemma-cands-length
-      }
 
--- Finally, we export a concise definition!
-Al-CandsCorrect : (doP : Diffable ⟦_⟧ₐ)(okP : CandsCorrect ⟦_⟧ₐ doP)
-               → CandsCorrect ⟦_⟧ₚ (Al-Diffable doP)
-Al-CandsCorrect doP okP = Al-CandsCorrect-priv
+Al-Correct : (doP : Diffable ⟦_⟧ₐ)(okP : CandsCorrect ⟦_⟧ₐ doP)
+           → CandsCorrect ⟦_⟧ₚ (Al-Diffable doP)
+Al-Correct doP okP = lemma-cands-ok
   where
-    open HypothesisCands doP okP
+    open CandsCorrect doP okP
+
+
+Al-Inhab : (doP : Diffable ⟦_⟧ₐ)(okP : CandsNonNil ⟦_⟧ₐ doP)
+           → CandsNonNil ⟦_⟧ₚ (Al-Diffable doP)
+Al-Inhab doP okP = lemma-cands-length
+  where
+    open CandsNonNil doP okP

@@ -42,12 +42,10 @@ S-Diffable doP = record
 -- We shall do this inside a parametrized module
 -- to save some typing.
 private 
-  module HypothesisCands 
+  module CandsCorrect 
            (doP : Diffable ⟦_⟧ₚ)
            (okP : CandsCorrect ⟦_⟧ₚ doP)
       where
-
-    open CandsCorrect
 
     -- Proving that our candidates function is correct is hard.
     -- specially in the Scns case.
@@ -143,7 +141,7 @@ private
                   (eval-cands-cons' dxs dys) 
                   (mapᵢ (λ {k} → All-map-commute (_∷_ k)) 
                   (mapᵢ (S-app-prod-core dx dy dxs dys) 
-                        (cands-correct okP {β y} {β y} 
+                        (okP {β y} {β y} 
                                               (dx , unit) (dy , unit))))
 
       S-app-prod-core
@@ -199,10 +197,20 @@ private
        = All-<$>-commute 
             (Schg cx cy) 
             (mapᵢ (S-app-chg-correct cx cy dx dy)
-                  (cands-correct okP dx dy))
+                  (okP dx dy))
 
     -- Now, we need to prove the candidates list
     -- is never empty.
+
+private 
+  module CandsNonNil
+           (doP : Diffable ⟦_⟧ₚ)
+           (okP : CandsNonNil ⟦_⟧ₚ doP)
+      where
+
+    eval-cands : {ty : Π}(dx dy : ⟦ ty ⟧ₚ)
+               → List (All (contr (P doP) ∘ β) ty)
+    eval-cands dx dy = mapMᵢ (uncurry (cands doP)) (zipₚ dx dy)
 
     -- The Scns case is still the hardest one, but this
     -- time it goes much easier.
@@ -212,7 +220,7 @@ private
     lemma-eval-cands-length {[]} unit unit 
       = s≤s z≤n
     lemma-eval-cands-length {x ∷ ty} (dx , dxs) (dy , dys)
-      with cands-nonnil okP {β x} {β x} (dx , unit) (dy , unit)
+      with okP {β x} {β x} (dx , unit) (dy , unit)
     ...| aux
       with cands doP {β x} {β x} (dx , unit) (dy , unit)
     ...| []     = aux
@@ -238,23 +246,20 @@ private
                  (length-<$>-≤ (eval-cands dx dy))
     lemma-cands-length _ _ | no _ | strip cx dx | strip cy dy
        | no _ 
-       =  ≤-trans (cands-nonnil okP dx dy)
+       =  ≤-trans (okP dx dy)
                   (length-<$>-≤ (cands doP dx dy)) 
       
 
-    -- Last but not least, we assemble all of them
-    -- in a record that proves that our Spine
-    -- construction is a diffing structure.
-    S-CandsCorrect-priv : CandsCorrect₀ ⟦_⟧ (S-Diffable doP)
-    S-CandsCorrect-priv = record
-      { cands-correct₀ = lemma-cands-ok
-      ; cands-nonnil₀  = lemma-cands-length
-      }
-
--- Finally, we export a concise definition!
-S-CandsCorrect : (doP : Diffable ⟦_⟧ₚ)(okP : CandsCorrect ⟦_⟧ₚ doP)
-               → CandsCorrect₀ ⟦_⟧ (S-Diffable doP)
-S-CandsCorrect doP okP = S-CandsCorrect-priv
+-- Finally, we export some concise definitions!
+S-Correct : (doP : Diffable ⟦_⟧ₚ)(okP : CandsCorrect ⟦_⟧ₚ doP)
+          → CandsCorrect₀ ⟦_⟧ (S-Diffable doP)
+S-Correct doP okP = lemma-cands-ok
   where
-    open HypothesisCands doP okP
+    open CandsCorrect doP okP
       
+
+S-Inhab : (doP : Diffable ⟦_⟧ₚ)(okP : CandsNonNil ⟦_⟧ₚ doP)
+        → CandsNonNil₀ ⟦_⟧ (S-Diffable doP)
+S-Inhab doP okP = lemma-cands-length
+  where
+    open CandsNonNil doP okP
