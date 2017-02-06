@@ -2,6 +2,7 @@
 open import Prelude
 open import Prelude.Vector
 open import Prelude.List.All
+open import Prelude.PartialFuncs.Base
 open import RegDiff.Generic.Parms
 
 module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
@@ -135,3 +136,18 @@ module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
   size-const : {n : ℕ}{A : Parms n}(ty : Sum n) → ⟦ ty ⟧ A → ℕ
   size-const = size1 (const 1)
 \end{code}
+\begin{code}
+  from-inj : {n : ℕ}{A : Parms n}{ty : Sum n}{i : Constr ty} 
+           → ⟦ ty ⟧ A ↦ ⟦ typeOf ty i ⟧ₚ A
+  from-inj x with sop x
+  from-inj {i = i} _ | strip cx dx 
+    with cx ≟-Fin i
+  ...| no _ = nothing
+  from-inj _ | strip cx dx
+     | yes refl = just dx
+
+  to-inj : {n : ℕ}{A : Parms n}{ty : Sum n}{i : Constr ty} 
+         → ⟦ typeOf ty i ⟧ₚ A ↦ ⟦ ty ⟧ A
+  to-inj {ty = ty} {i = i} = just ∘ inject {ty = ty} i
+\end{code}
+

@@ -32,18 +32,7 @@ module RegDiff.Diff.Trivial.Apply
   HasAppₚ : ΠΠSet → Set
   HasAppₚ Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ
 \end{code}
-\begin{code}
-  from-inj : {ty : U}{i : Constr ty} → ⟦ ty ⟧ ↦ ⟦ typeOf ty i ⟧ₚ
-  from-inj x with sop x
-  from-inj {ty} {i} _ | strip cx dx 
-    with cx ≟-Fin i
-  ...| no _ = nothing
-  from-inj _ | strip cx dx
-     | yes refl = just dx
 
-  to-inj : {ty : U}{i : Constr ty} → ⟦ typeOf ty i ⟧ₚ ↦ ⟦ ty ⟧
-  to-inj {ty} {i} = return ∘ inject i
-\end{code}
 \begin{code}
   singl   : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
             (eqP : (k : A)(x y : P k) → Dec (x ≡ y))
@@ -51,6 +40,7 @@ module RegDiff.Diff.Trivial.Apply
   singl {ty = ty} P eqP pa pb
     = ((const pb) ♭) & (So ∘ eqP ty pa)
 \end{code}
+
 \begin{code}
   Trivial-apply : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
             (eqA : (x y : A) → Dec (x ≡ y))

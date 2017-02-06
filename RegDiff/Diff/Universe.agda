@@ -17,6 +17,8 @@ module RegDiff.Diff.Universe
     public
   open import RegDiff.Generic.Eq ks keqs
     public
+  open import RegDiff.Generic.Lemmas ks keqs A _≟-A_
+    public
 
 -- First we define a few synonyms without
 -- having to pass parms# around everywhere.

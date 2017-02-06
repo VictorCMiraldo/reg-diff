@@ -70,7 +70,7 @@ private
       → S-app (apply doP) (Scns i p) (inject {ty = ty} i dx) 
       ≡ just (inject i dy)
     S-app-Scns-elim {ty} {i} {dx} {dy} p hip 
-      rewrite fromInj-inject {ty} i dx
+      rewrite fromInj-inject {ty = ty} i dx
             | hip
             = refl
 
