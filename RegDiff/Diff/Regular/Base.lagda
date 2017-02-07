@@ -148,25 +148,45 @@ module RegDiff.Diff.Regular.Base
 \end{code}
 %<*align-star-def>
 \begin{code}
-  align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
-  align* {[]}     {[]}     m n = return A0
-  align* {[]}     {v ∷ tv} m (n , nn) 
-    = Ap1ᵒ n <$> align* m nn
-  align* {y ∷ ty} {[]}     (m , mm) n 
-    = Ap1 m <$> align* mm n
-  align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
-    =  align? m n (align* mm nn)
-    ++ Ap1  m       <$> filter (not ∘ is-ap1ᵒ)  (align* mm (n , nn))
-    ++ Ap1ᵒ n       <$> filter (not ∘ is-ap1)   (align* (m , mm) nn)
-    where
-      align? : {ty tv : Atom}{tys tvs : Π} 
-             → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Trivialₐ tys tvs)
-             → List (Al Trivialₐ (ty ∷ tys) (tv ∷ tvs))
-      align? {I _} {I _} x y xys = AX (x , y) <$> xys
-      align? {K _} {K _} x y xys = AX (x , y) <$> xys
-      align? {I _} {K _} x y xys = []
-      align? {K _} {I _} x y xys = []
-      
+  mutual
+    align* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
+    align* {[]}     {[]}     m n = return A0
+    align* {[]}     {v ∷ tv} m (n , nn)
+      = Ap1ᵒ n <$> align* m nn
+    align* {y ∷ ty} {[]}     (m , mm) n
+      = Ap1 m <$> align* mm n
+    align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
+      =  align? m n (align* mm nn)
+      ++ Ap1  m       <$> (align*-no-ap1ᵒ mm (n , nn))
+      ++ Ap1ᵒ n       <$> (align*-no-ap1 (m , mm) nn)
+
+    align*-no-ap1ᵒ : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
+    align*-no-ap1ᵒ {[]}     {[]}     m n = return A0
+    align*-no-ap1ᵒ {[]}     {v ∷ tv} m (n , nn)
+      = []
+    align*-no-ap1ᵒ {y ∷ ty} {[]}     (m , mm) n
+      = Ap1 m <$> align* mm n
+    align*-no-ap1ᵒ {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
+      =  align? m n (align* mm nn)
+      ++ Ap1  m       <$> (align*-no-ap1ᵒ mm (n , nn))
+
+    align*-no-ap1 : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → List (Al Trivialₐ ty tv)
+    align*-no-ap1 {[]}     {[]}     m n = return A0
+    align*-no-ap1 {[]}     {v ∷ tv} m (n , nn)
+      = Ap1ᵒ n <$> align* m nn
+    align*-no-ap1 {y ∷ ty} {[]}     (m , mm) n
+      = []
+    align*-no-ap1 {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
+      =  align? m n (align* mm nn)
+      ++ Ap1ᵒ n       <$> (align*-no-ap1 (m , mm) nn)
+
+    align? : {ty tv : Atom}{tys tvs : Π}
+                 → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Trivialₐ tys tvs)
+                 → List (Al Trivialₐ (ty ∷ tys) (tv ∷ tvs))
+    align? {I _} {I _} x y xys = AX (x , y) <$> xys
+    align? {K _} {K _} x y xys = AX (x , y) <$> xys
+    align? {I _} {K _} x y xys = []
+    align? {K _} {I _} x y xys = []
 \end{code}
 %</align-star-def>
 begin{code}
