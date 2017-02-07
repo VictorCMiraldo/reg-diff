@@ -28,23 +28,23 @@ module RegDiff.Diff.Multirec.Apply
       public
 \end{code}
 \begin{code}
-    ⟨⟩ₚ : {k : Famᵢ} → ⟦ T k ⟧ ↦ ⟦ I k ∷ [] ⟧ₚ
+    ⟨⟩ₚ : {k : Famᵢ} → ⟦ T k ⟧ ⇀ ⟦ I k ∷ [] ⟧ₚ
     ⟨⟩ₚ  k = just (⟨ k ⟩ , unit) 
 
-    ⟨⟩ₚᵒ : {k : Famᵢ} → ⟦ I k ∷ [] ⟧ₚ ↦ ⟦ T k ⟧
+    ⟨⟩ₚᵒ : {k : Famᵢ} → ⟦ I k ∷ [] ⟧ₚ ⇀ ⟦ T k ⟧
     ⟨⟩ₚᵒ (⟨ k ⟩ , unit) = just k
 
-    ⟨⟩ₐ  : {k : Famᵢ} → ⟦ T k ⟧ ↦ ⟦ (I k ∷ []) ∷ [] ⟧
+    ⟨⟩ₐ  : {k : Famᵢ} → ⟦ T k ⟧ ⇀ ⟦ (I k ∷ []) ∷ [] ⟧
     ⟨⟩ₐ k = just (i1 (⟨ k ⟩ , unit))
 
-    ⟨⟩ₐᵒ : {k : Famᵢ} → ⟦ (I k ∷ []) ∷ [] ⟧ ↦ ⟦ T k ⟧
+    ⟨⟩ₐᵒ : {k : Famᵢ} → ⟦ (I k ∷ []) ∷ [] ⟧ ⇀ ⟦ T k ⟧
     ⟨⟩ₐᵒ (i2 ())
     ⟨⟩ₐᵒ (i1 (⟨ k ⟩ , unit)) = just k
 
     α-app : {a b : Atom}{P : UUSet}
           → (doP : HasApp P)
           → P (α a) (α b)
-          → ⟦ a ⟧ₐ ↦ ⟦ b ⟧ₐ
+          → ⟦ a ⟧ₐ ⇀ ⟦ b ⟧ₐ
     α-app {a} {b} doP wit = (return ∘ from-α {b}) 
                           ∙ doP wit 
                           ∙ (return ∘ to-α {a}) 

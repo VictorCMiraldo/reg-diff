@@ -22,20 +22,20 @@ module RegDiff.Diff.Trivial.Apply
 
 \begin{code}
   HasApp : UUSet → Set
-  HasApp Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ ↦ ⟦ tv ⟧
+  HasApp Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ ⇀ ⟦ tv ⟧
 \end{code}
 
 \begin{code}
   HasAppₐ : AASet → Set
-  HasAppₐ Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ₐ ↦ ⟦ tv ⟧ₐ
+  HasAppₐ Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ₐ ⇀ ⟦ tv ⟧ₐ
 \end{code}
 
 \begin{code}
   HasAppₚ : ΠΠSet → Set
-  HasAppₚ Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ
+  HasAppₚ Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ₚ ⇀ ⟦ tv ⟧ₚ
 \end{code}
 \begin{code}
-  from-inj : {ty : U}{i : Constr ty} → ⟦ ty ⟧ ↦ ⟦ typeOf ty i ⟧ₚ
+  from-inj : {ty : U}{i : Constr ty} → ⟦ ty ⟧ ⇀ ⟦ typeOf ty i ⟧ₚ
   from-inj x with sop x
   from-inj {ty} {i} _ | strip cx dx 
     with cx ≟-Fin i
@@ -43,13 +43,13 @@ module RegDiff.Diff.Trivial.Apply
   from-inj _ | strip cx dx
      | yes refl = just dx
 
-  to-inj : {ty : U}{i : Constr ty} → ⟦ typeOf ty i ⟧ₚ ↦ ⟦ ty ⟧
+  to-inj : {ty : U}{i : Constr ty} → ⟦ typeOf ty i ⟧ₚ ⇀ ⟦ ty ⟧
   to-inj {ty} {i} = return ∘ inject i
 \end{code}
 \begin{code}
   singl   : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
             (eqP : (k : A)(x y : P k) → Dec (x ≡ y))
-          → P ty → P tv → (P ty ↦ P tv)
+          → P ty → P tv → (P ty ⇀ P tv)
   singl {ty = ty} P eqP pa pb
     = ((const pb) ♭) & (So ∘ eqP ty pa)
 \end{code}
@@ -57,7 +57,7 @@ module RegDiff.Diff.Trivial.Apply
   Trivial-apply : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
             (eqA : (x y : A) → Dec (x ≡ y))
             (eqP : (k : A)(x y : P k) → Dec (x ≡ y))
-          → trivial P ty tv → (P ty ↦ P tv)
+          → trivial P ty tv → (P ty ⇀ P tv)
   Trivial-apply {ty = ty} {tv = tv} P eqA eqP (pa1 , pa2)
     with eqA ty tv
   ...| no _ = singl P eqP pa1 pa2
@@ -67,12 +67,12 @@ module RegDiff.Diff.Trivial.Apply
   ...| yes _ = id ♭
 \end{code}
 \begin{code}
-  Trivialₐ-apply : {ty tv : Atom} → Trivialₐ ty tv → (⟦ ty ⟧ₐ ↦ ⟦ tv ⟧ₐ)
+  Trivialₐ-apply : {ty tv : Atom} → Trivialₐ ty tv → (⟦ ty ⟧ₐ ⇀ ⟦ tv ⟧ₐ)
   Trivialₐ-apply {ty} {tv} = Trivial-apply {ty = ty} {tv} ⟦_⟧ₐ Atom-eq (dec-eqₐ _≟-A_)
 
-  Trivialₚ-apply : {ty tv : Π} → Trivialₚ ty tv → (⟦ ty ⟧ₚ ↦ ⟦ tv ⟧ₚ)
+  Trivialₚ-apply : {ty tv : Π} → Trivialₚ ty tv → (⟦ ty ⟧ₚ ⇀ ⟦ tv ⟧ₚ)
   Trivialₚ-apply {ty} {tv} = Trivial-apply {ty = ty} {tv} ⟦_⟧ₚ Prod-eq (dec-eqₚ _≟-A_)
 
-  Trivialₛ-apply : {ty tv : U} → Trivialₛ ty tv → (⟦ ty ⟧ ↦ ⟦ tv ⟧)
+  Trivialₛ-apply : {ty tv : U} → Trivialₛ ty tv → (⟦ ty ⟧ ⇀ ⟦ tv ⟧)
   Trivialₛ-apply {ty} {tv} = Trivial-apply {ty = ty} {tv} ⟦_⟧ Sum-eq (dec-eq _≟-A_)
 \end{code}

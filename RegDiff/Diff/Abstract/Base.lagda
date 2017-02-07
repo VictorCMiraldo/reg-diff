@@ -21,7 +21,7 @@ module RegDiff.Diff.Abstract.Base where
     field
       P      : A → A → Set
       cands  : ∀{a b} → ⟦ a ⟧ → ⟦ b ⟧ → List (P a b)
-      apply  : ∀{a b} → P a b → (⟦ a ⟧ ↦ ⟦ b ⟧)
+      apply  : ∀{a b} → P a b → (⟦ a ⟧ ⇀ ⟦ b ⟧)
       cost   : ∀{a b} → P a b → ℕ
 
   open Diffable public
@@ -70,7 +70,7 @@ module RegDiff.Diff.Abstract.Base where
     field
       P₀      : A → Set
       cands₀  : ∀{a} → ⟦ a ⟧ → ⟦ a ⟧ → List (P₀ a)
-      apply₀  : ∀{a} → P₀ a → (⟦ a ⟧ ↦ ⟦ a ⟧)
+      apply₀  : ∀{a} → P₀ a → (⟦ a ⟧ ⇀ ⟦ a ⟧)
       cost₀   : ∀{a} → P₀ a → ℕ
   
   open Diffable₀ public
