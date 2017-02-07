@@ -17,17 +17,17 @@ open import Prelude.Functor
 open import Prelude.Vector
 open import Prelude.Eq
 open import RegDiff.Generic.Parms
-open import RegDiff.Generic.Multirec
 open import RegDiff.Generic.Regular
-open import RegDiff.Generic.Fixpoint
+open import RegDiff.Generic.Multirec
 open import RegDiff.Generic.Eq
+open import RegDiff.Generic.Fixpoint
 open import RegDiff.Generic.Konstants
--- open import RegDiff.Diff.Abstract.Instances.Spine
-open import RegDiff.Diff.Abstract.Instances.Trivial
-open import RegDiff.Diff.Abstract.Base
 open import RegDiff.Diff.Trivial.Base
 open import RegDiff.Diff.Trivial.Apply
 open import RegDiff.Diff.Trivial.Lemmas
+-- open import RegDiff.Diff.Abstract.Instances.Spine
+open import RegDiff.Diff.Abstract.Base
+open import RegDiff.Diff.Abstract.Instances.Trivial
 open import RegDiff.Diff.ES.Base
 open import RegDiff.Diff.Fixpoint.Base
 open import RegDiff.Diff.Fixpoint.Apply
