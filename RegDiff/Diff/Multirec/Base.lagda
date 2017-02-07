@@ -1,4 +1,4 @@
-  Here we try to tie the know for a mutually recursive family
+  Here we try to tie the knot for a mutually recursive family
   of datatypes.
 
 \begin{code}
