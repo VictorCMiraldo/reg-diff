@@ -187,6 +187,44 @@ module RegDiff.Diff.Regular.Base
     align? {K _} {K _} x y xys = AX (x , y) <$> xys
     align? {I _} {K _} x y xys = []
     align? {K _} {I _} x y xys = []
+
+
+
+  lift-Ap1 :  ∀{P ty}     → ⟦ ty ⟧ₚ →  Al P ty []
+  lift-Ap1 {ty = []} v = A0
+  lift-Ap1 {ty = y ∷ ty} (v , vv) = Ap1 v (lift-Ap1 vv)
+
+  lift-Ap1ᵒ : ∀{P tv}     → ⟦ tv ⟧ₚ  → Al P [] tv
+  lift-Ap1ᵒ {tv = []} v = A0
+  lift-Ap1ᵒ {tv = x ∷ tv} (v , vv) = Ap1ᵒ v (lift-Ap1ᵒ vv)
+
+  -- Remark: this is an (inefficient!) LCS at the type level
+  -- Efficient Haskell implem: [http://urchin.earth.li/~ian/cabal/lcs/]
+  alignh*-help : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → ℕ × Al Trivialₐ ty tv
+  alignh*-help {[]} {[]} m n = 0 , A0
+  alignh*-help {[]} {v ∷ tv} m n = 0 , lift-Ap1ᵒ n
+  alignh*-help {y ∷ ty} {[]} m n = 0 , lift-Ap1 m
+  alignh*-help {y ∷ ty} {v ∷ tv} (m , mm) (n , nn) with Atom-eq y v
+  ... | no ¬p with  alignh*-help {y ∷ ty} {tv} (m , mm) nn
+                  | alignh*-help {ty} {v ∷ tv} mm (n , nn)
+  ... |  (n1 , r1) | (n2 , r2) with n1 ≤?-ℕ n2
+  ... | yes _ = n1 , Ap1ᵒ n r1
+  ... | no _ = n2 , Ap1 m r2
+  alignh*-help {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
+      | yes p with alignh*-help mm nn
+  ... | (sc , t) = sc + 1 , AX (m , n) t
+
+  alignh* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → Al Trivialₐ ty tv
+  alignh* xs ys = Σ.proj₂ (alignh*-help xs ys)
+
+  open import Data.List.Any as Any using (here; there)
+  open Any.Membership-≡ using (_∈_; _⊆_)
+
+  -- Conjecture: the above heuristic finds a valid alignment, as per the above spec.
+  postulate
+    alignh-valid : {ty tv : Π} → (y : ⟦ ty ⟧ₚ)(v : ⟦ tv ⟧ₚ) → alignh* y v ∈ align* y v
+
+
 \end{code}
 %</align-star-def>
 begin{code}
