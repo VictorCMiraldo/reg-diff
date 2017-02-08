@@ -100,7 +100,7 @@ module RegDiff.Diff.Multirec.Base
 \begin{code}
       diffμ*-atoms : {ty tv : Atom} → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (UU→AA Patchμ ty tv)
       diffμ*-atoms {I ty} {I tv} x y  = fix <$> diffμ* x y
-      diffμ*-atoms {K ty} {K tv} x y  = return (set (→α {K ty} x , →α {K tv} y))
+      diffμ*-atoms {K ty} {K tv} x y  = return (set (to-α {K ty} x , to-α {K tv} y))
       diffμ*-atoms {K ty} {I tv} x y  = []
       diffμ*-atoms {I ty} {K tv} x y  = []
 \end{code}
@@ -128,7 +128,10 @@ module RegDiff.Diff.Multirec.Base
       ...| no _ = []
       diffμ*-mod x y
          | yes refl 
+         = skel <$> S-mapM (uncurry alignμ) (spine x y)
+{-
          = skel <$> (diff1* x y >>= Patch-mapM (uncurry diffμ*-atoms))
+-}
 \end{code}
 %</diffmu-mod>
 %<*diffmu-ins>

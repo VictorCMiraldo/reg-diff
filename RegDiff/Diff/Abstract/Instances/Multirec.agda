@@ -27,10 +27,13 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
 
   open import RegDiff.Diff.Universe ks keqs (MREC.Fix fam) EQ._≟_
   open import RegDiff.Diff.Trivial.Base ks keqs (MREC.Fix fam) EQ._≟_
+  import RegDiff.Diff.Trivial.Lemmas ks keqs (MREC.Fix fam) EQ._≟_
+    as TRIVIAL_LEMMAS
   open import RegDiff.Diff.Abstract.Instances.Trivial ks keqs (MREC.Fix fam) EQ._≟_
   open import RegDiff.Diff.Abstract.Instances.Patch ks keqs (MREC.Fix fam) EQ._≟_
   open BASE.Internal fam
   open APPLY.Internal fam
+  open TRIVIAL_LEMMAS.Internal ⟦_⟧ Sum-eq (dec-eq _≟_)
 
   Fix-Diffable : Diffable (Fix fam)
   Fix-Diffable = record 
@@ -45,7 +48,7 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
     { P = UU→AA Patchμ 
     ; cands = diffμ*-atoms
     ; apply = α-app Patchμ-app₀
-    ; cost = {!!}
+    ; cost = Patchμ-cost
     }
 
   Patchμ-app-ins
@@ -123,11 +126,27 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
         = mapᵢ (λ {p} → Patchμ-app-app₀-trᵣ {k} {k'} x y {p}) 
                (lemma-del-correct₀ x y)
 
+      lemma-mod-correct₀
+        : {ty tv : U}(x : ⟦ ty ⟧)(y : ⟦ tv ⟧)
+        → All (λ p → Patchμ-app₀ p x ≡ just y) 
+              (diffμ*-mod x y)
+      lemma-mod-correct₀ {ty} {tv} x y 
+        with Sum-eq ty tv
+      ...| no _ = []
+      lemma-mod-correct₀ {ty} {.ty} x y
+         | yes refl = All-<$>-commute skel 
+                       (Patch-Correct 
+                         Lift-Fix-Diffable 
+                         lemma-lift-cands-correct x y)
+
+      
       lemma-mod-correct
         : {k k' : Famᵢ}(x : ⟦ T k ⟧)(y : ⟦ T k' ⟧)
         → All (λ p → Patchμ-app {k} {k'} p ⟨ x ⟩ ≡ just ⟨ y ⟩) 
               (diffμ*-mod x y)
-      lemma-mod-correct x y = {!!}
+      lemma-mod-correct {k} {k'} x y 
+        = mapᵢ (λ {p} → Patchμ-app-app₀-tr {k} {k'} x y {p}) 
+               (lemma-mod-correct₀ x y)
 
       {-# TERMINATING #-}
       lemma-cands-correct
@@ -138,6 +157,26 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
         ++ₐ (lemma-ins-correct {k} {k'} ⟨ x ⟩ y 
         ++ₐ  lemma-del-correct {k} {k'} x ⟨ y ⟩)
 
+      lemma-lift-cand-atomic
+        : {a b : Atom}(x : ⟦ a ⟧ₐ)(y : ⟦ b ⟧ₐ)
+        → α-app {a} {b} 
+                Patchμ-app₀ 
+                (set (to-α {a} x , to-α {b} y)) x 
+        ≡ just y
+      lemma-lift-cand-atomic {a} {b} x y 
+        with Atom-eq a b
+      ...| no _ 
+        rewrite singl-correct {α a} {α b} (to-α {a} x) (to-α {b} y)
+              = refl
+      lemma-lift-cand-atomic {a} x y 
+         | yes refl 
+        with dec-eqₐ _≟_ a x y
+      ...| no _  
+        rewrite singl-correct {α a} {α a} (to-α {a} x) (to-α {a} y)
+              = refl
+      ...| yes p = cong just p
+
+
       lemma-lift-cands-correct
         : CandsCorrect ⟦_⟧ₐ Lift-Fix-Diffable
       lemma-lift-cands-correct {I k} {I k'} x y
@@ -145,7 +184,7 @@ module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
                           (mapᵢ (λ {p} → Patchμ-app-fix x y {p}) 
                           (lemma-cands-correct x y))
       lemma-lift-cands-correct {K k} {K k'} x y 
-        = {!!} ∷ []
+        = lemma-lift-cand-atomic {K k} {K k'} x y ∷ []
       lemma-lift-cands-correct {I _} {K _}  x y = []
       lemma-lift-cands-correct {K _} {I _}  x y = []
 

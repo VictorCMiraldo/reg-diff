@@ -59,18 +59,19 @@ module RegDiff.Diff.Universe
   UU→AA : UUSet → AASet
   UU→AA P a a' = P (α a) (α a')
 
-  to-α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
-  to-α k = i1 (k , unit)
-
-  from-α : {a : Atom} → ⟦ α a ⟧ → ⟦ a ⟧ₐ
-  from-α (i1 (k , unit)) = k
-  from-α (i2 ())
-
-  →α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
-  →α k = i1 (k , unit)
-
   to-β : {a : Atom} → ⟦ a ⟧ₐ → ⟦ β a ⟧ₚ
   to-β k = (k , unit)
 
   from-β : {a : Atom} → ⟦ β a ⟧ₚ → ⟦ a ⟧ₐ
   from-β (k , unit) = k
+
+  to-α : {a : Atom} → ⟦ a ⟧ₐ → ⟦ α a ⟧
+  to-α {a} k = i1 (to-β {a} k)
+
+  from-α : {a : Atom} → ⟦ α a ⟧ → ⟦ a ⟧ₐ
+  from-α {a} (i1 k) = from-β {a} k
+  from-α (i2 ())
+
+  to-α-elim : {a : Atom}(x : ⟦ a ⟧ₐ)
+            → to-α {a} x ≡ i1 (x , unit)
+  to-α-elim x = refl
