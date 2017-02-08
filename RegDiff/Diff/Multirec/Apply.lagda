@@ -13,18 +13,19 @@ module RegDiff.Diff.Multirec.Apply
   open Monad {{...}}
   open Applicative {{...}}
 
-  open import RegDiff.Generic.Multirec ks
-    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-  open import RegDiff.Generic.Eq ks keqs
+  import RegDiff.Generic.Multirec ks as MREC
+  import RegDiff.Generic.Eq ks keqs as EQ
   open import RegDiff.Diff.Multirec.Base ks keqs
     renaming (module Internal to MRECInternal)
 \end{code}
 
 \begin{code}
-  module Internal {fam# : ℕ}(fam : Fam fam#) where
+  module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
 
     open MRECInternal fam
-    open import RegDiff.Diff.Regular.Apply ks keqs (Fix fam) _≟_
+    open import RegDiff.Diff.Universe ks keqs (MREC.Fix fam) EQ._≟_
+    open import RegDiff.Diff.Trivial.Apply ks keqs (MREC.Fix fam) EQ._≟_
+    open import RegDiff.Diff.Regular.Apply ks keqs (MREC.Fix fam) EQ._≟_
       public
 \end{code}
 \begin{code}
@@ -50,10 +51,34 @@ module RegDiff.Diff.Multirec.Apply
                           ∙ (return ∘ to-α {a}) 
 
     {-# TERMINATING #-}
-    Patchμ-app : HasApp Patchμ
-    Patchμ-app (skel p)  = Patch-app (α-app Patchμ-app) p
-    Patchμ-app (ins i x) = to-inj ∙ Al-app (α-app Patchμ-app) x ∙ ⟨⟩ₚ
-    Patchμ-app (del i x) = ⟨⟩ₚᵒ ∙ Al-app (α-app Patchμ-app) x ∙ from-inj
-    Patchμ-app (fix p)   = ⟨⟩ₐ ∙ Patchμ-app p ∙ ⟨⟩ₐᵒ
-    Patchμ-app (set xy)  = Trivialₛ-apply xy
+    Patchμ-app₀ : HasApp Patchμ
+    Patchμ-app₀ (skel p)  = Patch-app (α-app Patchμ-app₀) p
+    Patchμ-app₀ (ins i x) = to-inj ∙ Al-app (α-app Patchμ-app₀) x ∙ ⟨⟩ₚ
+    Patchμ-app₀ (del i x) = ⟨⟩ₚᵒ ∙ Al-app (α-app Patchμ-app₀) x ∙ from-inj
+    Patchμ-app₀ (fix p)   = ⟨⟩ₐ ∙ Patchμ-app₀ p ∙ ⟨⟩ₐᵒ
+    Patchμ-app₀ (set xy)  = Trivialₛ-apply xy
+\end{code}
+
+\begin{code}
+    Patchμ-app : {k k' : Famᵢ} → Patchμ (T k) (T k') 
+               → Fix fam k ↦ Fix fam k'
+    Patchμ-app p = (⟨_⟩ ♭) ∙ Patchμ-app₀ p ∙ (unmu ♭)         
+\end{code}
+
+\begin{code}
+    Patchμ-app-app₀-trₗ
+      : {k k' : Famᵢ}(x : Fix fam k)(y : ⟦ T k' ⟧)
+      → {p : Patchμ (T k) (T k')}
+      → Patchμ-app₀ p (unmu x) ≡ just y
+      → Patchμ-app {k} {k'} p x ≡ just ⟨ y ⟩
+    Patchμ-app-app₀-trₗ ⟨ x ⟩ y hip 
+      rewrite hip = refl
+
+    Patchμ-app-app₀-trᵣ
+      : {k k' : Famᵢ}(x : ⟦ T k ⟧)(y : Fix fam k')
+      → {p : Patchμ (T k) (T k')}
+      → Patchμ-app₀ p x ≡ just (unmu y)
+      → Patchμ-app {k} {k'} p ⟨ x ⟩ ≡ just y
+    Patchμ-app-app₀-trᵣ x ⟨ y ⟩ hip 
+      rewrite hip = refl
 \end{code}

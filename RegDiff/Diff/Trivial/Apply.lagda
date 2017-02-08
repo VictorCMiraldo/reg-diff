@@ -11,9 +11,7 @@ module RegDiff.Diff.Trivial.Apply
        {parms# : ℕ}(A : Parms parms#)(_≟-A_ : ParmEq A)
     where
 
-  open import RegDiff.Generic.Multirec ks
-    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-  open import RegDiff.Generic.Eq ks keqs
+  open import RegDiff.Diff.Universe ks keqs A _≟-A_
   open import RegDiff.Diff.Trivial.Base ks keqs A _≟-A_
 \end{code}
 
@@ -34,18 +32,7 @@ module RegDiff.Diff.Trivial.Apply
   HasAppₚ : ΠΠSet → Set
   HasAppₚ Q = ∀{ty tv} → Q ty tv → ⟦ ty ⟧ₚ ⇀ ⟦ tv ⟧ₚ
 \end{code}
-\begin{code}
-  from-inj : {ty : U}{i : Constr ty} → ⟦ ty ⟧ ⇀ ⟦ typeOf ty i ⟧ₚ
-  from-inj x with sop x
-  from-inj {ty} {i} _ | strip cx dx 
-    with cx ≟-Fin i
-  ...| no _ = nothing
-  from-inj _ | strip cx dx
-     | yes refl = just dx
 
-  to-inj : {ty : U}{i : Constr ty} → ⟦ typeOf ty i ⟧ₚ ⇀ ⟦ ty ⟧
-  to-inj {ty} {i} = return ∘ inject i
-\end{code}
 \begin{code}
   singl   : ∀{α}{A : Set α}{ty tv : A}(P : A → Set)
             (eqP : (k : A)(x y : P k) → Dec (x ≡ y))

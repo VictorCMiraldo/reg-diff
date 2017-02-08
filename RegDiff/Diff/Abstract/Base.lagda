@@ -40,32 +40,31 @@ module RegDiff.Diff.Abstract.Base where
   for the record above. We only want the Diffables that
   obey certain laws!
 
+  Here are some interesting predicates:
+
 \begin{code}
-  record IsDiff {A : Set}(⟦_⟧ : A → Set)(D : Diffable ⟦_⟧) : Set₁ where
-    field
-      candidates-ok
-        : ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧) 
-        → All (IsCand D x y) (cands D x y)
+  CandsCorrect : {A : Set}(⟦_⟧ : A → Set)(D : Diffable ⟦_⟧) → Set
+  CandsCorrect ⟦_⟧ D = ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧) 
+                     → All (IsCand D x y) (cands D x y)
 
-      candidates-nonnil
-        : ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧)
-        → 1 ≤ length (cands D x y)
-      
-      cost-eq
-        : ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P D a b)
-          (hp : IsCand D x y p)(hq : IsCand D x y q)
-        → cost D p ≡ cost D q → apply D p ≡ apply D q
+  CandsNonNil : {A : Set}(⟦_⟧ : A → Set)(D : Diffable ⟦_⟧) → Set
+  CandsNonNil ⟦_⟧ D = ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧) 
+                    → 1 ≤ length (cands D x y)
 
-      cost-order
-        : ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P D a b)
-          (hp : IsCand D x y p)(hq : IsCand D x y q)
-        → cost D p ≤ cost D q → apply D q ≼* apply D p
+  CostEq : {A : Set}(⟦_⟧ : A → Set)(D : Diffable ⟦_⟧) → Set
+  CostEq ⟦_⟧ D = ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P D a b)
+               → (hp : IsCand D x y p)(hq : IsCand D x y q)
+               → cost D p ≡ cost D q → apply D p ≡ apply D q
+
+  CostOrdered : {A : Set}(⟦_⟧ : A → Set)(D : Diffable ⟦_⟧) → Set
+  CostOrdered ⟦_⟧ D = ∀{a b}(x : ⟦ a ⟧)(y : ⟦ b ⟧)(p q : P D a b)
+                    → (hp : IsCand D x y p)(hq : IsCand D x y q)
+                    → cost D p ≤ cost D q → apply D q ≼* apply D p
 \end{code}
   
   Now we repeat everything for homogeneous patches!
 
 \begin{code}
-
   record Diffable₀ {A : Set}(⟦_⟧ : A → Set) : Set₁ where
     field
       P₀      : A → Set
@@ -80,24 +79,22 @@ module RegDiff.Diff.Abstract.Base where
           → Set
   IsCand₀ D x y p = apply₀ D p x ≡ just y
 
-  record IsDiff₀ {A : Set}(⟦_⟧ : A → Set)(D : Diffable₀ ⟦_⟧) : Set₁ where
-    field
-      candidates-ok₀
-        : ∀{a}(x y : ⟦ a ⟧)
-        → All (IsCand₀ D x y) (cands₀ D x y)
+  CandsCorrect₀ : {A : Set}(⟦_⟧ : A → Set)(D : Diffable₀ ⟦_⟧) → Set
+  CandsCorrect₀ ⟦_⟧ D = ∀{a}(x y : ⟦ a ⟧) 
+                      → All (IsCand₀ D x y) (cands₀ D x y)
 
-      candidates-nonnil₀
-        : ∀{a}(x y : ⟦ a ⟧)
-        → 1 ≤ length (cands₀ D x y)
-      
-      cost-eq
-        : ∀{a}(x y : ⟦ a ⟧)(p q : P₀ D a)
-          (hp : IsCand₀ D x y p)(hq : IsCand₀ D x y q)
-        → cost₀ D p ≡ cost₀ D q → apply₀ D p ≡ apply₀ D q
+  CandsNonNil₀ : {A : Set}(⟦_⟧ : A → Set)(D : Diffable₀ ⟦_⟧) → Set
+  CandsNonNil₀ ⟦_⟧ D = ∀{a}(x y : ⟦ a ⟧)
+                     → 1 ≤ length (cands₀ D x y)
 
-      cost-order₀
-        : ∀{a}(x y : ⟦ a ⟧)(p q : P₀ D a)
-          (hp : IsCand₀ D x y p)(hq : IsCand₀ D x y q)
-        → cost₀ D p ≤ cost₀ D q → apply₀ D q ≼* apply₀ D p
+  CostEq₀ : {A : Set}(⟦_⟧ : A → Set)(D : Diffable₀ ⟦_⟧) → Set
+  CostEq₀ ⟦_⟧ D = ∀{a}(x y : ⟦ a ⟧)(p q : P₀ D a)
+                → (hp : IsCand₀ D x y p)(hq : IsCand₀ D x y q)
+                → cost₀ D p ≡ cost₀ D q → apply₀ D p ≡ apply₀ D q
+
+  CostOrdered₀ : {A : Set}(⟦_⟧ : A → Set)(D : Diffable₀ ⟦_⟧) → Set
+  CostOrdered₀ ⟦_⟧ D = ∀{a}(x y : ⟦ a ⟧)(p q : P₀ D a)
+                     → (hp : IsCand₀ D x y p)(hq : IsCand₀ D x y q)
+                     → cost₀ D p ≤ cost₀ D q → apply₀ D q ≼* apply₀ D p
 \end{code}
 
