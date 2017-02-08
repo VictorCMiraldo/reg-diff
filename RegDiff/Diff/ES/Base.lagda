@@ -16,13 +16,14 @@ module RegDiff.Diff.ES.Base
   open Monad {{...}}
   open Applicative {{...}}
 
-  open import RegDiff.Generic.Multirec ks
-    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-  open import RegDiff.Generic.Eq ks keqs
+  import RegDiff.Generic.Multirec ks as MREC
+  import RegDiff.Generic.Eq ks keqs as EQ
 
-  module Internal {fam# : ℕ}(fam : Fam fam#) where
+  module Internal {fam# : ℕ}(fam : MREC.Fam fam#) where
 
-    open import RegDiff.Diff.Regular.Base ks keqs (Fix fam) _≟_
+    open import RegDiff.Diff.Universe ks keqs (MREC.Fix fam) EQ._≟_
+    open import RegDiff.Diff.Trivial.Base ks keqs (MREC.Fix fam) EQ._≟_
+    open import RegDiff.Diff.Regular.Base ks keqs (MREC.Fix fam) EQ._≟_
       public
 
     Famᵢ : Set

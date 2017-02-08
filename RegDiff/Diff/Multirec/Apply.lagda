@@ -61,7 +61,7 @@ module RegDiff.Diff.Multirec.Apply
 
 \begin{code}
     Patchμ-app : {k k' : Famᵢ} → Patchμ (T k) (T k') 
-               → Fix fam k ↦ Fix fam k'
+               → Fix fam k ⇀ Fix fam k'
     Patchμ-app p = (⟨_⟩ ♭) ∙ Patchμ-app₀ p ∙ (unmu ♭)         
 \end{code}
 

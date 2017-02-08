@@ -14,6 +14,9 @@ open import Prelude.RelCalc.Coproduct
 open import Prelude.RelCalc.Core
 open import Prelude.RelCalc.Product
 open import Prelude.RelCalc.Base
+open import Prelude.List.All
+open import Prelude.List.Lemmas
+open import Prelude.Nat.Lemmas
 open import Prelude.Functor
 open import Prelude.Vector
 open import Prelude.Eq
@@ -25,6 +28,10 @@ open import RegDiff.Generic.Multirec
 open import RegDiff.Generic.Eq
 open import RegDiff.Generic.Fixpoint
 open import RegDiff.Generic.Konstants
+open import RegDiff.Generic.Lemmas
+
+-- Re-exporting the universe with more suitable names
+open import RegDiff.Diff.Universe
 
 -- Trivial diff
 open import RegDiff.Diff.Trivial.Base
@@ -34,11 +41,15 @@ open import RegDiff.Diff.Trivial.Lemmas
 -- Specification of diff-ability (extensional)
 open import RegDiff.Diff.Abstract.Base
 open import RegDiff.Diff.Abstract.Instances.Trivial
--- open import RegDiff.Diff.Abstract.Instances.Spine
+open import RegDiff.Diff.Abstract.Instances.Patch
+-- TODO: needs finishing
+-- open import RegDiff.Diff.Abstract.Instances.Multirec
+
+-- Lempsink's diff:
+open import RegDiff.Diff.ES.Base
 
 -- Diff of sums-of-products (intensional)
 open import RegDiff.Diff.Regular.Base
-open import RegDiff.Diff.ES.Base
 open import RegDiff.Diff.Fixpoint.Base
 open import RegDiff.Diff.Fixpoint.Apply
 -- open import RegDiff.Diff.Fixpoint.Lab
@@ -46,8 +57,7 @@ open import RegDiff.Diff.Regular.Base
 open import RegDiff.Diff.Regular.Apply
 open import RegDiff.Diff.Regular.Grupoid
 open import RegDiff.Diff.Regular.Lab
--- open import RegDiff.Diff.Regular.Lemmas
--- open import RegDiff.Diff.Regular.Correct
+open import RegDiff.Diff.Regular.Lemmas
 open import RegDiff.Diff.Multirec.Base
 open import RegDiff.Diff.Multirec.Apply
 -- open import RegDiff.Diff.Multirec.Grupoid

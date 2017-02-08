@@ -8,10 +8,10 @@ module RegDiff.Diff.Regular.Lab where
   open import RegDiff.Generic.Konstants
   open import RegDiff.Generic.Parms
   open ToyParms
-  open import RegDiff.Generic.Regular konstants public
-    hiding (Atom; ⟦_⟧; ⟦_⟧ₚ; ⟦_⟧ₐ)
-  open import RegDiff.Generic.Eq konstants keqs public
 
+  open import RegDiff.Diff.Universe konstants keqs PARMS WB-PARMS
+  open import RegDiff.Diff.Trivial.Base konstants keqs PARMS WB-PARMS
+    public
   open import RegDiff.Diff.Regular.Base konstants keqs PARMS WB-PARMS
     public
 

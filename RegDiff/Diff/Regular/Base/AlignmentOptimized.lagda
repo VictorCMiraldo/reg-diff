@@ -89,7 +89,7 @@ module RegDiff.Diff.Regular.Base.AlignmentOptimized
   ... | (sc , t) = sc + 1 , AX (m , n) t
 
   alignh* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → Al Trivialₐ ty tv
-  alignh* xs ys = Σ.proj₂ (alignh*-help xs ys)
+  alignh* xs ys = p2 (alignh*-help xs ys)
 
   open import Data.List.Any as Any using (here; there)
   open Any.Membership-≡ using (_∈_; _⊆_)

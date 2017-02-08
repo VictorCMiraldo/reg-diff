@@ -12,9 +12,8 @@ module RegDiff.Diff.Regular.Grupoid
        {parms# : ℕ}(A : Parms parms#)(_≟-A_ : ParmEq A)
     where
 
-  open import RegDiff.Generic.Multirec ks
-    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-  open import RegDiff.Generic.Eq ks keqs
+  open import RegDiff.Diff.Universe ks keqs A _≟-A_
+  open import RegDiff.Diff.Trivial.Base ks keqs A _≟-A_
   open import RegDiff.Diff.Regular.Base ks keqs A _≟-A_
   open import RegDiff.Diff.Regular.Apply ks keqs A _≟-A_
 \end{code}
@@ -42,8 +41,8 @@ module RegDiff.Diff.Regular.Grupoid
 \begin{code}
   Al-inv : {P : AASet}(doP : HasInv P) → HasInv (Al P)
   Al-inv doP A0         = A0
-  Al-inv doP (Ap1  x a) = Ap1ᵒ x (Al-inv doP a)
-  Al-inv doP (Ap1ᵒ x a) = Ap1  x (Al-inv doP a)
+  Al-inv doP (Adel  x a) = Ains x (Al-inv doP a)
+  Al-inv doP (Ains x a) = Adel  x (Al-inv doP a)
   Al-inv doP (AX   x a) = AX (doP x) (Al-inv doP a)
 \end{code}
 \begin{code}

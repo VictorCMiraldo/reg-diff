@@ -52,6 +52,8 @@ module RegDiff.Diff.Multirec.LabJson where
 
   open DIFF.Internal JSON public
   open APPLY.Internal JSON public
+  open import RegDiff.Diff.Universe konstants keqs (Fix JSON) _≟_
+    using (⟦_⟧)
 
   js1 js2 js3 : json
   
@@ -82,7 +84,7 @@ module RegDiff.Diff.Multirec.LabJson where
                (fix
                 (del {k = fs fz} (fs fz)
                  (AX (fix (del {k = fs fz} fz (AX (fix (skel Scp)) A0))) 
-                 (Ap1 ⟨ i1 unit ⟩ A0))))
+                 (Adel ⟨ i1 unit ⟩ A0))))
                A0
                ∷ [])))))
           A0
@@ -95,9 +97,6 @@ module RegDiff.Diff.Multirec.LabJson where
     f _                       = nothing
   -}
 
-  unfix : {x : Fin 2} → Fix JSON x → ⟦ T x ⟧
-  unfix ⟨ x ⟩ = x
-
   _==_ : json → Maybe json → Bool
   _ == nothing = false
   t == just u with t ≟ u 
@@ -105,8 +104,6 @@ module RegDiff.Diff.Multirec.LabJson where
   ...| no  _ = false
 
   test : json → Maybe json
-  test x with (Patchμ-app j12-nf) (unfix x)
-  ...| nothing = nothing
-  ...| just k  = just ⟨ k ⟩
+  test x = Patchμ-app j12-nf x
 
   
