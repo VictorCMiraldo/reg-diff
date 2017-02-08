@@ -138,7 +138,7 @@ module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
 \end{code}
 \begin{code}
   from-inj : {n : ℕ}{A : Parms n}{ty : Sum n}{i : Constr ty} 
-           → ⟦ ty ⟧ A ↦ ⟦ typeOf ty i ⟧ₚ A
+           → ⟦ ty ⟧ A ⇀ ⟦ typeOf ty i ⟧ₚ A
   from-inj x with sop x
   from-inj {i = i} _ | strip cx dx 
     with cx ≟-Fin i
@@ -147,7 +147,7 @@ module RegDiff.Generic.Regular {ks# : ℕ}(ks : Vec Set ks#) where
      | yes refl = just dx
 
   to-inj : {n : ℕ}{A : Parms n}{ty : Sum n}{i : Constr ty} 
-         → ⟦ typeOf ty i ⟧ₚ A ↦ ⟦ ty ⟧ A
+         → ⟦ typeOf ty i ⟧ₚ A ⇀ ⟦ ty ⟧ A
   to-inj {ty = ty} {i = i} = just ∘ inject {ty = ty} i
 \end{code}
 

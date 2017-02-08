@@ -24,7 +24,6 @@ module RegDiff.Diff.Regular.Base
   -- Now the spine is just re-exported
   open import RegDiff.Diff.Regular.Base.Spine ks keqs A _≟-A_
     public
-\end{code}
 
   -- And the alignment aswell.
   open import RegDiff.Diff.Regular.Base.AlignmentOptimized ks keqs A _≟-A_
