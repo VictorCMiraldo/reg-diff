@@ -50,16 +50,19 @@ open import RegDiff.Diff.ES.Base
 
 -- Diff of sums-of-products (intensional)
 open import RegDiff.Diff.Regular.Base
-open import RegDiff.Diff.Fixpoint.Base
-open import RegDiff.Diff.Fixpoint.Apply
--- open import RegDiff.Diff.Fixpoint.Lab
-open import RegDiff.Diff.Regular.Base
 open import RegDiff.Diff.Regular.Apply
 open import RegDiff.Diff.Regular.Grupoid
 open import RegDiff.Diff.Regular.Lab
 open import RegDiff.Diff.Regular.Lemmas
+
+-- Diff of mutual fixpoints
 open import RegDiff.Diff.Multirec.Base
 open import RegDiff.Diff.Multirec.Apply
 -- open import RegDiff.Diff.Multirec.Grupoid
 open import RegDiff.Diff.Multirec.LabJson
 -- open import RegDiff.Diff.Multirec.Lab
+
+-- Diff of fixpoints (specialized from Multirec)
+open import RegDiff.Diff.Fixpoint.Base
+open import RegDiff.Diff.Fixpoint.Apply
+-- open import RegDiff.Diff.Fixpoint.Lab
