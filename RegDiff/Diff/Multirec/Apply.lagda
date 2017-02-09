@@ -81,4 +81,12 @@ module RegDiff.Diff.Multirec.Apply
       → Patchμ-app {k} {k'} p ⟨ x ⟩ ≡ just y
     Patchμ-app-app₀-trᵣ x ⟨ y ⟩ hip 
       rewrite hip = refl
+
+    Patchμ-app-app₀-tr
+      : {k k' : Famᵢ}(x : ⟦ T k ⟧)(y : ⟦ T k' ⟧)
+      → {p : Patchμ (T k) (T k')}
+      → Patchμ-app₀ p x ≡ just y
+      → Patchμ-app {k} {k'} p ⟨ x ⟩ ≡ just ⟨ y ⟩
+    Patchμ-app-app₀-tr x y hip 
+      rewrite hip = refl
 \end{code}
