@@ -73,6 +73,22 @@ module RegDiff.Diff.Multirec.LabJson where
   j12 j12-nf : Patchμ (T jsonᵢ) (T jsonᵢ)
   j12 = diffμ js1 js2
 
+{-
+     Here is a table with all different optimization combinations (align and diffμ)
+     representing (length (diffμ* js1 js2))
+
+     AO = Align Optimized
+     AN = Align Naive
+     DO = Diffμ optimized
+     DN = Diffμ naive
+
+        | DN    | DO    
+     -------------
+     AN | 84619 | 7037
+     -------------
+     AO | 2427  | 55
+-}
+
   j12-nf = skel
         (Scns fz
          (AX

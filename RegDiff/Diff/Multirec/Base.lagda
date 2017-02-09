@@ -36,7 +36,7 @@ module RegDiff.Diff.Multirec.Base
     import RegDiff.Diff.Multirec.Base.Type ks keqs as TYPE
     open TYPE.Internal fam public
 
-    import RegDiff.Diff.Multirec.Base.Naive ks keqs as ALGO
+    import RegDiff.Diff.Multirec.Base.Optimized ks keqs as ALGO
     open ALGO.Internal fam public
 \end{code}
 

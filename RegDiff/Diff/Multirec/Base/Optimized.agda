@@ -76,3 +76,6 @@ module RegDiff.Diff.Multirec.Base.Optimized
       diffμp* {k} {k'} R ⟨ x ⟩ ⟨ y ⟩ 
         =   diffμ*-mod {T k}            {T k'}    x      y
         ++  diffμ*-del {lookup k fam}   {k'}      x   ⟨  y ⟩
+
+    diffμ* : {k k' : Famᵢ} → Fix fam k → Fix fam k' → List (Patchμ (T k) (T k'))
+    diffμ* = diffμp* M

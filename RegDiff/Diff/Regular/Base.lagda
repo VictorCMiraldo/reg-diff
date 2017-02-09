@@ -31,7 +31,6 @@ module RegDiff.Diff.Regular.Base
 \end{code}
 
 
-
 %<*Patch-def>
 \begin{code}
   Patch : AASet → U → Set
