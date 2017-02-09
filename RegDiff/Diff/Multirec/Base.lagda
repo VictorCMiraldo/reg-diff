@@ -32,134 +32,13 @@ module RegDiff.Diff.Multirec.Base
     open import RegDiff.Diff.Trivial.Base ks keqs (MREC.Fix fam) EQ._≟_
     open import RegDiff.Diff.Regular.Base ks keqs (MREC.Fix fam) EQ._≟_
       public
-\end{code}
 
-  And now, we just change the types slightly, but
-  the rationale behind this is the same as normal fixpoints.
+    import RegDiff.Diff.Multirec.Base.Type ks keqs as TYPE
+    open TYPE.Internal fam public
 
-  But now, instead oh matching only I's, we match (I k)'s.
-
-%<*Fami-def>
-\begin{code}
-    Famᵢ : Set
-    Famᵢ = Fin fam#
-
-    T : Famᵢ → Sum fam#
-    T k = lookup k fam
+    import RegDiff.Diff.Multirec.Base.Optimized ks keqs as ALGO
+    open ALGO.Internal fam public
 \end{code}
-%</Fami-def>
-%<*Patchmu-skel-def>
-\begin{code}
-    data Patchμ : U → U → Set where
-      skel  : {ty : U} → Patch (UU→AA Patchμ) ty 
-            → Patchμ ty ty
-\end{code}
-%</Patchmu-skel-def>
-%<*Patchmu-ins-del-def>
-\begin{code}
-      ins   : {ty : U}{k : Famᵢ}(i : Constr ty)
-            → Al (UU→AA Patchμ) (I k ∷ []) (typeOf ty i) 
-            → Patchμ (T k) ty
-      del   : {ty : U}{k : Famᵢ}(i : Constr ty)
-            → Al (UU→AA Patchμ) (typeOf ty i) (I k ∷ [])  
-            → Patchμ ty (T k)
-\end{code}
-%</Patchmu-ins-del-def>
-%<*Patchmu-fix-set-def>
-\begin{code}
-      fix   : {k k'   : Famᵢ}  
-            → Patchμ (T k) (T k')      
-            → Patchμ (α (I k)) (α (I k'))
-      set   : {ty tv : U} 
-            → Trivialₛ ty tv
-            → Patchμ ty tv
-\end{code}
-%</Patchmu-fix-set-def>
-
-%<*Patchmu-cost>
-\begin{code}
-    {-# TERMINATING #-}
-    Patchμ-cost : {ty tv : U} → Patchμ ty tv → ℕ
-    Patchμ-cost (skel x)  
-      = Patch-cost Patchμ-cost x
-    Patchμ-cost (ins i x) 
-      = Al-cost Patchμ-cost x
-    Patchμ-cost (del i x) 
-      = Al-cost Patchμ-cost x
-    Patchμ-cost (fix p)   
-      = Patchμ-cost p
-    Patchμ-cost (set x)
-      = cost-Trivialₛ x
-\end{code}
-%</Patchmu-cost>
-
-\begin{code}
-    mutual
-\end{code}
-%<*diffmu-atoms>
-\begin{code}
-      diffμ*-atoms : {ty tv : Atom} → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (UU→AA Patchμ ty tv)
-      diffμ*-atoms {I ty} {I tv} x y  = fix <$> diffμ* x y
-      diffμ*-atoms {K ty} {K tv} x y  = return (set (to-α {K ty} x , to-α {K tv} y))
-      diffμ*-atoms {K ty} {I tv} x y  = []
-      diffμ*-atoms {I ty} {K tv} x y  = []
-\end{code}
-%</diffmu-atoms>
-%<*alignmu-def>
-\begin{code}
-      alignμ  : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ
-              → List (Al (UU→AA Patchμ) ty tv)
-      alignμ x y = align* x y >>= Al-mapM (uncurry diffμ*-atoms)
-\end{code}
-%</alignmu-def>
-%<*alignmu-nonempty-def>
-\begin{code}      
-      alignμ'  : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ
-               → List (Al (UU→AA Patchμ) ty tv)
-      alignμ' {[]}     {_}      _ _  = []
-      alignμ' {_}      {[]}     _ _  = []
-      alignμ' {_ ∷ _}  {_ ∷ _}  x y  = alignμ x y
-\end{code}
-%</alignmu-nonempty-def>
-%<*diffmu-mod>
-\begin{code}
-      diffμ*-mod : {ty tv : U} → ⟦ ty ⟧ → ⟦ tv ⟧ → List (Patchμ ty tv)
-      diffμ*-mod {ty} {tv} x y with Sum-eq ty tv
-      ...| no _ = []
-      diffμ*-mod x y
-         | yes refl 
-         = skel <$> S-mapM (uncurry alignμ) (spine x y)
-{-
-         = skel <$> (diff1* x y >>= Patch-mapM (uncurry diffμ*-atoms))
--}
-\end{code}
-%</diffmu-mod>
-%<*diffmu-ins>
-\begin{code}
-      diffμ*-ins : {ty : U}{k : Famᵢ} → Fix fam k → ⟦ ty ⟧ → List (Patchμ (T k) ty)
-      diffμ*-ins x y with sop y
-      diffμ*-ins x _ | strip cy dy 
-        = ins cy <$> alignμ' (x , unit) dy
-\end{code}
-%</diffmu-ins>
-%<*diffmu-del>
-\begin{code}
-      diffμ*-del : {ty : U}{k : Famᵢ} → ⟦ ty ⟧ → Fix fam k → List (Patchμ ty (T k))
-      diffμ*-del x y with sop x
-      diffμ*-del _ y | strip cx dx
-        = del cx <$> alignμ' dx (y , unit) 
-\end{code}
-%</diffmu-del>
-%<*diff-mu-non-det>
-\begin{code}
-      {-# TERMINATING #-}
-      diffμ* : {k k' : Famᵢ} → Fix fam k → Fix fam k' → List (Patchμ (T k) (T k'))
-      diffμ* {k} {k'} ⟨ x ⟩ ⟨ y ⟩ 
-        =   diffμ*-mod {T k}            {T k'}    x      y
-        ++  diffμ*-ins {lookup k' fam}  {k}    ⟨  x ⟩    y
-        ++  diffμ*-del {lookup k fam}   {k'}      x   ⟨  y ⟩
-\end{code}
-%</diff-mu-non-det>
 
 \begin{code}
     _<μ>_ : {ty tv : U} → Patchμ ty tv → List (Patchμ ty tv) → Patchμ ty tv
