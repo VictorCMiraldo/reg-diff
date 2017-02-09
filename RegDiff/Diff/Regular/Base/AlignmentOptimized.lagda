@@ -32,6 +32,7 @@ module RegDiff.Diff.Regular.Base.AlignmentOptimized
       = Adel m <$> align* mm n
     align* {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
       =  align? m n (align* mm nn)
+      -- XXX: instantiate [List] in [MonadPlus] and use _∣_ instead of _++_
       ++ Adel  m       <$> (align*-no-ins mm (n , nn))
       ++ Ains n        <$> (align*-no-del (m , mm) nn)
 
