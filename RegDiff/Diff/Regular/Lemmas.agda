@@ -41,11 +41,29 @@ module RegDiff.Diff.Regular.Lemmas
   spine-elim _ _ | no _ | strip cx dx | strip cy dy
      | no _ 
      = i2 (i2 ((cx , cy) , ((dx , dy) , refl)))
+
+  data spineP {ty : U} : ⟦ ty ⟧ → ⟦ ty ⟧ → S Trivialₚ ty → Set where
+    spineP-eq  : (x : ⟦ ty ⟧) → spineP x x Scp
+    spineP-cns : (i : Constr ty)
+                (dx dy : ⟦ typeOf ty i ⟧ₚ) →
+                spineP (inject i dx) (inject i dy) (Scns i (zipₚ dx dy))
+    spineP-chg : (i j : Constr ty)
+                (dx : ⟦ typeOf ty i ⟧ₚ)(dy : ⟦ typeOf ty j ⟧ₚ) →
+                ¬ (i ≡ j) →
+                spineP (inject i dx) (inject j dy) (Schg i j (dx , dy))
+
+  -- XXX: this should work better (and be usable/useful)
+  postulate
+    spine-view : ∀ {ty} → (x y : ⟦ ty ⟧) → spineP x y (spine x y)
+--  spine-view x y = {!!}
+
+
 {-
   S-app-prod-ind-step
     : {y : Atom}{ty : Π}{P : ΠΠSet}(dx dy : ⟦ y ⟧ₐ)(dxs dys : ⟦ ty ⟧ₚ)
     → 
 -}
+
 -- The lemmas that follow have not been used
 
   _* : ∀{a b}{A : Set a} → (A → A → Set b) → (A → A → Set b)
