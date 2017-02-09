@@ -52,3 +52,32 @@ module RegDiff.Diff.Regular.Lab where
 
   test2 : List (Al Trivialₐ Prod1 Prod2)
   test2 = align* (4 , 1 , 2 , 3 , unit) (5 , 1 , 3 , unit)
+
+  ProdG : ℕ → Prod 3
+  ProdG zero = []
+  ProdG (suc n) = K kℕ ⊗ ProdG n
+
+  input : (n : ℕ) → ⟦ ProdG n ⟧ₚ
+  input zero = unit
+  input (suc n) = n , input n
+
+  test3 : (n : ℕ) → List (Al Trivialₐ (ProdG n) (ProdG n))
+  test3 n = align* (input n) (input n)
+
+  size-test3-1 : length (test3 1) ≡ 1
+  size-test3-1 = refl
+
+  size-test3-2 : length (test3 2) ≡ 3
+  size-test3-2 = refl
+
+  size-test3-3 : length (test3 3) ≡ 9
+  size-test3-3 = refl
+
+  -- XXX: Surely, that must be defined in the stdlib?! Can't find it..
+  _**_ : ℕ → ℕ → ℕ
+  m ** zero = 1
+  m ** suc n = m * (m ** n)
+
+  -- XXX: the moment you think "hey, why would I prove something in Agda?"
+  postulate
+    size-test3 : ∀ n → length (test3 n) ≡ 3 ** (n ∸ 1)
