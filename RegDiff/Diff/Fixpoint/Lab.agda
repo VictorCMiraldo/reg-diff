@@ -2,7 +2,7 @@ open import Prelude hiding (⊥)
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.RelCalc.Base
-open import Prelude.ListI
+open import Prelude.List.All
 
 module RegDiff.Diff.Fixpoint.Lab where
 
@@ -15,7 +15,7 @@ module RegDiff.Diff.Fixpoint.Lab where
   import RegDiff.Diff.Multirec.Base konstants keqs 
     as DIFF
 
-  LIST-F : σπ 1
+  LIST-F : Sum 1
   LIST-F = u1 ⊕ (K kℕ) ⊗ I ⊗ [] ⊕ []
 
   list : Set
@@ -28,7 +28,7 @@ module RegDiff.Diff.Fixpoint.Lab where
   _>_ : ℕ → list → list
   x > xs = ⟨ i2 (i1 (x , xs , unit)) ⟩
 
-  2-3-TREE-F : σπ 1
+  2-3-TREE-F : Sum 1
   2-3-TREE-F = u1 ⊕ (K kℕ) ⊗ I ⊗ I ⊗ [] ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I ⊗ [] ⊕ []
 
   2-3-Tree : Set
@@ -48,7 +48,7 @@ module RegDiff.Diff.Fixpoint.Lab where
   t == just u with t ≟-Fix u 
   ...| yes _ = true
   ...| no  _ = false
-
+{-
   module T1 where
     open DIFF.Internal (LIST-F ∷ []) public
 
@@ -67,8 +67,9 @@ module RegDiff.Diff.Fixpoint.Lab where
     s2 = diffμ l4 l0 -- 6
 
     cost1-ex1 cost1-ex2 : Patchμ (T fz) (T fz)
-    cost1-ex1 = {!diffμ* l4 l0!}
-    cost1-ex2 = {!!}
+    cost1-ex1 = {!length (diffμ* l3 l3)!}
+    cost1-ex2 = {!diffμ l0 l4!}
+-}
 {-
     cost2-ex1 cost2-ex2 : Patchμ (T fz) (T fz)
     cost2-ex1 = skel
@@ -92,7 +93,7 @@ module RegDiff.Diff.Fixpoint.Lab where
             ∷ [])))
     cost2-ex2 = del (fs fz) (Ap1 5 (AX (fix (skel Scp)) A0))
 -}
-{-
+
   module T2 where
     open DIFF.Internal (2-3-TREE-F ∷ []) public
     -- open DOMAIN.Internal (2-3-TREE-F ∷ []) public
@@ -106,6 +107,10 @@ module RegDiff.Diff.Fixpoint.Lab where
     t1 t2 : 2-3-Tree
     t1 = 2-Node 4 k1 k2
     t2 = 3-Node 5 k1 Leaf k2
+
+    t3 t4 : 2-3-Tree
+    t3 = 3-Node 10 t1 k3 k2
+    t4 = 3-Node 10 t2 t2 t2
 
     r1 r2 h1 h2 h3 : Patchμ (T fz) (T fz)
     r1 = diffμ t1 t2
@@ -121,9 +126,9 @@ module RegDiff.Diff.Fixpoint.Lab where
     h1 = skel
      (Schg (fs fz) (fs (fs fz))
       (AX (set (i1 (4 , unit) , i1 (5 , unit)))
-       (AX (fix (skel Scp)) (Ap1ᵒ ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0)))))
+       (AX (fix (skel Scp)) (Ains ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0)))))
 
-    h3 = {!diffμ k1 k3!}
+    h3 = {!length (diffμ* t3 t4)!}
 
     r2 = diffμ k1 k3
     -- 74  with good align
@@ -134,16 +139,16 @@ module RegDiff.Diff.Fixpoint.Lab where
     -- 128 new sop
 
     h2 = ins (fs (fs fz))
-       (Ap1ᵒ 3
+       (Ains 3
         (AX (fix (skel Scp))
-         (Ap1ᵒ
+         (Ains
           ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
           ⟩
-          (Ap1ᵒ
+          (Ains
            ⟨ i2 (i2 (i1 (5 , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , ⟨ i1 unit ⟩ , unit)))
            ⟩
            A0))))
--}
+
 {-
     r1-computed
       = chng
@@ -177,4 +182,4 @@ module RegDiff.Diff.Fixpoint.Lab where
     still-ok-2 = refl
 -}
  
-  open T1 public
+  open T2 public
