@@ -2,7 +2,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.RelCalc.Base
-open import Prelude.ListI
+open import Data.List.All
 
 module RegDiff.Diff.Multirec.Lab where
 
@@ -115,7 +115,7 @@ module RegDiff.Diff.Multirec.Lab where
                 (AX
                  (fix
                   (ins {k = fz} (fs fz)
-                   (Ap1ᵒ ⟨ i1 (4 , ⟨ i1 unit ⟩ , unit) ⟩ (AX (fix (skel Scp)) A0))))
+                   (Ains ⟨ i1 (4 , ⟨ i1 unit ⟩ , unit) ⟩ (AX (fix (skel Scp)) A0))))
                  A0
                  ∷ [])))))
             A0
@@ -136,8 +136,8 @@ module RegDiff.Diff.Multirec.Lab where
            (AX
             (fix
              (ins {k = fs fz} fz
-              (Ap1ᵒ 1
-               (AX (fix (ins {k = fs fz} (fs fz) (AX (fix (skel Scp)) (Ap1ᵒ ⟨ i1 unit ⟩ A0))))
+              (Ains 1
+               (AX (fix (ins {k = fs fz} (fs fz) (AX (fix (skel Scp)) (Ains ⟨ i1 unit ⟩ A0))))
                 A0))))
             A0
             ∷ (AX (fix (skel Scp)) A0 ∷ [])))))
