@@ -171,37 +171,24 @@ private
     lemma-cands-ok 
       : {ty : U}(x y : ⟦ ty ⟧)
       → All (IsCand₀ (S-Diffable doP) x y) (cands₀ (S-Diffable doP) x y)
-    -- The proof follows the structure of the spine function,
-    -- first we compare x and y for equality:
-    lemma-cands-ok {ty} x y with dec-eq _≟-A_ ty x y
-    -- If they are, this is trivial!
-    ...| yes p = (cong just p) ∷ []
-
-    -- If they are not equal, we check their constructor:
-    ...| no  _ with sop x | sop y
-    lemma-cands-ok _ _ | no _
-       | strip cx dx | strip cy dy 
-       with cx ≟-Fin cy
-
-    -- If they have the same constructor, we are in the Scns case.
-    lemma-cands-ok _ _ | no _ | strip cx dx | strip _ dy
-       | yes refl 
-       = All-<$>-commute 
-            (Scns cx) 
+    -- The proof follows the structure of the spine function.
+    -- Using the spine-view makes like oh-so-much easier.
+    lemma-cands-ok x y with spine x y | spine-view x y 
+    lemma-cands-ok _ _ | _ | spineP-eq x 
+      = cong just refl ∷ []
+    lemma-cands-ok _ _ | _ | spineP-cns i dx dy 
+      = All-<$>-commute 
+            (Scns i) 
             (mapᵢ (λ {x} p → S-app-Scns-elim x p) 
                   (S-app-prod-hip dx dy))
-
-    -- If not, we are in the Schg case.
-    lemma-cands-ok _ _ | no _ | strip cx dx | strip cy dy
-       | no _ 
-       = All-<$>-commute 
-            (Schg cx cy) 
-            (mapᵢ (S-app-chg-correct cx cy dx dy)
+    lemma-cands-ok _ _ | _ | spineP-chg i j dx dy i≢j 
+      = All-<$>-commute 
+            (Schg i j) 
+            (mapᵢ (S-app-chg-correct i j dx dy)
                   (okP dx dy))
 
-    -- Now, we need to prove the candidates list
-    -- is never empty.
-
+-- Now, we need to prove the candidates list
+-- is never empty.
 private 
   module CandsNonNil
            (doP : Diffable ⟦_⟧ₚ)
@@ -234,21 +221,16 @@ private
     lemma-cands-length 
       : {ty : U}(x y : ⟦ ty ⟧)
       → 1 ≤ length (cands₀ (S-Diffable doP) x y)
-    lemma-cands-length {ty} x y with dec-eq _≟-A_ ty x y
-    ...| yes p = s≤s z≤n
-    ...| no  _ with sop x | sop y
-    lemma-cands-length _ _ | no _
-       | strip cx dx | strip cy dy 
-       with cx ≟-Fin cy
-    lemma-cands-length {ty} _ _ | no _ | strip cx dx | strip _ dy
-       | yes refl 
-       = ≤-trans (lemma-eval-cands-length dx dy) 
+    lemma-cands-length x y with spine x y | spine-view x y
+    lemma-cands-length _ _ | _ | spineP-eq x 
+      = s≤s z≤n
+    lemma-cands-length _ _ | _ | spineP-cns i dx dy 
+      = ≤-trans (lemma-eval-cands-length dx dy) 
                  (length-<$>-≤ (eval-cands dx dy))
-    lemma-cands-length _ _ | no _ | strip cx dx | strip cy dy
-       | no _ 
-       =  ≤-trans (okP dx dy)
+    lemma-cands-length _ _ | _ | spineP-chg i j dx dy i≢j 
+      = ≤-trans (okP dx dy)
                   (length-<$>-≤ (cands doP dx dy)) 
-      
+
 
 -- Finally, we export some concise definitions!
 S-Correct : (doP : Diffable ⟦_⟧ₚ)(okP : CandsCorrect ⟦_⟧ₚ doP)
