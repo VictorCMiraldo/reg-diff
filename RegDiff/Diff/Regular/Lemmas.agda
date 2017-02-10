@@ -18,30 +18,6 @@ module RegDiff.Diff.Regular.Lemmas
   open import RegDiff.Diff.Regular.Apply ks keqs A _≟-A_
 
 
-  -- I though this would be more usefull... agda doesn't
-  -- like this type of eliminator.
-  spine-elim
-    : {ty : U}(x y : ⟦ ty ⟧)
-    → (x ≡ y × spine x y ≡ Scp)
-    ⊎ Σ (Constr ty) 
-        (λ i → Σ (⟦ typeOf ty i ⟧ₚ × ⟦ typeOf ty i ⟧ₚ)
-                 (λ { (dx , dy) → spine x y ≡ Scns i (zipₚ dx dy) }))
-    ⊎ Σ (Constr ty × Constr ty)
-        (λ { (i , j) → Σ (⟦ typeOf ty i ⟧ₚ × ⟦ typeOf ty j ⟧ₚ)
-               (λ { (dx , dy) → spine x y ≡ Schg i j (dx , dy) }) })
-  spine-elim {ty} x y with dec-eq _≟-A_ ty x y
-  ...| yes p = i1 (p , refl)
-  ...| no  _ with sop x | sop y
-  spine-elim _ _ | no _
-     | strip cx dx | strip cy dy 
-     with cx ≟-Fin cy
-  spine-elim _ _ | no _ | strip cx dx | strip _ dy
-     | yes refl 
-     = i2 (i1 (cx , (dx , dy) , refl))
-  spine-elim _ _ | no _ | strip cx dx | strip cy dy
-     | no _ 
-     = i2 (i2 ((cx , cy) , ((dx , dy) , refl)))
-
   data spineP {ty : U} : ⟦ ty ⟧ → ⟦ ty ⟧ → S Trivialₚ ty → Set where
     spineP-eq  : (x : ⟦ ty ⟧) → spineP x x Scp
     spineP-cns : (i : Constr ty)
@@ -52,10 +28,14 @@ module RegDiff.Diff.Regular.Lemmas
                 ¬ (i ≡ j) →
                 spineP (inject i dx) (inject j dy) (Schg i j (dx , dy))
 
-  -- XXX: this should work better (and be usable/useful)
-  postulate
-    spine-view : ∀ {ty} → (x y : ⟦ ty ⟧) → spineP x y (spine x y)
---  spine-view x y = {!!}
+
+  spine-view : {ty : U} → (x y : ⟦ ty ⟧) → spineP x y (spine x y)
+  spine-view {ty} x y with dec-eq _≟-A_ ty x y
+  ...| yes refl = spineP-eq x
+  ...| no  _ with sop x | sop y
+  ...| strip cx dx | strip cy dy with cx ≟-Fin cy
+  ...| no p = spineP-chg cx cy dx dy p
+  ...| yes refl = spineP-cns cx dx dy
 
 
 {-
