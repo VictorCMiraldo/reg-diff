@@ -4,7 +4,7 @@ open import Prelude.Vector
 open import Prelude.RelCalc.Base
 open import Data.List.All
 
-module RegDiff.Diff.Multirec.Lab where
+module RegDiff.Diff.Multirec.Lab.RoseTree where
 
   open import RegDiff.Generic.Konstants
   open import RegDiff.Generic.Multirec konstants 

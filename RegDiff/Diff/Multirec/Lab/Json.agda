@@ -4,7 +4,7 @@ open import Prelude.Vector
 open import Prelude.RelCalc.Base
 open import Prelude.List.All
 
-module RegDiff.Diff.Multirec.LabJson where
+module RegDiff.Diff.Multirec.Lab.Json where
 
   open import RegDiff.Generic.Konstants
   open import RegDiff.Generic.Multirec konstants 
