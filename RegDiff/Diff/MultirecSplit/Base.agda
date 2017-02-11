@@ -28,23 +28,24 @@ module RegDiff.Diff.MultirecSplit.Base
     T : Famᵢ → Sum fam#
     T k = lookup k fam
 
-    mutual
-      data Patchμ : U → U → Set where
-        skel  : {ty : U} → Patch Rec ty → Patchμ ty ty
-        ins   : {ty : U}{k : Famᵢ}(i : Constr ty)
+    data Sμ (Rec : AASet) : UUSet where
+      skel  : {ty : U} → Patch Rec ty → Sμ Rec ty ty
+      ins   : {ty : U}{k : Famᵢ}(i : Constr ty)
               → Al Rec (I k ∷ []) (typeOf ty i) 
-              → Patchμ (T k) ty
-        del   : {ty : U}{k : Famᵢ}(i : Constr ty)
+              → Sμ Rec (T k) ty
+      del   : {ty : U}{k : Famᵢ}(i : Constr ty)
               → Al Rec (typeOf ty i) (I k ∷ [])  
-              → Patchμ ty (T k)
+              → Sμ Rec ty (T k)
 
-      data Rec : Atom → Atom → Set where
+    data Rec : AASet where
         fix : {k k'   : Famᵢ}  
-            → Patchμ (T k) (T k')      
+            → Sμ Rec (T k) (T k')      
             → Rec (I k) (I k')
         set : {k k' : Fin ks#} 
             → Trivialₐ (K k) (K k')
             → Rec (K k) (K k')
+
+    Patchμ = Sμ Rec
 
     CostFor : {A : Set}→ (A → A → Set) → Set
     CostFor P = ∀{ty tv} → P ty tv → ℕ
