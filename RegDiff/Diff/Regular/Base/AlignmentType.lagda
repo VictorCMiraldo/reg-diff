@@ -23,7 +23,7 @@ module RegDiff.Diff.Regular.Base.AlignmentType
     A0   :                                          Al P [] []
     Adel : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P (a ∷ ty) tv
     Ains : ∀{a ty tv}     → ⟦ a ⟧ₐ  → Al P ty tv →  Al P ty       (a ∷ tv)
-    AX   : ∀{a a' ty tv}  → P a a'  → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
+    AX   : ∀{a a' ty tv}  → P a a   → Al P ty tv →  Al P (a ∷ ty) (a' ∷ tv)
 \end{code}
 %</Al-def>
 %<*Al-mapM-def>

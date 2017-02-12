@@ -26,27 +26,26 @@ module RegDiff.Diff.MultirecSplit.Base
     Famᵢ = Fin fam#
 
     T : Famᵢ → Sum fam#
-    T k = lookup k fam
+    T k = lookup k fam    
 
-    data Sμ (Rec : AASet) : UUSet where
-      skel  : {ty : U} → Patch Rec ty → Sμ Rec ty ty
-      ins   : {ty : U}{k : Famᵢ}(i : Constr ty)
-              → Al Rec (I k ∷ []) (typeOf ty i) 
-              → Sμ Rec (T k) ty
-      del   : {ty : U}{k : Famᵢ}(i : Constr ty)
-              → Al Rec (typeOf ty i) (I k ∷ [])  
-              → Sμ Rec ty (T k)
+    mutual
+      Sμ : U → Set
+      Sμ ty = S Alμ Atμ ty
 
-    data Rec : AASet where
-        fix : {k k'   : Famᵢ}  
-            → Sμ Rec (T k) (T k')      
-            → Rec (I k) (I k')
-        set : {k k' : Fin ks#} 
-            → Trivialₐ (K k) (K k')
-            → Rec (K k) (K k')
+      Alμ : ΠΠSet
+      Alμ = Al Atμ
 
-    Patchμ = Sμ Rec
+      data Atμ : AASet where
+        fix : ∀ {k} 
+              → Sμ (T k)
+              → Atμ (I k) (I k)
+        set : ∀ {k k'} 
+              → Trivialₐ (K k) (K k')
+              → Atμ (K k) (K k')
 
+    Patchμ = Sμ
+
+{-
     CostFor : {A : Set}→ (A → A → Set) → Set
     CostFor P = ∀{ty tv} → P ty tv → ℕ
 
@@ -157,3 +156,4 @@ module RegDiff.Diff.MultirecSplit.Base
         udiffμ-del x y with sop x
         udiffμ-del {k = k} _ y | strip cx dx
           = del cx (ualign dx (y , unit))
+-}

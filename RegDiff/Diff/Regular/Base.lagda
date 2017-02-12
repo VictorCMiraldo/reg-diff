@@ -34,18 +34,19 @@ module RegDiff.Diff.Regular.Base
 %<*Patch-def>
 \begin{code}
   Patch : AASet → U → Set
-  Patch P = S (Al P)
+  Patch P = S (Al P) P
 \end{code}
 %</Patch-def>
 \begin{code}
   Patch-cost : {ty : U}{P : AASet}(doP : ∀{k v} → P k v → ℕ)
              → Patch P ty → ℕ
-  Patch-cost doP = S-cost (Al-cost doP)
+  Patch-cost doP = S-cost doP (Al-cost doP)
 
-  Patch-mapM : {ty : U}{M : Set → Set}{{m : Monad M}}
-               {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
-             → Patch P ty → M (Patch Q ty)
-  Patch-mapM X = S-mapM (Al-mapM X)
+  postulate
+    Patch-mapM : {ty : U}{M : Set → Set}{{m : Monad M}}
+                 {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
+               → Patch P ty → M (Patch Q ty)
+--  Patch-mapM X = {!S-mapM (Al-mapM X)!} -- S-mapM (Al-mapM X)
 \end{code}
 \begin{code}
   Patch-cost-Trivialₐ : {ty : U} → Patch Trivialₐ ty → ℕ

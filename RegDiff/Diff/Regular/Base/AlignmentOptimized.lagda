@@ -58,8 +58,12 @@ module RegDiff.Diff.Regular.Base.AlignmentOptimized
     align? : {ty tv : Atom}{tys tvs : Π}
                  → ⟦ ty ⟧ₐ → ⟦ tv ⟧ₐ → List (Al Trivialₐ tys tvs)
                  → List (Al Trivialₐ (ty ∷ tys) (tv ∷ tvs))
-    align? {I _} {I _} x y xys = AX (x , y) <$> xys
-    align? {K _} {K _} x y xys = AX (x , y) <$> xys
+    align? {I k} {I k'} x y xys with k ≟-Fin k'
+    ... | yes refl = AX (x , y) <$> xys
+    ... | no _ = []
+    align? {K k} {K k'} x y xys with k ≟-Fin k'
+    ... | yes refl = AX (x , y) <$> xys
+    ... | no _ = []
     align? {I _} {K _} x y xys = []
     align? {K _} {I _} x y xys = []
 
@@ -85,7 +89,7 @@ module RegDiff.Diff.Regular.Base.AlignmentOptimized
   ... | yes _ = n1 , Ains n r1
   ... | no _ = n2 , Adel m r2
   alignh*-help {y ∷ ty} {v ∷ tv} (m , mm) (n , nn)
-      | yes p with alignh*-help mm nn
+      | yes refl with alignh*-help mm nn
   ... | (sc , t) = sc + 1 , AX (m , n) t
 
   alignh* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → Al Trivialₐ ty tv
