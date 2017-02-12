@@ -12,11 +12,6 @@ module RegDiff.Generic.Parms where
 \end{code}
 %</Parms-def>
 
-\begin{code}
-  _⇉_ : {n : ℕ} → Parms n → Parms n → Set
-  P ⇉ Q = ∀{k} → P k → Q k
-\end{code}
-
   Well behaved parameters are those that
   have a size function and decidable equality!
 

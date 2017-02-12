@@ -26,61 +26,65 @@ module RegDiff.Diff.Regular.Base.Spine
 
 %<*Spine-def>
 \begin{code}
-  data S (P : ΠΠSet) : U → Set where
-    Scp  : {ty : U} → S P ty
-    Schg : {ty : U}(i j : Constr ty)
-         → P (typeOf ty i) (typeOf ty j)
-         → S P ty
-    Scns : {ty : U}(i : Constr ty)
-         → All (contr P ∘ β) (typeOf ty i)
-         → S P ty
+  data S (Al : ΠΠSet)(At : AASet)(ty : U) : Set where
+    Scp  : S Al At ty
+    Schg : (i j : Constr ty)
+         → Al (typeOf ty i) (typeOf ty j)
+         → S Al At ty
+    Scns : (i : Constr ty)
+         → All (contr At) (typeOf ty i)
+         → S Al At ty
 \end{code}
 %</Spine-def>
 
 %<*S-map-def>
 \begin{code}
-  S-map  :  {ty : U}
-            {P Q : ΠΠSet}(X : ∀{k v} → P k v → Q k v)
-         → S P ty → S Q ty
-  S-map f Scp          = Scp
-  S-map f (Schg i j x) = Schg i j (f x)
-  S-map f (Scns i xs)  = Scns i (mapᵢ f xs)
+  S-map  : {ty : U}{P Q : ΠΠSet}{A B : AASet}
+         → (X : P ⇒ Q)(Y : A ⇒ B)
+         → S P A ty → S Q B ty
+  S-map f g Scp          = Scp
+  S-map f g (Schg i j x) = Schg i j (f x)
+  S-map f g (Scns i xs)  = Scns i (mapᵢ g xs)
 \end{code}
 %</S-map-def>
 %<*S-mapM-def>
 \begin{code}
   S-mapM  :  {ty : U}{M : Set → Set}{{m : Monad M}}
-             {P Q : ΠΠSet}(X : ∀{k v} → P k v → M (Q k v))
-          → S P ty → M (S Q ty)
-  S-mapM f Scp          = return Scp
-  S-mapM f (Schg i j x) = Schg i j <$> f x
-  S-mapM f (Scns i xs)  = Scns i   <$> mapMᵢ f xs
+             {P Q : ΠΠSet}{A B : AASet}
+          → (X : P ⇒ M ∘₂ Q)
+          → (Y : A ⇒ M ∘₂ B)
+          → S P A ty → M (S Q B ty)
+  S-mapM f g Scp          = return Scp
+  S-mapM f g (Schg i j x) = Schg i j <$> f x
+  S-mapM f g (Scns i xs)  = Scns i   <$> mapMᵢ g xs
 \end{code}
 %</S-mapM-def>
 
 %<*S-cost-def>
 \begin{code}
-  S-cost : {ty : U}{P : ΠΠSet}(doP : {k v : Π} → P k v → ℕ)
-         → S P ty → ℕ
-  S-cost doP Scp         = 0
-  S-cost doP (Schg i j x) = doP x
-  S-cost doP (Scns i xs) = foldrᵢ (λ h r → doP h + r) 0 xs
+  S-cost : {ty : U}{P : ΠΠSet}{At : AASet}
+           (doP : Measurable P)
+           (doA : Measurable At)
+         → S P At ty → ℕ
+  S-cost doP doAt Scp         = 0
+  S-cost doP doAt (Schg i j x) = doP x
+  S-cost doP doAt (Scns i xs) = foldrᵢ (λ h r → doAt h + r) 0 xs
 \end{code}
 %</S-cost-def>
 
 %<*zip-product-def>
 \begin{code}
   zipₚ : {ty : Π}
-       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → All (λ k → Trivialₚ (β k) (β k)) ty
+       → ⟦ ty ⟧ₚ → ⟦ ty ⟧ₚ → All (λ k → Trivialₐ k k) ty
   zipₚ {[]}     _        _         
     = []
   zipₚ {_ ∷ ty} (x , xs) (y , ys)  
-    = ((x , unit) , (y , unit)) ∷ zipₚ xs ys
+    = (x , y) ∷ zipₚ xs ys
 \end{code}
 %</zip-product-def>
 %<*spine-def>
 \begin{code}
-  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Trivialₚ ty
+  spine-cns : {ty : U}(x y : ⟦ ty ⟧) → S Trivialₚ Trivialₐ ty
   spine-cns x y  with sop x | sop y
   spine-cns _ _ | strip cx dx | strip cy dy
     with cx ≟-Fin cy
@@ -88,7 +92,7 @@ module RegDiff.Diff.Regular.Base.Spine
   spine-cns _ _ | strip _ dx | strip cy dy
      | yes refl  = Scns cy (zipₚ dx dy)
   
-  spine : {ty : U}(x y : ⟦ ty ⟧) → S Trivialₚ ty
+  spine : {ty : U}(x y : ⟦ ty ⟧) → S Trivialₚ Trivialₐ ty
   spine {ty} x y 
     with dec-eq _≟-A_ ty x y 
   ...| yes _     = Scp
