@@ -45,6 +45,62 @@ module RegDiff.Diff.MultirecSplit.Base
 
     Patchμ = Sμ
 
+    data Sμ' (Rec : AASet) : UUSet where
+      skel  : {ty : U} → Patch Rec ty → Sμ' Rec ty ty
+      ins   : {ty : U}{k : Famᵢ}(i : Constr ty)
+              → Al Rec (I k ∷ []) (typeOf ty i) 
+              → Sμ' Rec (T k) ty
+      del   : {ty : U}{k : Famᵢ}(i : Constr ty)
+              → Al Rec (typeOf ty i) (I k ∷ [])  
+              → Sμ' Rec ty (T k)
+
+    data Rec : AASet where
+         fix : {k k'   : Famᵢ}  
+           → Sμ' Rec (T k) (T k')      
+           → Rec (I k) (I k')
+         set : {k k' : Fin ks#} 
+           → Trivialₐ (K k) (K k')
+           → Rec (K k) (K k')
+
+    Patchμ' = Sμ' Rec
+
+    {-# TERMINATING #-}
+    mutual
+      φS : ∀ {ty} → Sμ ty → Sμ' Rec ty ty
+      φS Scp = skel Scp
+      φS (Schg i j x) = skel (Schg i j (Al-map φAt x ))
+      φS (Scns i x) = skel (Scns i (mapᵢ (λ {k} → φAt {k}{k}) x))
+
+      φAt : ∀{k k'} → Atμ k k' → Rec k k'
+      φAt (fix x) = fix (φS x)
+      φAt (set x) = set x
+
+    {-# TERMINATING #-}
+    mutual
+      ψS : ∀ {ty} → Sμ' Rec ty ty → Sμ ty
+      ψS (skel x) = S-map ψAl ψAt x
+      ψS (ins i x) with splitAl-l x
+      ... | (a , b) = Schg i a b
+      ψS (del i x) with splitAl-r x
+      ...| (a , b) = Schg i a b
+
+      splitAl-l : ∀{k ty} → Al Rec (I k ∷ []) ty
+                → ∃ λ Ck → Alμ ty (typeOf (lookup k fam) Ck) 
+      splitAl-l (Adel x x₁) = {!!}
+      splitAl-l (Ains x x₁) = {!!}
+      splitAl-l (AX x x₁) = {!!}
+
+      splitAl-r : ∀{k ty} → Al Rec ty (I k ∷ [])
+                → ∃ λ Ck → Alμ ty (typeOf (lookup k fam) Ck)
+      splitAl-r = {!!}
+
+      ψAl : ∀{ty tv} → Al Rec ty tv → Alμ ty tv
+      ψAl = Al-map1 ψAt
+
+      ψAt : ∀{k} → Rec k k → Atμ k k
+      ψAt (fix x) = fix (ψS x)
+      ψAt (set x) = set x
+
 {-
     CostFor : {A : Set}→ (A → A → Set) → Set
     CostFor P = ∀{ty tv} → P ty tv → ℕ

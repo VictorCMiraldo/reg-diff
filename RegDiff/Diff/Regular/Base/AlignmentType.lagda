@@ -28,6 +28,22 @@ module RegDiff.Diff.Regular.Base.AlignmentType
 %</Al-def>
 %<*Al-mapM-def>
 \begin{code}
+  Al-map : {ty tv : Π}
+            {P Q : AASet}(X : ∀{k v} → P k v → Q k v)
+          → Al P ty tv → Al Q ty tv
+  Al-map f A0 = A0
+  Al-map f (Adel x a) = Adel x (Al-map f a)
+  Al-map f (Ains x a) = Ains x (Al-map f a)
+  Al-map f (AX x a) = AX (f x) (Al-map f a)
+
+  Al-map1 : {ty tv : Π}
+            {P Q : AASet}(X : ∀{k} → P k k → Q k k)
+          → Al P ty tv → Al Q ty tv
+  Al-map1 f A0 = A0
+  Al-map1 f (Adel x a) = Adel x (Al-map1 f a)
+  Al-map1 f (Ains x a) = Ains x (Al-map1 f a)
+  Al-map1 f (AX x a) = AX (f x) (Al-map1 f a)
+
   Al-mapM : {ty tv : Π}{M : Set → Set}{{m : Monad M}}
             {P Q : AASet}(X : ∀{k v} → P k v → M (Q k v))
           → Al P ty tv → M (Al Q ty tv)
