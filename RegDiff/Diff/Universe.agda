@@ -1,6 +1,8 @@
 open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
+open import Prelude.Monad
+
 open import RegDiff.Generic.Parms
 
 module RegDiff.Diff.Universe
@@ -50,6 +52,26 @@ module RegDiff.Diff.Universe
 
   ΠΠSet : Set₁
   ΠΠSet = Π → Π → Set
+
+-- And we borrow some relation functionality from
+-- Agda
+  open import Relation.Binary.Core
+    using (REL; _⇒_)
+    public
+
+  -- composes a monad with a relation.
+  -- Makes the types of the mapM guys much simpler
+  _∘₂_ : ∀{a b c}{A : Set a}{B : Set b}
+       → (M : Set c → Set c){{_ : Monad M}} 
+       → REL A B c
+       → REL A B c
+  (M ∘₂ R) x y = M (R x y)
+
+  -- We are specially intereste in "measurable" relations
+  Measurable : ∀{a b c}{A : Set a}{B : Set b}
+             → REL A B c → Set (c ⊔ (b ⊔ a))
+  Measurable R = ∀{i j} → R i j → ℕ
+
 
 -- Finally, a bunch of general purpose functionality.
   contr : ∀{a b}{A : Set a}{B : Set b}
