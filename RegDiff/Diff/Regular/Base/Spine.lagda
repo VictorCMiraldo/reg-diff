@@ -52,11 +52,13 @@ module RegDiff.Diff.Regular.Base.Spine
 %<*S-mapM-def>
 \begin{code}
   S-mapM  :  {ty : U}{M : Set → Set}{{m : Monad M}}
-             {P Q : ΠΠSet}{At : AASet}(X : ∀{k v} → P k v → M (Q k v))
-          → S P At ty → M (S Q At ty)
-  S-mapM f Scp          = return Scp
-  S-mapM f (Schg i j x) = Schg i j <$> f x
-  S-mapM f (Scns i xs)  = return (Scns i xs)
+             {P Q : ΠΠSet}{A B : AASet}
+             (X : ∀{k v} → P k v → M (Q k v))
+             (Y : ∀{x} → A x x → M (B x x))
+          → S P A ty → M (S Q B ty)
+  S-mapM f g Scp          = return Scp
+  S-mapM f g (Schg i j x) = Schg i j <$> f x
+  S-mapM f g (Scns i xs)  = Scns i <$> mapMᵢ g xs
 \end{code}
 %</S-mapM-def>
 
