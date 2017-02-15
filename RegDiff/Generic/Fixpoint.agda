@@ -8,7 +8,6 @@ module RegDiff.Generic.Fixpoint {ks# : ℕ}(ks : Vec Set ks#)(eqs : VecI Eq ks)
   open import RegDiff.Generic.Eq ks eqs
   open import RegDiff.Generic.Multirec ks 
     renaming (I to Iₙ; ⟦_⟧ to interp; Fix to Fixₘ)
-    public
 
   I : Atom 1
   I = Iₙ fz

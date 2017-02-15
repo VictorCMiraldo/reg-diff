@@ -8,12 +8,10 @@ module RegDiff.Diff.Fixpoint.Apply
        {ks# : ℕ}(ks : Vec Set ks#)(keqs : VecI Eq ks)
     where
 
-  open import RegDiff.Generic.Fixpoint ks keqs
-  open import RegDiff.Generic.Eq ks keqs
+  open import RegDiff.Generic.Multirec ks
   import RegDiff.Diff.Multirec.Apply ks keqs
     as MREC
-\end{code}
 
-  module Internal (T : ?) where
+  module Internal (T : Sum 1) where
     open MREC.Internal (T ∷ []) public
 \end{code}
