@@ -7,16 +7,16 @@ open import Prelude.List.All
 module RegDiff.Diff.Fixpoint.Lab23TreeHet where
 
   open import RegDiff.Generic.Konstants
-  open import RegDiff.Generic.Fixpoint konstants keqs
-    hiding (Atom; ⟦_⟧ₐ; ⟦_⟧ₚ; ⟦_⟧)
-    public
-  open import RegDiff.Generic.Eq konstants keqs public
-
+  open import RegDiff.Generic.Eq konstants keqs as EQ
+  open import RegDiff.Generic.Multirec konstants
+    renaming (I to I')
   import RegDiff.Diff.Multirec.Base konstants keqs 
     as DIFF
   import RegDiff.Diff.Multirec.Apply konstants keqs 
     as APPLY
 
+  I : Atom 1
+  I = I' fz
 
   2-3-TREE-F : Sum 1
   2-3-TREE-F = u1 
@@ -24,7 +24,7 @@ module RegDiff.Diff.Fixpoint.Lab23TreeHet where
              ⊕ (K kℕ) ⊗ I ⊗ I ⊗ I ⊗ [] ⊕ []
 
   2-3-Tree : Set
-  2-3-Tree = Fix 2-3-TREE-F
+  2-3-Tree = Fix (2-3-TREE-F ∷ []) fz
 
   %leaf %2-node %3-node : Constr 2-3-TREE-F
   %leaf = fz
@@ -42,7 +42,7 @@ module RegDiff.Diff.Fixpoint.Lab23TreeHet where
 
   _==_ : 2-3-Tree → Maybe 2-3-Tree → Bool
   _ == nothing = false
-  t == just u with t ≟-Fix u 
+  t == just u with t ≟ u 
   ...| yes _ = true
   ...| no  _ = false
 
@@ -66,10 +66,10 @@ module RegDiff.Diff.Fixpoint.Lab23TreeHet where
   d12-expected
     = skel
       (Schg %2-node %3-node
-       (Adel false
+        (Adel false
         (Ains 3
-         (AX (fix (skel Scp))
-          (Ains ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0))))))
+        (AX (fix (skel Scp))
+        (Ains ⟨ i1 unit ⟩ (AX (fix (skel Scp)) A0))))))
 
   d12-correct : d12 ≡ d12-expected
   d12-correct = refl
