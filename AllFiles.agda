@@ -43,7 +43,7 @@ open import RegDiff.Diff.Abstract.Base
 open import RegDiff.Diff.Abstract.Instances.Trivial
 open import RegDiff.Diff.Abstract.Instances.Patch
 -- TODO: needs finishing
--- open import RegDiff.Diff.Abstract.Instances.Multirec
+open import RegDiff.Diff.Abstract.Instances.Multirec
 
 -- Lempsink's diff:
 open import RegDiff.Diff.ES.Base
@@ -59,7 +59,7 @@ open import RegDiff.Diff.Regular.Lemmas
 open import RegDiff.Diff.Multirec.Base
 open import RegDiff.Diff.Multirec.Apply
 -- open import RegDiff.Diff.Multirec.Grupoid
-open import RegDiff.Diff.Multirec.LabJson
+open import RegDiff.Diff.Multirec.Lab.Json
 -- open import RegDiff.Diff.Multirec.Lab
 
 -- Diff of fixpoints (specialized from Multirec)
