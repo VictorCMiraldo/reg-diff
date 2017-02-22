@@ -25,26 +25,20 @@ module RegDiff.Diff.Regular.Apply
   to see how the two phases of the algorithm play together.
 
 \begin{code}
-  β-app : {a b : Atom}{P : ΠΠSet}
-        → (doP : HasAppₚ P)
-        → P (β a) (β b)
-        → ⟦ a ⟧ₐ ⇀ ⟦ b ⟧ₐ
-  β-app {a} {b} doP wit = (return ∘ from-β {b}) 
-                        ∙ doP wit 
-                        ∙ (return ∘ to-β {a}) 
-
-  S-app-prod : {P : ΠΠSet}
-             → (doP : HasAppₚ P){l : List Atom}
-             → All ((contr P) ∘ β) l
+  S-app-prod : {At : AASet}(doAt : HasAppₐ At){l : List Atom}
+             → All (contr At) l
              → ⟦ l ⟧ₚ ⇀ ⟦ l ⟧ₚ
-  S-app-prod doP {[]}     []       = !
-  S-app-prod doP {x ∷ xs} (l ∷ ls) = β-app doP l >< S-app-prod doP ls
+  S-app-prod doAt      []       = !
+  S-app-prod {At} doAt (l ∷ ls) = doAt l >< S-app-prod {At} doAt ls
 \end{code}
 \begin{code}
-  S-app : {ty : U}{P : ΠΠSet}(doP : HasAppₚ P) → S P ty → ⟦ ty ⟧ ⇀ ⟦ ty ⟧
-  S-app doP Scp           = id ♭
-  S-app doP (Scns i sx)   = to-inj {i = i} ∙ S-app-prod doP sx ∙ from-inj
-  S-app doP (Schg i j p)  = to-inj ∙ doP p ∙ from-inj
+  S-app : {ty : U}{P : ΠΠSet}{At : AASet}(doP : HasAppₚ P)(doAt : HasAppₐ At) 
+        → S P At ty → ⟦ ty ⟧ ⇀ ⟦ ty ⟧
+  S-app      doP doAt Scp           = id ♭
+  S-app {ty} {P} {At} doP doAt (Scns i sx)   
+    = to-inj {i = i} ∙ S-app-prod {At} doAt sx ∙ from-inj
+  S-app      doP doAt (Schg i j p)  
+    = to-inj ∙ doP p ∙ from-inj
 \end{code}
 \begin{code}
   guard♯ : {a : Atom}{ty : Π}
@@ -64,7 +58,7 @@ module RegDiff.Diff.Regular.Apply
 \begin{code}
   Patch-app : {ty : U}{P : AASet}(doP : HasAppₐ P) 
             → Patch P ty → ⟦ ty ⟧ ⇀ ⟦ ty ⟧
-  Patch-app doP = S-app (Al-app doP)
+  Patch-app doP = S-app (Al-app doP) doP
 \end{code}
 \begin{code}
   PatchΔ-app : {ty : U} → Patch Trivialₐ ty → ⟦ ty ⟧ ⇀ ⟦ ty ⟧
