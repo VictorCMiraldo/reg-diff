@@ -131,7 +131,7 @@ module RegDiff.Diff.Fixpoint.LabSExp where
   d12 d12-expected : Patchμ (T fz) (T fz)
   d12 = diffμ k1 k2
 
-  -- WARNING: Takes about 3h to compute.
+  -- WARNING: Takes about 3h to normalize on an i5 7th gen with 16gb of ram.
   d15 d15-expected : Patchμ (T fz) (T fz)
   d15 = diffμ k1 k5
 
