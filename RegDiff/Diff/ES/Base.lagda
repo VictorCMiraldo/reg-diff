@@ -6,6 +6,7 @@ open import Prelude
 open import Prelude.Eq
 open import Prelude.Vector
 open import Prelude.Monad
+open import Prelude.List.Lemmas
 open import Prelude.List.All
 open import RegDiff.Generic.Parms
 
@@ -145,3 +146,30 @@ module RegDiff.Diff.ES.Base
       diff (x ∷ xs)  []        = doDel x xs []
       diff (x ∷ xs)  (y ∷ ys)  = doMod x y xs ys
 \end{code}
+
+  Edit scripts can be concatenated.
+
+\begin{code}
+    _&_ : {txs tys tws tzs : List Atom}
+        → ES txs tys → ES tws tzs
+        → ES (txs ++ tws) (tys ++ tzs)
+    end & es₁ = es₁
+    _&_ {txs} {k ∷ tys} {_} {tzs} (ins ck es₀) es₁ 
+      with es₀ & es₁
+    ...| res 
+      rewrite sym (++-assoc (tyOf k ck) tys tzs)
+        = ins ck res
+    _&_ {k ∷ txs} {tys} {tws} {tzs} (del ck es₀) es₁ 
+      with es₀ & es₁
+    ...| res 
+      rewrite sym (++-assoc (tyOf k ck) txs tws)
+        = del ck res
+    _&_ {k ∷ txs} {.k ∷ tys} {tws} {tzs} (cpy ck es₀) es₁ 
+      with es₀ & es₁
+    ...| res
+      rewrite sym (++-assoc (tyOf k ck) txs tws)
+            | sym (++-assoc (tyOf k ck) tys tzs)
+            = cpy ck res
+\end{code}
+
+
