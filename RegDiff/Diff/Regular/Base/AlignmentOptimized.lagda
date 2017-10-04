@@ -94,9 +94,6 @@ module RegDiff.Diff.Regular.Base.AlignmentOptimized
   alignh* : {ty tv : Π} → ⟦ ty ⟧ₚ → ⟦ tv ⟧ₚ → Al Trivialₐ ty tv
   alignh* xs ys = p2 (alignh*-help xs ys)
 
-  open import Data.List.Any as Any using (here; there)
-  open Any.Membership-≡ using (_∈_; _⊆_)
-
   -- Conjecture: the above heuristic finds a valid alignment, as per the above spec.
   postulate
     alignh-valid : {ty tv : Π} → (y : ⟦ ty ⟧ₚ)(v : ⟦ tv ⟧ₚ) → alignh* y v ∈ align* y v

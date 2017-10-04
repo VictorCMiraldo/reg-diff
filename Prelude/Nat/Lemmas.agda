@@ -8,12 +8,12 @@ module Prelude.Nat.Lemmas where
     public
 
   open import Data.Nat
-    renaming (decTotalOrder to DTO)
   open import Data.Nat.Properties
     using ( ≤-steps
           ; 1+n≰n
           ; m≤m+n
           )
+    renaming (≤-decTotalOrder to DTO)
     public
 
   private

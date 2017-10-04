@@ -13,7 +13,7 @@ module Prelude.List.All where
 
   open import Data.List.Any as Any using (here; there)
     public
-  open Any.Membership-≡ using (_∈_; _⊆_) 
+  open import Data.List.Any.Membership.Propositional using (_∈_; _⊆_) 
     public
 
   open Monad {{...}} 
