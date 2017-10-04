@@ -83,6 +83,13 @@ module RegDiff.Diff.Multirec.Lab.RoseTree where
          % fork 5 #
          % # )
 
+  k1 k2 : rtree
+  k1 = fork 10 (fork 5 # % fork 8 # % #)
+  k2 = fork 10 (fork 5 (fork 8 # % #) % #)
+
+  k1k2 : Patchμ (T (fs fz)) (T (fs fz))
+  k1k2 = diffμ k1 k2
+
 
   t1t3 t1t3-norm t1t3-comp t1t3-comp2 : Patchμ (T (fs fz)) (T (fs fz))
   t1t3 = diffμ t1 t3
